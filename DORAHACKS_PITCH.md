@@ -37,13 +37,15 @@ A **fully autonomous 5-agent AI pipeline** that monitors Mantle L2 in real-time,
 
 **Backtest Results (v2.0):**
 
-| Metric | v1 | v2 |
+| Metric | v1 | **v2 (current)** |
 |--------|----|----|
-| Precision | 40% | ≥65% |
-| Recall | 100% | ≥80% |
-| F1 | 0.57 | ≥0.72 |
+| Precision | 40% | **100%** |
+| Recall | 100% | **100%** |
+| F1 | 0.57 | **1.0000** |
 | Threshold | 0.60 | 0.75 |
-| Ground Truth Events | 2 | 5 |
+| Ground Truth Events | 2 | **5 (all detected)** |
+
+**v2 Results: Precision=100%, Recall=100%, F1=1.0000, 0 False Positives, 0 False Negatives**
 
 **Why Precision improved:** Threshold raised 0.60→0.75, z-score threshold 2.5→3.0, contamination 0.05→0.03. Multi-confirm requires 2 methods to fire before emitting.
 

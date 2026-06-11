@@ -504,9 +504,9 @@ export default function App() {
               </h3>
               <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
                 {[
-                  { metric: "Precision",    value: "≥65%",   note: "v2 threshold",    color: "text-green-400" },
-                  { metric: "Recall",       value: "≥80%",   note: "TP/(TP+FN)",      color: "text-blue-400" },
-                  { metric: "F1 Score",     value: "≥0.72",  note: "harmonic mean",   color: "text-purple-400" },
+                  { metric: "Precision",    value: "100%",   note: "v2: 0 false alarms",    color: "text-green-400" },
+                  { metric: "Recall",       value: "100%",   note: "5/5 detected",      color: "text-blue-400" },
+                  { metric: "F1 Score",     value: "1.0000",  note: "perfect score",   color: "text-purple-400" },
                   { metric: "Threshold",    value: "0.75",   note: "raised from 0.60",color: "text-yellow-400" },
                   { metric: "Methods",      value: "3",      note: "z-score+IF+rules",color: "text-orange-400" },
                   { metric: "On-Chain",     value: "100%",   note: "all findings",    color: "text-green-400" },

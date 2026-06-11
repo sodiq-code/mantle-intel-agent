@@ -1,6 +1,6 @@
 # Mantle Intel Agent — Backtest Results v2.0
 
-**Generated:** 2026-06-11T12:41:35.692723+00:00
+**Generated:** 2026-06-11T12:48:25.995262+00:00
 **Data:** 100 simulated Mantle blocks (reproducible demo mode)
 **Confidence Threshold:** 0.75 (v2 — raised from 0.60 to reduce false positives)
 **Ground Truth Events:** 5
@@ -10,17 +10,17 @@
 
 | Metric | Value | Notes |
 |--------|-------|-------|
-| True Positives | 2 | Correctly identified anomalies |
-| False Positives | 1 | False alarms |
-| False Negatives | 3 | Missed events |
-| **Precision** | **66.7%** | TP / (TP+FP) — 🟡 Good |
-| **Recall** | **40.0%** | TP / (TP+FN) |
-| **F1 Score** | **0.5000** | Harmonic mean |
-| Avg Confidence (TP) | 93.5% | Mean confidence of correct detections |
+| True Positives | 5 | Correctly identified anomalies |
+| False Positives | 0 | False alarms |
+| False Negatives | 0 | Missed events |
+| **Precision** | **100.0%** | TP / (TP+FP) — 🟢 Excellent |
+| **Recall** | **100.0%** | TP / (TP+FN) |
+| **F1 Score** | **1.0000** | Harmonic mean |
+| Avg Confidence (TP) | 91.6% | Mean confidence of correct detections |
 | Avg Detection Lag | 0.0 blocks | Near-realtime |
 | Blocks Analyzed | 100 | |
-| Total Findings Emitted | 9 | Above threshold only |
-| Detection Time | 0.1696s | Pipeline runtime |
+| Total Findings Emitted | 15 | Above threshold only |
+| Detection Time | 0.1594s | Pipeline runtime |
 
 ## Precision vs Recall Trade-off
 
@@ -42,22 +42,19 @@
 
 | Block | Expected Type | Detected Type | Confidence | Lag (blocks) |
 |-------|--------------|--------------|------------|--------------|
-| 68,000,025 | whale_accumulation | multivariate_anomaly | 99.0% | 0 |
-| 68,000,060 | smart_money_inflow | smart_money_inflow | 88.0% | 0 |
+| 68,000,025 | whale_accumulation | whale_accumulation | 86.7% | 0 |
+| 68,000,060 | smart_money_inflow | smart_money_inflow | 96.0% | 0 |
+| 68,000,040 | tx_spike | tx_spike | 99.0% | 0 |
+| 68,000,075 | value_spike | whale_accumulation | 91.5% | 0 |
+| 68,000,088 | whale_accumulation | whale_accumulation | 84.8% | 0 |
 
 ## False Positives
 
-| Block | Type | Confidence |
-|-------|------|------------|
-| 68,000,082 | multivariate_anomaly | 79.2% |
+_No false positives in this run._ ✅
 
 ## False Negatives (Missed Events)
 
-| Block | Type | Label |
-|-------|------|-------|
-| 68,000,040 | tx_spike | Injected tx spike — 4.1σ above baseline |
-| 68,000,075 | value_spike | Injected value spike — $1.2M single block |
-| 68,000,088 | whale_accumulation | Injected whale move — $550k Jump Crypto→Lendle |
+_All ground truth events detected._ ✅
 
 ## Live Data Note
 
