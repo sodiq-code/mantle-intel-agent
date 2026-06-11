@@ -5,7 +5,8 @@
 Built for the **[Find Evil! 2026 Hackathon](https://findevil.devpost.com)** · **Alpha & Data Track (Mirana Ventures)**
 
 [![Live Dashboard](https://img.shields.io/badge/Dashboard-Live-brightgreen)](https://mantle-intel-agent.vercel.app)
-[![Contract](https://img.shields.io/badge/Contract-Mantle%20Sepolia-blue)](https://sepolia.mantlescan.xyz/address/0x03C88A1060626581854DB94e955a6be291782abb)
+[![Contract](https://img.shields.io/badge/MantleIntelAudit-Verified%20%E2%9C%93-blue)](https://repo.sourcify.dev/contracts/full_match/5003/0x03C88A1060626581854DB94e955a6be291782abb/)
+[![NFT](https://img.shields.io/badge/ERC--8004%20Agent%20NFT-Verified%20%E2%9C%93-purple)](https://repo.sourcify.dev/contracts/full_match/5003/0xa1A134f27b72140eAf61Da2c52632735a328742f/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-blue)](https://python.org)
 [![Mantle Network](https://img.shields.io/badge/Network-Mantle-green)](https://mantle.xyz)
@@ -60,14 +61,24 @@ Findings are surfaced via **Telegram bot alerts** and a **public web dashboard**
 
 ---
 
-## Deployed Contract
+## Deployed Contracts
 
-| Network | Address | Explorer |
+### MantleIntelAudit — On-Chain Findings Log
+
+| Network | Address | Verified |
 |---------|---------|---------|
-| Mantle Mainnet | `TBD — deploy with hardhat` | [mantlescan.xyz](https://mantlescan.xyz) |
-| Mantle Testnet | [`0x03C88A1060626581854DB94e955a6be291782abb`](https://sepolia.mantlescan.xyz/address/0x03C88A1060626581854DB94e955a6be291782abb) | [sepolia.mantlescan.xyz](https://sepolia.mantlescan.xyz/address/0x03C88A1060626581854DB94e955a6be291782abb) |
+| Mantle Mainnet | `TBD — pending funding` | — |
+| Mantle Testnet (Sepolia) | [`0x03C88A1060626581854DB94e955a6be291782abb`](https://sepolia.mantlescan.xyz/address/0x03C88A1060626581854DB94e955a6be291782abb) | [Sourcify ✓](https://repo.sourcify.dev/contracts/full_match/5003/0x03C88A1060626581854DB94e955a6be291782abb/) |
 
-> Contract: `MantleIntelAudit.sol` — stores SHA256 hash of every agent finding. Fully auditable, not a black box.
+> `MantleIntelAudit.sol` — immutable on-chain log of every agent finding. Stores SHA256 hash, severity, confidence score, and MITRE tactic per finding.
+
+### MantleIntelAgentNFT — ERC-8004 Agent Identity
+
+| Network | Address | Verified |
+|---------|---------|---------|
+| Mantle Testnet (Sepolia) | [`0xa1A134f27b72140eAf61Da2c52632735a328742f`](https://sepolia.mantlescan.xyz/address/0xa1A134f27b72140eAf61Da2c52632735a328742f) | [Sourcify ✓](https://repo.sourcify.dev/contracts/full_match/5003/0xa1A134f27b72140eAf61Da2c52632735a328742f/) |
+
+> `MantleIntelAgentNFT.sol` — ERC-8004 Agent Identity NFT. Token ID 1 encodes `agentType: anomaly_detector`, `capabilities: 7 (detect|report|audit)`, linked to the audit contract. Enables trustless agent-to-agent composition on Mantle.
 
 ---
 
