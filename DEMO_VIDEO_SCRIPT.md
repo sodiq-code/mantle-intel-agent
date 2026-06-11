@@ -1,83 +1,76 @@
 # Mantle Intel Agent — Demo Video Script
-**Target length:** 2 minutes  
-**Format:** Screen recording + voiceover  
-**Audience:** Hackathon judges (Find Evil! 2026 — Alpha & Data track)
+**Target length: 90–120 seconds**  
+**Hackathon: Find Evil! 2026 — Alpha & Data Track**
 
 ---
 
-## Scene 1 — Hook (0:00–0:15)
-**Screen:** Live dashboard at `https://mantle-intel-agent.vercel.app`  
-**Voiceover:**
-> "On-chain data is noisy. Wallets move millions in seconds — and most anomaly tools miss it. Mantle Intel Agent is an autonomous AI ops system that watches the Mantle network in real time, detects smart-money threats, and writes every finding directly on-chain."
+## What to record (step by step)
+
+### [0:00–0:12] Hook — Open on the dashboard
+- Open **https://mantle-intel-agent.vercel.app** in browser
+- Let the live feed show for 3 seconds
+- Narrate: *"This is Mantle Intel Agent — an autonomous AI system that monitors the Mantle network for anomalous wallet behavior and verifies every finding permanently on-chain."*
 
 ---
 
-## Scene 2 — Architecture Overview (0:15–0:35)
-**Screen:** Show `README.md` architecture diagram or draw.io screenshot  
-**Voiceover:**
-> "The system runs a 3-layer intelligence stack: Qwen-Max for deep anomaly reasoning, Qwen-Turbo for fast triage, and Qwen-Embedding for semantic search across 500+ indexed runbooks. It connects to Mantle RPC, Splunk MCP, and a Hardhat-deployed audit contract — all on Mantle Sepolia."
-
-**Show:** `agent/agent.py` open in editor — highlight the three model calls
-
----
-
-## Scene 3 — Live Agent Run (0:35–1:10)
-**Screen:** Terminal — run the agent against a known suspicious wallet  
-```bash
-cd /home/user/mantle-intel-agent
-python agent/agent.py --wallet 0xSUSPICIOUS --chain mantle_testnet
-```
-**Voiceover:**
-> "Watch the agent work. First, Qwen-Turbo does a 50ms triage — is this wallet worth investigating? Yes. Qwen-Max then deep-dives: cross-referencing transfer patterns, contract interactions, and historical velocity. It generates a structured threat report — severity, confidence score, MITRE-style tactic label."
-
-**Show:** JSON output with `severity: HIGH`, `confidence: 0.91`, `tactic: "TA0010 Exfiltration"`
+### [0:12–0:30] Show the pipeline running
+- Open terminal and run:
+  ```bash
+  cd /home/user/mantle-intel-agent
+  python3 main.py --demo --cycles 1
+  ```
+- Let it print findings to the terminal
+- Narrate: *"Three Qwen AI models working together — Turbo for fast triage, Max for deep threat reasoning, Embedding for RAG runbook matching — detecting whale accumulation, smart money inflows, and anomalous patterns."*
 
 ---
 
-## Scene 4 — On-Chain Audit Log (1:10–1:35)
-**Screen:** Mantle Sepolia explorer — open contract `0x03C88A1060626581854DB94e955a6be291782abb`  
-**URL:** `https://sepolia.explorer.mantle.xyz/address/0x03C88A1060626581854DB94e955a6be291782abb`
-
-**Voiceover:**
-> "Every finding is immutable. The agent calls `recordFinding()` — writing the wallet address, severity, IPFS hash of the full report, and timestamp directly to the MantleIntelAudit contract. No backend. No trust required."
-
-**Show:** A `FindingRecorded` event in the explorer — click into it, show the decoded parameters.
-
-**Then switch to:** Sourcify verification page  
-`https://repo.sourcify.dev/contracts/full_match/5003/0x03C88A1060626581854DB94e955a6be291782abb/`
-
-> "And it's fully verified — open source, auditable."
+### [0:30–0:50] On-chain audit proof
+- Open **https://sepolia.mantlescan.xyz/address/0x03C88A1060626581854DB94e955a6be291782abb**
+- Show the contract page and recent transactions
+- Narrate: *"Every finding is written on-chain to our audit contract — immutable, timestamped, verifiable by anyone."*
+- Click one transaction to show the data
 
 ---
 
-## Scene 5 — ERC-8004 Agent NFT (1:35–1:50)
-**Screen:** Sourcify page for NFT contract  
-`https://repo.sourcify.dev/contracts/full_match/5003/0xa1A134f27b72140eAf61Da2c52632735a328742f/`
-
-**Voiceover:**
-> "The agent also has an on-chain identity — an ERC-8004 Agent NFT. Token ID 1 encodes the agent's type, capabilities bitmask, and a pointer to its audit contract. This is the foundation for trustless agent-to-agent composition on Mantle."
-
-**Show:** `agentIdentities[1]` call result in explorer showing `agentType: anomaly_detector`, `capabilities: 7`
+### [0:50–1:05] Telegram bot live
+- Open Telegram → **@MantleIntelAgentBot**
+- Type `/start` — show welcome message
+- Type `/latest` — show last findings
+- Type `/status` — show pipeline stats
+- Narrate: *"Real-time alerts via Telegram — /latest pulls the last five findings, /verify lets anyone confirm a hash on-chain."*
 
 ---
 
-## Scene 6 — Dashboard (1:50–2:00)
-**Screen:** Live dashboard `https://mantle-intel-agent.vercel.app`  
-**Voiceover:**
-> "All findings surface in the live dashboard — searchable, filterable, real-time. Built on Mantle. Autonomous. Open source."
-
-**End card:**
-- GitHub: `github.com/sodiq-code/mantle-intel-agent`
-- Contract: `0x03C88A1060626581854DB94e955a6be291782abb`
-- NFT: `0xa1A134f27b72140eAf61Da2c52632735a328742f`
-- Dashboard: `mantle-intel-agent.vercel.app`
+### [1:05–1:18] ERC-8004 Agent NFT
+- Open **https://sepolia.mantlescan.xyz/address/0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C**
+- Show the contract
+- Narrate: *"The agent has an on-chain identity — an ERC-8004 NFT encoding its capabilities, version, and audit contract link. Machine-verifiable provenance."*
 
 ---
 
-## Recording Tips
-- Use OBS or Loom for screen + mic capture
-- Record at 1920×1080
-- Keep terminal font size large (18pt+) so judges can read
-- Pause 1–2s on each contract address so it's readable
-- No background music needed — clean narration is more professional
-- Export as MP4, upload to YouTube (unlisted) or Loom link for DoraHacks submission
+### [1:18–1:30] Close on GitHub + dashboard
+- Show **https://github.com/sodiq-code/mantle-intel-agent**
+- End back on the live dashboard
+- Narrate: *"Fully open-source. Production-ready architecture. Built on Mantle for the Find Evil! 2026 hackathon."*
+
+---
+
+## Recording tips
+- Use OBS or Loom (free, browser-based)
+- Keep terminal font large (18pt+)
+- Record at 1080p
+- Mute system sounds, use mic narration
+- Loom link works fine for submission — no need to upload to YouTube
+
+---
+
+## Key URLs to show on screen
+| What | URL |
+|---|---|
+| Live Dashboard | https://mantle-intel-agent.vercel.app |
+| Audit Contract | https://sepolia.mantlescan.xyz/address/0x03C88A1060626581854DB94e955a6be291782abb |
+| NFT Contract | https://sepolia.mantlescan.xyz/address/0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C |
+| Sourcify (Audit) | https://repo.sourcify.dev/contracts/full_match/5003/0x03C88A1060626581854DB94e955a6be291782abb/ |
+| Sourcify (NFT) | https://repo.sourcify.dev/contracts/full_match/5003/0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C/ |
+| GitHub | https://github.com/sodiq-code/mantle-intel-agent |
+| Telegram Bot | https://t.me/MantleIntelAgentBot |

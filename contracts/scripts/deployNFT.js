@@ -1,54 +1,51 @@
 const hre = require("hardhat");
-const fs = require("fs");
+const fs  = require("fs");
 const path = require("path");
 
 async function main() {
   const [deployer] = await hre.ethers.getSigners();
-  console.log("Deploying MantleIntelAgentNFT with:", deployer.address);
+  console.log("Deployer:", deployer.address);
+  const bal = await hre.ethers.provider.getBalance(deployer.address);
+  console.log("Balance:", hre.ethers.formatEther(bal), "MNT");
 
-  const balance = await hre.ethers.provider.getBalance(deployer.address);
-  console.log("Balance:", hre.ethers.formatEther(balance), "MNT");
-
-  // Deploy
   const NFT = await hre.ethers.getContractFactory("MantleIntelAgentNFT");
+  console.log("Deploying MantleIntelAgentNFT...");
   const nft = await NFT.deploy();
   await nft.waitForDeployment();
+  const addr = await nft.getAddress();
+  console.log("MantleIntelAgentNFT deployed to:", addr);
 
-  const address = await nft.getAddress();
-  console.log("MantleIntelAgentNFT deployed to:", address);
-
-  // Mint token ID 1 to deployer
+  // Mint Agent NFT #1
   const auditContract = process.env.AUDIT_CONTRACT_ADDRESS || "0x03C88A1060626581854DB94e955a6be291782abb";
+  console.log("Minting Agent NFT #1 to", deployer.address, "...");
   const tx = await nft.mintAgentIdentity(
-    deployer.address,         // to
-    "Mantle Intel Agent",     // agentName
-    "anomaly_detector",       // agentType
-    "1.0.0",                  // version
-    auditContract,            // auditContract address
-    7,                        // capabilities bitmask: 0b111 = detect + report + audit
-    "https://mantle-intel-agent.vercel.app/api/nft/1" // tokenURI
+    deployer.address,
+    "Mantle Intel Agent",
+    "INTEL_AGENT",
+    "1.0.0",
+    auditContract,
+    7,
+    "ipfs://mantle-intel-agent-metadata"
   );
   await tx.wait();
-  console.log("Minted Agent NFT token ID 1 to:", deployer.address);
-  console.log("Mint tx:", tx.hash);
+  console.log("Minted! TX:", tx.hash);
 
-  // Update deployment.json
-  const deploymentPath = path.join(__dirname, "../deployment.json");
-  let deployment = {};
-  if (fs.existsSync(deploymentPath)) {
-    deployment = JSON.parse(fs.readFileSync(deploymentPath, "utf8"));
-  }
-
-  const network = hre.network.name;
-  deployment[network] = deployment[network] || {};
-  deployment[network].MantleIntelAgentNFT = address;
-  deployment[network].MantleIntelAgentNFT_mintTx = tx.hash;
-
-  fs.writeFileSync(deploymentPath, JSON.stringify(deployment, null, 2));
-  console.log("deployment.json updated");
+  // Save deployment
+  const depFile = path.join(__dirname, "../deployment.json");
+  let dep = {};
+  if (fs.existsSync(depFile)) dep = JSON.parse(fs.readFileSync(depFile, "utf8"));
+  dep.nft_testnet = {
+    address: addr,
+    network: "mantle_sepolia",
+    chainId: 5003,
+    deployer: deployer.address,
+    mintTx: tx.hash,
+    deployedAt: new Date().toISOString()
+  };
+  fs.writeFileSync(depFile, JSON.stringify(dep, null, 2));
+  console.log("Saved to deployment.json");
+  console.log("\nNFT Contract:", addr);
+  console.log("Explorer:", `https://sepolia.mantlescan.xyz/address/${addr}`);
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+main().catch((e) => { console.error(e); process.exit(1); });

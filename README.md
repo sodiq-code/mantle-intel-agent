@@ -6,7 +6,7 @@ Built for the **[Find Evil! 2026 Hackathon](https://findevil.devpost.com)** · *
 
 [![Live Dashboard](https://img.shields.io/badge/Dashboard-Live-brightgreen)](https://mantle-intel-agent.vercel.app)
 [![Contract](https://img.shields.io/badge/MantleIntelAudit-Verified%20%E2%9C%93-blue)](https://repo.sourcify.dev/contracts/full_match/5003/0x03C88A1060626581854DB94e955a6be291782abb/)
-[![NFT](https://img.shields.io/badge/ERC--8004%20Agent%20NFT-Verified%20%E2%9C%93-purple)](https://repo.sourcify.dev/contracts/full_match/5003/0xa1A134f27b72140eAf61Da2c52632735a328742f/)
+[![NFT](https://img.shields.io/badge/ERC--8004%20Agent%20NFT-Verified%20%E2%9C%93-purple)](https://repo.sourcify.dev/contracts/full_match/5003/0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-blue)](https://python.org)
 [![Mantle Network](https://img.shields.io/badge/Network-Mantle-green)](https://mantle.xyz)
@@ -76,7 +76,7 @@ Findings are surfaced via **Telegram bot alerts** and a **public web dashboard**
 
 | Network | Address | Verified |
 |---------|---------|---------|
-| Mantle Testnet (Sepolia) | [`0xa1A134f27b72140eAf61Da2c52632735a328742f`](https://sepolia.mantlescan.xyz/address/0xa1A134f27b72140eAf61Da2c52632735a328742f) | [Sourcify ✓](https://repo.sourcify.dev/contracts/full_match/5003/0xa1A134f27b72140eAf61Da2c52632735a328742f/) |
+| Mantle Testnet (Sepolia) | [`0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C`](https://sepolia.mantlescan.xyz/address/0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C) | [Sourcify ✓](https://repo.sourcify.dev/contracts/full_match/5003/0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C/) |
 
 > `MantleIntelAgentNFT.sol` — ERC-8004 Agent Identity NFT. Token ID 1 encodes `agentType: anomaly_detector`, `capabilities: 7 (detect|report|audit)`, linked to the audit contract. Enables trustless agent-to-agent composition on Mantle.
 
@@ -138,7 +138,11 @@ python main.py --cycles 3
 
 Works out of the box in demo mode — generates realistic simulated Mantle data with injected anomalies.
 
-### 3. Run with Telegram bot
+### 3. Telegram Bot
+
+**Live bot:** [@MantleIntelAgentBot](https://t.me/MantleIntelAgentBot) — `/start`, `/status`, `/latest`, `/verify <hash>`
+
+### 3b. Run bot locally
 
 ```bash
 # Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in .env
