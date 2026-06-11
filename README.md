@@ -4,9 +4,13 @@
 
 Built for the **[Find Evil! 2026 Hackathon](https://findevil.devpost.com)** · **Alpha & Data Track (Mirana Ventures)**
 
+[![Live Dashboard](https://img.shields.io/badge/Dashboard-Live-brightgreen)](https://mantle-intel-agent.vercel.app)
+[![Contract](https://img.shields.io/badge/Contract-Mantle%20Sepolia-blue)](https://sepolia.mantlescan.xyz/address/0x03C88A1060626581854DB94e955a6be291782abb)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-blue)](https://python.org)
 [![Mantle Network](https://img.shields.io/badge/Network-Mantle-green)](https://mantle.xyz)
+
+> 🔴 **Live:** [mantle-intel-agent.vercel.app](https://mantle-intel-agent.vercel.app) · Contract: [`0x03C88...782abb`](https://sepolia.mantlescan.xyz/address/0x03C88A1060626581854DB94e955a6be291782abb)
 
 ---
 
