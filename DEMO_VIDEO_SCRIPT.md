@@ -1,6 +1,6 @@
 # Mantle Intel Agent — Demo Video Script
 **Target length: 90–120 seconds**  
-**Hackathon: Find Evil! 2026 — Alpha & Data Track**
+**Hackathon: The Turing Test Hackathon 2026 — Alpha & Data Track**
 
 ---
 
@@ -51,7 +51,7 @@
 ### [1:18–1:30] Close on GitHub + dashboard
 - Show **https://github.com/sodiq-code/mantle-intel-agent**
 - End back on the live dashboard
-- Narrate: *"Fully open-source. Production-ready architecture. Built on Mantle for the Find Evil! 2026 hackathon."*
+- Narrate: *"Fully open-source. Production-ready architecture. Built on Mantle for the The Turing Test Hackathon 2026 hackathon."*
 
 ---
 

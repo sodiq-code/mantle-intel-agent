@@ -222,7 +222,7 @@ export default function App() {
 
         {/* Footer */}
         <div className="text-center text-xs text-gray-700 pt-4 border-t border-gray-800">
-          Mantle Intel Agent · Find Evil! 2026 Hackathon · Alpha &amp; Data Track (Mirana Ventures)
+          Mantle Intel Agent · The Turing Test Hackathon 2026 · Alpha &amp; Data Track (Mirana Ventures)
           · Built by Kudirat Oyindamola
         </div>
       </div>

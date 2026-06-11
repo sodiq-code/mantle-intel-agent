@@ -37,7 +37,7 @@ I detect whale moves, smart money inflows, and anomalous patterns — then verif
 /latest   — Last 5 findings
 /verify &lt;hash&gt; — Verify a finding hash on-chain
 
-<i>Built for the Find Evil! 2026 Hackathon — Alpha & Data Track</i>
+<i>Built for the The Turing Test Hackathon 2026 — Alpha & Data Track</i>
 """
 
 STATUS_TEMPLATE = """

@@ -40,7 +40,7 @@ def print_banner():
     print("\n" + "="*70)
     print("  MANTLE INTEL AGENT")
     print("  Autonomous On-Chain Intelligence for Mantle Network")
-    print("  Find Evil! 2026 Hackathon — Alpha & Data Track (Mirana Ventures)")
+    print("  The Turing Test Hackathon 2026 — Alpha & Data Track (Mirana Ventures)")
     print("="*70 + "\n")
 
 

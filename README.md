@@ -2,7 +2,7 @@
 
 **Autonomous on-chain intelligence for Mantle Network** — anomaly detection, smart money tracking, and fully verifiable AI findings recorded on-chain.
 
-Built for the **[Find Evil! 2026 Hackathon](https://findevil.devpost.com)** · **Alpha & Data Track (Mirana Ventures)**
+Built for the **[The Turing Test Hackathon 2026](https://dorahacks.io/hackathon)** · **Alpha & Data Track (Mirana Ventures)**
 
 [![Live Dashboard](https://img.shields.io/badge/Dashboard-Live-brightgreen)](https://mantle-intel-agent.vercel.app)
 [![Contract](https://img.shields.io/badge/MantleIntelAudit-Verified%20%E2%9C%93-blue)](https://repo.sourcify.dev/contracts/full_match/5003/0x03C88A1060626581854DB94e955a6be291782abb/)
@@ -266,7 +266,7 @@ mantle-intel-agent/
 
 **Kudirat Oyindamola** — Platform & DevOps Engineer
 - GitHub: [@sodiq-code](https://github.com/sodiq-code)
-- Hackathon: [Find Evil! 2026](https://findevil.devpost.com)
+- Hackathon: [The Turing Test Hackathon 2026](https://dorahacks.io/hackathon)
 
 ---
 

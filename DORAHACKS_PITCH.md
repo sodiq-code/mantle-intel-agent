@@ -7,7 +7,7 @@ Mantle Intel Agent
 Autonomous AI ops agent for Mantle — on-chain anomaly detection, smart-money threat analysis, and immutable audit logs powered by Qwen.
 
 ## Track
-Alpha & Data (Mirana Ventures) — Find Evil! 2026
+Alpha & Data (Mirana Ventures) — The Turing Test Hackathon 2026
 
 ---
 
@@ -97,4 +97,4 @@ GitHub: https://github.com/sodiq-code
 
 ---
 
-*Submitted to Find Evil! 2026 — Alpha & Data track (Mirana Ventures)*
+*Submitted to The Turing Test Hackathon 2026 — Alpha & Data track (Mirana Ventures)*
