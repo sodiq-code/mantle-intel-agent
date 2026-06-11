@@ -26,18 +26,23 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 
 WELCOME_MSG = """
-🔍 <b>Mantle Intel Agent</b>
+🔍 <b>Mantle Intel Agent v2.0</b>
 
 Autonomous on-chain intelligence for Mantle Network.
-I detect whale moves, smart money inflows, and anomalous patterns — then verify every finding on-chain.
+5-agent AI pipeline — detects whale moves, smart money inflows, and anomalous patterns.
+Every finding verified on-chain via MantleIntelAudit.sol.
 
 <b>Commands:</b>
-/start    — This message
-/status   — Pipeline status + stats
-/latest   — Last 5 findings
-/verify &lt;hash&gt; — Verify a finding hash on-chain
+/start               — This message
+/status              — Pipeline status + stats
+/latest              — Last 5 findings
+/verify &lt;hash&gt;  — Verify a finding hash on-chain
+/compare &lt;type&gt; — Compare signal history (whale|smart_money|cex|mev|all)
 
-<i>Built for the The Turing Test Hackathon 2026 — Alpha & Data Track</i>
+<b>Contract:</b> <code>0x03C88A1060626581854DB94e955a6be291782abb</code>
+<b>Network:</b> Mantle Sepolia Testnet
+
+<i>Built for the Turing Test Hackathon 2026 — Alpha &amp; Data Track (Mirana Ventures)</i>
 """
 
 STATUS_TEMPLATE = """
@@ -235,6 +240,50 @@ class MantleIntelBot:
             )
         await update.message.reply_html(msg)
 
+    async def cmd_compare(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        /compare <type> — compare signal history
+        Types: whale | smart_money | cex | mev | all
+        """
+        valid_types = {"whale", "smart_money", "cex", "mev", "all"}
+        signal_type = (context.args[0] if context.args else "all").lower()
+
+        if signal_type not in valid_types:
+            await update.message.reply_text(
+                f"Usage: /compare &lt;type&gt;\n"
+                f"Types: {' | '.join(sorted(valid_types))}"
+            )
+            return
+
+        if not self._pipeline:
+            await update.message.reply_text("Pipeline not running.")
+            return
+
+        sm_agent = self._pipeline.smart_money
+        result   = sm_agent.compare_signals(signal_type)
+
+        protocol_lines = "\n".join(
+            f"  • <b>{p['protocol']}</b>: ${p['volume_usd']:,.0f}"
+            for p in result.get("top_protocols", [])[:5]
+        ) or "  <i>No protocol data</i>"
+
+        action_lines = "\n".join(
+            f"  • {k}: {v}"
+            for k, v in result.get("action_breakdown", {}).items()
+        ) or "  <i>No action data</i>"
+
+        msg = (
+            f"📊 <b>Signal Compare — {signal_type.upper()}</b>\n\n"
+            f"Count: <b>{result.get('count', 0)}</b> signals (last {result.get('lookback_count', 50)})\n"
+            f"Total Flow: <b>${result.get('total_usd', 0):,.0f}</b>\n"
+            f"Avg per Signal: <b>${result.get('avg_usd', 0):,.0f}</b>\n"
+            f"Avg Confidence: <b>{result.get('avg_confidence', 0)*100:.1f}%</b>\n\n"
+            f"<b>Top Protocols:</b>\n{protocol_lines}\n\n"
+            f"<b>Actions:</b>\n{action_lines}\n\n"
+            f"<i>{result.get('message', '')}</i>"
+        )
+        await update.message.reply_html(msg)
+
     # ── Bot runner ────────────────────────────────────────────────────────────
 
     def build_app(self):
@@ -245,10 +294,11 @@ class MantleIntelBot:
             .token(self.token)
             .build()
         )
-        self._app.add_handler(CommandHandler("start",  self.cmd_start))
-        self._app.add_handler(CommandHandler("status", self.cmd_status))
-        self._app.add_handler(CommandHandler("latest", self.cmd_latest))
-        self._app.add_handler(CommandHandler("verify", self.cmd_verify))
+        self._app.add_handler(CommandHandler("start",   self.cmd_start))
+        self._app.add_handler(CommandHandler("status",  self.cmd_status))
+        self._app.add_handler(CommandHandler("latest",  self.cmd_latest))
+        self._app.add_handler(CommandHandler("verify",  self.cmd_verify))
+        self._app.add_handler(CommandHandler("compare", self.cmd_compare))
         return self._app
 
     async def run_polling(self):
