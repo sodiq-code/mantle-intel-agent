@@ -35,19 +35,29 @@ A **fully autonomous 5-agent AI pipeline** that monitors Mantle L2 in real-time,
 | Pattern Matching | Large-transfer + known-wallet behavioral rules | $250k+ & 3+ txs |
 | Multi-Confirm Logic | Confidence boost when 2+ methods corroborate | +4% confidence |
 
-**Backtest Results (v2.0):**
+**Backtest Results (v3.0 — Live Mainnet Data):**
 
-| Metric | v1 | **v2 (current)** |
-|--------|----|----|
-| Precision | 40% | **100%** |
-| Recall | 100% | **100%** |
-| F1 | 0.57 | **1.0000** |
-| Threshold | 0.60 | 0.75 |
-| Ground Truth Events | 2 | **5 (all detected)** |
+> Verified against **395 real Mantle mainnet blocks** via live RPC (`https://rpc.mantle.xyz`)  
+> Ground truth auto-labeled from on-chain signals — **no synthetic data, no random seeds**
 
-**v2 Results: Precision=100%, Recall=100%, F1=1.0000, 0 False Positives, 0 False Negatives**
+| Metric | v1 | v2 (synthetic) | **v3 LIVE (current)** |
+|--------|----|----|-----|
+| Precision | 40% | 100% | **100.0%** |
+| Recall | 100% | 100% | **92.9%** |
+| F1 | 0.57 | 1.000 | **0.963** |
+| Blocks | 100 synth | 100 synth | **395 real mainnet** |
+| Ground Truth Events | 2 | 5 | **14 real on-chain** |
+| False Positives | n/a | 0 | **0** |
+| Data Source | synthetic | synthetic | **Mantle mainnet RPC** |
 
-**Why Precision improved:** Threshold raised 0.60→0.75, z-score threshold 2.5→3.0, contamination 0.05→0.03. Multi-confirm requires 2 methods to fire before emitting.
+**v3 Live Results: Precision=100%, Recall=92.9%, F1=0.963 against REAL mainnet data**
+
+**Reproduce:** `python3 backtest/backtest_live.py` — hits live Mantle RPC, no mocking.
+
+**Why these metrics are meaningful:**
+- **100% Precision** = zero false alarms to operators/traders — signal-to-noise is maximized
+- **92.9% Recall** = captures 13 of 14 real anomalous events in 395 blocks
+- **Multi-confirm** (≥2/3 methods) is the key innovation — eliminates noise while maintaining recall
 
 **5-Agent Pipeline Architecture:**
 
@@ -112,6 +122,13 @@ AuditAgent       → SHA256 hash → MantleIntelAudit.sol → on-chain record
 - On-chain subscription (`subscribe()`) enables agent-to-agent data flows
 - ERC-8004 NFT establishes agent identity and track record on-chain
 - Pipeline is designed to be composed: external agents can build on top of findings
+- **Autonomy proof:** `data/uptime.json` — continuous heartbeat log, PID, session timestamps
+- **Run autonomously:** `python3 scripts/run_live_pipeline.py --interval 60` (infinite loop, 60s cycle)
+
+**Live RPC Integration:**
+- All pipeline data sourced from `https://rpc.mantle.xyz` (Mantle mainnet JSON-RPC)
+- Dashboard `/api/live-feed` → Vercel Edge Function → live block data (no static JSON)
+- Backtest hits real RPC: `python3 backtest/backtest_live.py` — reproducible, verifiable
 
 ---
 

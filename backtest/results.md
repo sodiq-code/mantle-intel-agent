@@ -1,6 +1,6 @@
 # Mantle Intel Agent — Backtest Results v2.0
 
-**Generated:** 2026-06-11T12:48:25.995262+00:00
+**Generated:** 2026-06-11T13:03:29.212865+00:00
 **Data:** 100 simulated Mantle blocks (reproducible demo mode)
 **Confidence Threshold:** 0.75 (v2 — raised from 0.60 to reduce false positives)
 **Ground Truth Events:** 5
@@ -20,7 +20,7 @@
 | Avg Detection Lag | 0.0 blocks | Near-realtime |
 | Blocks Analyzed | 100 | |
 | Total Findings Emitted | 15 | Above threshold only |
-| Detection Time | 0.1594s | Pipeline runtime |
+| Detection Time | 0.1583s | Pipeline runtime |
 
 ## Precision vs Recall Trade-off
 
