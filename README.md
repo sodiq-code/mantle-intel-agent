@@ -61,7 +61,7 @@ Findings are surfaced via **Telegram bot alerts** and a **public web dashboard**
 | Network | Address | Explorer |
 |---------|---------|---------|
 | Mantle Mainnet | `TBD — deploy with hardhat` | [mantlescan.xyz](https://mantlescan.xyz) |
-| Mantle Testnet | `TBD — deploy with hardhat` | [sepolia.mantlescan.xyz](https://sepolia.mantlescan.xyz) |
+| Mantle Testnet | [`0x03C88A1060626581854DB94e955a6be291782abb`](https://sepolia.mantlescan.xyz/address/0x03C88A1060626581854DB94e955a6be291782abb) | [sepolia.mantlescan.xyz](https://sepolia.mantlescan.xyz/address/0x03C88A1060626581854DB94e955a6be291782abb) |
 
 > Contract: `MantleIntelAudit.sol` — stores SHA256 hash of every agent finding. Fully auditable, not a black box.
 
