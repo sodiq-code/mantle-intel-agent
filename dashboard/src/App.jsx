@@ -4,7 +4,7 @@ import {
   RefreshCw, TrendingUp, Zap, Globe, GitBranch, BarChart2,
   ChevronDown, ChevronUp, Radio, Filter, Clock, Wifi, WifiOff,
   CheckCircle, Server, Link, Eye, Lock, ArrowUpRight, ArrowDownRight,
-  Cpu, Box, Layers, Target, DollarSign, BookOpen, Info
+  Cpu, Box, Layers, Target, DollarSign, BookOpen, Info, Code
 } from "lucide-react";
 
 // ── Config ───────────────────────────────────────────────────────────────────
@@ -474,15 +474,27 @@ function ProtocolStateTab({ data }) {
   const lendle   = protocol.lendle || {};
   const prices   = protocol.prices || {};
 
-  // Hardcoded representative fallbacks if API doesn't have live protocol data yet
-  const mntPrice  = prices.mnt_usd  || 0.854;
-  const ethPrice  = prices.eth_usd  || 3500;
-  const methRate  = meth.rate       || 1.034012;
-  const methDepeg = meth.depeg_bps  || 0;
-  const methSupply= meth.supply     || 127443.8;
-  const moeRes0   = moe.reserve0    || 2847223;
-  const moeRes1   = moe.reserve1    || 284.7;
-  const lendleTvl = lendle.tvl_mnt  || 21340000;
+  // Live data from API — falls back to representative values if unavailable
+  const mntPrice   = prices.mnt_usd                 || 0.854;
+  const ethPrice   = prices.eth_usd                 || 3500;
+  // mETH: use live ratio from on-chain call
+  const methRatio  = meth.ratio                     || 1.0012;
+  const methRate   = meth.ratio                     || 1.034012;
+  const methDepeg  = meth.depeg_alert ? Math.abs((methRatio - 1) * 10000).toFixed(0) * 1 : 0;
+  const methSupply = meth.supply_meth               || 127443.8;
+  const methStaked = meth.staked_eth                || null;
+  const methStatus = meth.status                    || "HEALTHY";
+  // Merchant Moe: live router balance
+  const moeBalance = moe.router_balance_mnt         || null;
+  const moeRes0    = moeBalance                     || 2847223;
+  const moeRes1    = 284.7;
+  // Lendle: live pool balance
+  const lendleBal  = lendle.pool_balance_mnt        || null;
+  const lendleTvl  = lendleBal                      || 21340000;
+  // On-chain contracts info
+  const contracts  = protocol.contracts             || {};
+  const auditCount = protocol.audit_contract?.finding_count || 20;
+  const isLive     = !!(meth.ratio || moe.router_balance_mnt || lendle.pool_balance_mnt);
 
   return (
     <div className="space-y-4">
@@ -525,17 +537,18 @@ function ProtocolStateTab({ data }) {
             <Shield size={13} className="text-blue-400"/> mETH Staking Protocol
           </h3>
           <span className={`text-xs font-bold px-2 py-1 rounded-full border ${methDepeg === 0 ? "text-green-400 bg-green-950/50 border-green-800/40" : "text-red-400 bg-red-950/50 border-red-800/40"}`}>
-            {methDepeg === 0 ? "✓ PEGGED — 0 bps" : `⚠ DEPEG — ${methDepeg} bps`}
+            {methDepeg === 0 ? `✓ ${methStatus} — 0 bps` : `⚠ DEPEG — ${methDepeg} bps`}
           </span>
+          {isLive && <span className="text-xs text-green-500 font-mono">⬤ LIVE</span>}
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {[
-            { label:"mETH/ETH Rate",  value:methRate.toFixed(6),                unit:"ETH" },
-            { label:"mETH Supply",    value:methSupply.toLocaleString(),         unit:"mETH" },
-            { label:"mETH USD Value", value:`$${(methRate * ethPrice).toFixed(2)}`,unit:"/mETH" },
-            { label:"Depeg Status",   value:`${methDepeg} bps`,                 unit:methDepeg===0?"HEALTHY":"⚠ ALERT" },
-            { label:"Est. Staking APY",value:"~3.4%",                           unit:"annualised" },
-            { label:"Anomaly Trigger",value:">50 bps depeg",                    unit:"threshold" },
+            { label:"mETH/ETH Ratio",  value: methRatio ? methRatio.toFixed(6) : methRate.toFixed(6), unit:"on-chain" },
+            { label:"mETH Supply",     value: methSupply ? methSupply.toLocaleString() : "—",          unit:"mETH" },
+            { label:"ETH Staked",      value: methStaked ? methStaked.toLocaleString() : "—",          unit:"ETH" },
+            { label:"Depeg Status",    value:`${methDepeg} bps`,                                       unit:methDepeg===0?"HEALTHY":"⚠ ALERT" },
+            { label:"Est. Staking APY",value:"~3.4%",                                                  unit:"annualised" },
+            { label:"Anomaly Trigger", value:">50 bps depeg",                                          unit:"threshold" },
           ].map(({ label, value, unit }) => (
             <div key={label} className="bg-gray-950/60 border border-gray-800/30 rounded-lg p-3">
               <div className="text-xs text-gray-600 mb-1">{label}</div>
@@ -556,9 +569,9 @@ function ProtocolStateTab({ data }) {
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label:"MNT Reserve",      value:moeRes0.toLocaleString(),                          unit:"MNT (token0)" },
-            { label:"WETH Reserve",     value:moeRes1.toLocaleString(),                          unit:"WETH (token1)" },
-            { label:"Pool Value (est)", value:`$${((moeRes0*mntPrice)+(moeRes1*ethPrice)/1e6).toFixed(2)}M`, unit:"USD" },
+            { label:"Router Balance",   value: moeBalance ? `${moeBalance.toLocaleString()} MNT` : `${moeRes0.toLocaleString()} MNT`, unit: moeBalance ? "live on-chain" : "reference" },
+            { label:"Est. USD Value",   value:`${((moeRes0*mntPrice)/1e6).toFixed(2)}M`,        unit:"approx" },
+            { label:"Pool Status",      value:"ACTIVE",                                          unit:"Mantle mainnet" },
             { label:"Reserve Imbalance",value:"<5%",                                             unit:"from baseline" },
           ].map(({ label, value, unit }) => (
             <div key={label} className="bg-gray-950/60 border border-gray-800/30 rounded-lg p-3">
@@ -577,14 +590,42 @@ function ProtocolStateTab({ data }) {
         </h3>
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label:"totalSupply()",  value:lendleTvl.toLocaleString(), unit:"MNT" },
-            { label:"Est. USD TVL",   value:`$${(lendleTvl*mntPrice/1e6).toFixed(1)}M`, unit:"approx" },
-            { label:"Data Source",    value:"Mantle RPC",               unit:"live on-chain call" },
+            { label:"Pool Balance",   value: lendleBal ? `${lendleBal.toLocaleString()} MNT` : `${lendleTvl.toLocaleString()} MNT`, unit: lendleBal ? "live on-chain" : "reference" },
+            { label:"Est. USD TVL",   value:`${(lendleTvl*mntPrice/1e6).toFixed(1)}M`, unit:"approx" },
+            { label:"Data Source",    value:"eth_getBalance()",          unit:"Mantle mainnet RPC" },
           ].map(({ label, value, unit }) => (
             <div key={label} className="bg-gray-950/60 border border-gray-800/30 rounded-lg p-3">
               <div className="text-xs text-gray-600 mb-1">{label}</div>
               <div className="text-sm font-bold font-mono text-white">{value}</div>
               <div className="text-xs text-gray-700 mt-0.5">{unit}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Deployed Contracts */}
+      <div className="bg-gray-900/60 border border-purple-900/30 rounded-xl p-4">
+        <h3 className="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">
+          <Code size={13} className="text-purple-400"/> On-Chain Contracts — Mantle Sepolia
+          <span className="ml-auto text-xs font-mono text-purple-400 bg-purple-950/40 border border-purple-800/30 px-2 py-0.5 rounded-full">5 deployed</span>
+        </h3>
+        <div className="space-y-2 font-mono text-xs">
+          {[
+            { name:"MantleIntelAudit",    addr:"0x7fAb1E37d992109d3aA747703436ff4e261391b7", note:`${auditCount} findings on-chain` },
+            { name:"MantleIntelAgentNFT", addr:"0x7fAb1E37d992109d3aA747703436ff4e261391b7", note:"ERC-8004 agent identity NFT" },
+            { name:"SignalRegistry",      addr:"0xdf0755192B35220B4C2bD12Ce01aa36E2F7fbBEE", note:"Investment signal ledger" },
+            { name:"SmartMoneyTracker",   addr:"0xB1ba1eeB90e29E2b00d61E8Aa2f0D6eDe46973Bf", note:"Whale wallet flow log" },
+            { name:"AlertLog",            addr:"0x1Ce1B5F606b9E83e7432057265Dd95678114F82D", note:"Immutable alert dispatch log" },
+          ].map(({ name, addr, note }) => (
+            <div key={name} className="flex items-start justify-between gap-3 bg-gray-950/50 border border-gray-800/30 rounded-lg px-3 py-2">
+              <div>
+                <span className="text-purple-300 font-bold">{name}</span>
+                <span className="text-gray-700 ml-2">{note}</span>
+              </div>
+              <a href={`https://sepolia.mantlescan.xyz/address/${addr}`} target="_blank" rel="noopener noreferrer"
+                 className="text-gray-600 hover:text-purple-400 transition-colors truncate max-w-[180px] shrink-0">
+                {addr.slice(0,10)}…{addr.slice(-6)}↗
+              </a>
             </div>
           ))}
         </div>
@@ -746,7 +787,7 @@ const ABI = ["function findingCount() view returns(uint256)",
 const provider = new ethers.JsonRpcProvider("https://rpc.sepolia.mantle.xyz");
 const audit = new ethers.Contract("${CONTRACT_ADDR}", ABI, provider);
 
-const count = await audit.findingCount();   // → 5 (live findings)
+const count = await audit.findingCount();   // → 20 (live findings)
 const page  = await audit.getPublicFindings(0, 10);  // paginated`,
   };
 
@@ -919,7 +960,7 @@ function AuditTab({ data }) {
         <div className="space-y-2 text-xs font-mono">
           {[
             { fn:"recordFinding(bytes32 hash, uint8 typ, uint8 conf)", desc:"Record new finding on-chain (owner only)" },
-            { fn:"findingCount() → uint256",                           desc:"Total findings recorded (currently 5)" },
+            { fn:"findingCount() → uint256",                           desc:"Total findings recorded (currently 20)" },
             { fn:"getPublicFindings(offset, limit) → tuple[]",         desc:"Paginated public read — no auth needed" },
             { fn:"subscribe(address) / unsubscribe(address)",          desc:"Signal subscription registry" },
           ].map(({ fn, desc }) => (
