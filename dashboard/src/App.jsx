@@ -1067,7 +1067,7 @@ export default function App() {
               <h1 className="text-sm font-bold text-white flex items-center gap-2">
                 <span className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-xs font-black flex-shrink-0">⬡</span>
                 Mantle Intel Agent
-                <span className="text-xs bg-blue-950/60 text-blue-400 border border-blue-800/40 px-1.5 py-0.5 rounded font-mono">v3.0</span>
+                <span className="text-xs bg-blue-950/60 text-blue-400 border border-blue-800/40 px-1.5 py-0.5 rounded font-mono">v4.1</span>
               </h1>
               <p className="text-xs text-gray-700 mt-0.5">Autonomous On-Chain Intelligence · Alpha &amp; Data Track · Turing Test Hackathon 2026</p>
             </div>
@@ -1216,7 +1216,7 @@ export default function App() {
         {/* ── Footer ──────────────────────────────────────────────────── */}
         <div className="text-center text-xs text-gray-800 pt-2 border-t border-gray-900 space-y-1">
           <div>
-            Mantle Intel Agent v3.0 · Turing Test Hackathon 2026 · Alpha &amp; Data Track (Mirana Ventures)
+            Mantle Intel Agent v4.1 · Turing Test Hackathon 2026 · Alpha &amp; Data Track (Mirana Ventures)
           </div>
           <div className="flex items-center justify-center gap-4">
             <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="hover:text-gray-500 flex items-center gap-1"><GitBranch size={10}/> GitHub</a>
