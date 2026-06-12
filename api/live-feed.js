@@ -302,12 +302,12 @@ async function fetchLendleTvl() {
 // On-chain audit contract stats
 async function fetchAuditStats() {
   try {
-    // findingCount() = 0x0a7a4c1d
+    // findingCount() = 0x04193ffb
     const AUDIT = "0x7fAb1E37d992109d3aA747703436ff4e261391b7";
-    const countHex = await rpcCall(MANTLE_SEPOLIA, "eth_call", [{ to: AUDIT, data: "0x0a7a4c1d" }, "latest"]);
-    const count = countHex && countHex !== "0x" ? parseInt(countHex, 16) : 20;
+    const countHex = await rpcCall(MANTLE_SEPOLIA, "eth_call", [{ to: AUDIT, data: "0x04193ffb" }, "latest"]);
+    const count = countHex && countHex !== "0x" ? parseInt(countHex, 16) : 120;
     return { finding_count: count };
-  } catch { return { finding_count: 20 }; }
+  } catch { return { finding_count: 120 }; }
 }
 
 async function buildSnapshot() {
@@ -328,7 +328,7 @@ async function buildSnapshot() {
   const meth      = methData.status    === "fulfilled" ? methData.value    : { staked_eth: null, supply_meth: null, ratio: null, depeg_alert: false };
   const moe       = moeData.status     === "fulfilled" ? moeData.value     : { router_balance_mnt: null };
   const lendle    = lendleData.status  === "fulfilled" ? lendleData.value  : { pool_balance_mnt: null };
-  const auditStat = auditData.status   === "fulfilled" ? auditData.value   : { finding_count: 20 };
+  const auditStat = auditData.status   === "fulfilled" ? auditData.value   : { finding_count: 120 };
 
   const mainnetFeatures = mainnet.blocks.map(parseBlock).sort((a,b) => a.block_num - b.block_num);
   const findings        = detectAnomalies(mainnetFeatures);
