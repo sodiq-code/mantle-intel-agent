@@ -27,7 +27,7 @@ FINDINGS_TO_SUBMIT = [
     {"block": 96526386, "type": "tx_spike",    "confidence": 0.76, "tx_count": 6},
 ]
 
-CONTRACT_ADDR = "0x03C88A1060626581854DB94e955a6be291782abb"
+CONTRACT_ADDR = "0x7fAb1E37d992109d3aA747703436ff4e261391b7"
 RPC_URL       = "https://rpc.sepolia.mantle.xyz"
 CHAIN_ID      = 5003
 
@@ -89,7 +89,7 @@ def finding_hash(f: dict) -> bytes:
 
 def main():
     from web3 import Web3
-    from web3.middleware import geth_poa_middleware
+    
 
     private_key = os.environ.get("AGENT_PRIVATE_KEY") or os.environ.get("PRIVATE_KEY")
     if not private_key:
@@ -98,7 +98,6 @@ def main():
         sys.exit(1)
 
     w3 = Web3(Web3.HTTPProvider(RPC_URL, request_kwargs={"timeout": 30}))
-    w3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
     if not w3.is_connected():
         print(f"ERROR: Cannot connect to {RPC_URL}")
@@ -134,7 +133,7 @@ def main():
             ).build_transaction({
                 "chainId": CHAIN_ID,
                 "gas": 200_000,
-                "gasPrice": w3.to_wei("0.02", "gwei"),
+                "gasPrice": w3.eth.gas_price,
                 "nonce": nonce,
                 "from": account.address,
             })

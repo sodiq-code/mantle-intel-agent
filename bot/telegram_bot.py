@@ -39,7 +39,7 @@ Every finding verified on-chain via MantleIntelAudit.sol.
 /verify &lt;hash&gt;  — Verify a finding hash on-chain
 /compare &lt;type&gt; — Compare signal history (whale|smart_money|cex|mev|all)
 
-<b>Contract:</b> <code>0x03C88A1060626581854DB94e955a6be291782abb</code>
+<b>Contract:</b> <code>0x7fAb1E37d992109d3aA747703436ff4e261391b7</code>
 <b>Network:</b> Mantle Sepolia Testnet
 
 <i>Built for the Turing Test Hackathon 2026 — Alpha &amp; Data Track (Mirana Ventures)</i>

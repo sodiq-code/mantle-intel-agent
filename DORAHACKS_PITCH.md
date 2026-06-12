@@ -213,11 +213,11 @@ python main.py                  # Run live pipeline
 
 | Contract | Network | Address |
 |----------|---------|---------|
-| MantleIntelAudit | Mantle Sepolia Testnet | `0x03C88A1060626581854DB94e955a6be291782abb` |
+| MantleIntelAudit | Mantle Sepolia Testnet | `0x7fAb1E37d992109d3aA747703436ff4e261391b7` |
 | MantleIntelAgentNFT (ERC-8004) | Mantle Sepolia Testnet | `0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C` |
 | MantleIntelAudit (Mainnet) | Mantle Mainnet | *Ready to deploy — requires MNT gas* |
 
-**Explorer:** https://sepolia.mantlescan.xyz/address/0x03C88A1060626581854DB94e955a6be291782abb
+**Explorer:** https://sepolia.mantlescan.xyz/address/0x7fAb1E37d992109d3aA747703436ff4e261391b7
 
 ---
 

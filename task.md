@@ -14,7 +14,7 @@
 - [ ] 9. README + pitch updated with all real evidence
 
 ## Deployed Contracts (Mantle Sepolia testnet)
-- MantleIntelAudit: 0x03C88A1060626581854DB94e955a6be291782abb
+- MantleIntelAudit: 0x7fAb1E37d992109d3aA747703436ff4e261391b7
 - MantleIntelAgentNFT: 0xa1A134f27b72140eAf61Da2c52632735a328742f
 - Explorer: https://sepolia.mantlescan.xyz
 

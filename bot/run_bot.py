@@ -24,7 +24,7 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 from telegram.constants import ParseMode
 
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-CONTRACT = os.environ.get("AUDIT_CONTRACT_ADDRESS", "0x03C88A1060626581854DB94e955a6be291782abb")
+CONTRACT = os.environ.get("AUDIT_CONTRACT_ADDRESS", "0x7fAb1E37d992109d3aA747703436ff4e261391b7")
 EXPLORER = "https://sepolia.mantlescan.xyz"
 FINDINGS_FILE = Path(__file__).parent.parent / "data" / "findings.jsonl"
 START_TIME = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")

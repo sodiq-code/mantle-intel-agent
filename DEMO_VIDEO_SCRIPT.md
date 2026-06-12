@@ -25,7 +25,7 @@
 ---
 
 ### [0:30–0:50] On-chain audit proof
-- Open **https://sepolia.mantlescan.xyz/address/0x03C88A1060626581854DB94e955a6be291782abb**
+- Open **https://sepolia.mantlescan.xyz/address/0x7fAb1E37d992109d3aA747703436ff4e261391b7**
 - Show the contract page and recent transactions
 - Narrate: *"Every finding is written on-chain to our audit contract — immutable, timestamped, verifiable by anyone."*
 - Click one transaction to show the data
@@ -68,9 +68,9 @@
 | What | URL |
 |---|---|
 | Live Dashboard | https://mantle-intel-agent.vercel.app |
-| Audit Contract | https://sepolia.mantlescan.xyz/address/0x03C88A1060626581854DB94e955a6be291782abb |
+| Audit Contract | https://sepolia.mantlescan.xyz/address/0x7fAb1E37d992109d3aA747703436ff4e261391b7 |
 | NFT Contract | https://sepolia.mantlescan.xyz/address/0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C |
-| Sourcify (Audit) | https://repo.sourcify.dev/contracts/full_match/5003/0x03C88A1060626581854DB94e955a6be291782abb/ |
+| Sourcify (Audit) | https://repo.sourcify.dev/contracts/full_match/5003/0x7fAb1E37d992109d3aA747703436ff4e261391b7/ |
 | Sourcify (NFT) | https://repo.sourcify.dev/contracts/full_match/5003/0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C/ |
 | GitHub | https://github.com/sodiq-code/mantle-intel-agent |
 | Telegram Bot | https://t.me/MantleIntelAgentBot |

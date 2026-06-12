@@ -11,7 +11,7 @@ async function main() {
   const NFT = await hre.ethers.getContractFactory("MantleIntelAgentNFT");
   const nft = NFT.attach(NFT_ADDRESS);
 
-  const auditContract = process.env.AUDIT_CONTRACT_ADDRESS || "0x03C88A1060626581854DB94e955a6be291782abb";
+  const auditContract = process.env.AUDIT_CONTRACT_ADDRESS || "0x7fAb1E37d992109d3aA747703436ff4e261391b7";
 
   const tx = await nft.mintAgentIdentity(
     deployer.address,

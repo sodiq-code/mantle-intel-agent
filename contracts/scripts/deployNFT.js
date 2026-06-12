@@ -16,7 +16,7 @@ async function main() {
   console.log("MantleIntelAgentNFT deployed to:", addr);
 
   // Mint Agent NFT #1
-  const auditContract = process.env.AUDIT_CONTRACT_ADDRESS || "0x03C88A1060626581854DB94e955a6be291782abb";
+  const auditContract = process.env.AUDIT_CONTRACT_ADDRESS || "0x7fAb1E37d992109d3aA747703436ff4e261391b7";
   console.log("Minting Agent NFT #1 to", deployer.address, "...");
   const tx = await nft.mintAgentIdentity(
     deployer.address,

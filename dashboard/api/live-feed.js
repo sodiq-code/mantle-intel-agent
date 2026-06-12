@@ -11,8 +11,8 @@ export const config = { runtime: "edge" };
 
 const MANTLE_RPC       = "https://rpc.mantle.xyz";
 const MANTLE_SEPOLIA   = "https://rpc.sepolia.mantle.xyz";
-const CONTRACT_ADDR    = "0x03C88A1060626581854DB94e955a6be291782abb";
-const CONTRACT_TESTNET = "0x03C88A1060626581854DB94e955a6be291782abb";
+const CONTRACT_ADDR    = "0x7fAb1E37d992109d3aA747703436ff4e261391b7";
+const CONTRACT_TESTNET = "0x7fAb1E37d992109d3aA747703436ff4e261391b7";
 
 const KNOWN_WALLETS = {
   "0x28c6c06298d514db089934071355e5743bf21d60": { label: "Binance Hot Wallet 1",  tier: 1, type: "cex"  },

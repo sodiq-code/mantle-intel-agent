@@ -1,7 +1,7 @@
 # Mantle Intel Agent
 
 [![Live Dashboard](https://img.shields.io/badge/Live%20Demo-mantle--intel--agent.vercel.app-blue)](https://mantle-intel-agent.vercel.app)
-[![Contract](https://img.shields.io/badge/Contract-Mantle%20Sepolia-green)](https://sepolia.mantlescan.xyz/address/0x03C88A1060626581854DB94e955a6be291782abb)
+[![Contract](https://img.shields.io/badge/Contract-Mantle%20Sepolia-green)](https://sepolia.mantlescan.xyz/address/0x7fAb1E37d992109d3aA747703436ff4e261391b7)
 [![Hackathon](https://img.shields.io/badge/Hackathon-Turing%20Test%202026-purple)](https://dorahacks.io)
 
 > Autonomous 5-agent AI pipeline for on-chain intelligence on Mantle Network.
@@ -47,7 +47,7 @@ CollectorAgent → AnomalyAgent → SmartMoneyAgent → InsightAgent → AuditAg
 
 | Contract | Network | Address |
 |----------|---------|---------|
-| MantleIntelAudit v2.0 | Mantle Sepolia Testnet | [`0x03C88A1060626581854DB94e955a6be291782abb`](https://sepolia.mantlescan.xyz/address/0x03C88A1060626581854DB94e955a6be291782abb) |
+| MantleIntelAudit v2.0 | Mantle Sepolia Testnet | [`0x7fAb1E37d992109d3aA747703436ff4e261391b7`](https://sepolia.mantlescan.xyz/address/0x7fAb1E37d992109d3aA747703436ff4e261391b7) |
 | MantleIntelAgentNFT (ERC-8004) | Mantle Sepolia Testnet | [`0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C`](https://sepolia.mantlescan.xyz/address/0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C) |
 
 **Mainnet deploy ready** — run `npx hardhat run scripts/deploy.js --network mantle` once wallet is funded.
@@ -225,7 +225,7 @@ function getStats() returns (uint256 total, uint256 latestBlock, uint256 latestT
 MANTLE_RPC_URL=https://rpc.mantle.xyz
 
 # Deployed contracts
-AUDIT_CONTRACT_TESTNET=0x03C88A1060626581854DB94e955a6be291782abb
+AUDIT_CONTRACT_TESTNET=0x7fAb1E37d992109d3aA747703436ff4e261391b7
 NFT_CONTRACT_TESTNET=0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C
 AUDIT_CONTRACT_MAINNET=   # fill after mainnet deploy
 
