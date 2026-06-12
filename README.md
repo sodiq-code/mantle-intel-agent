@@ -117,11 +117,33 @@ Every finding surfaces an actionable **investment signal** — not just raw data
 
 **URL:** https://mantle-intel-agent.vercel.app
 
+### Live Feed — Real-time anomaly findings
+![Live Feed](./docs/screenshots/dashboard.png)
+
+### Analytics — Precision 100% · F1 0.963 · 120 On-Chain Findings
+![Analytics](./docs/screenshots/analytics.png)
+
+### Audit Log — 120 findings on-chain (Mantle Sepolia)
+![Audit Log](./docs/screenshots/audit_log.png)
+
+### Protocol State — mETH, Merchant Moe, Lendle live
+![Protocol State](./docs/screenshots/protocol_state.png)
+
+### Investment Signals
+![Signals](./docs/screenshots/signals.png)
+
+### Intel API — Live JSON feed
+![API](./docs/screenshots/api_feed.png)
+
+### MantleIntelAudit Contract (Mantle Sepolia)
+![Contract](./docs/screenshots/contract.png)
+
 **Tabs:**
 - **Live Feed** — Real-time findings with confidence bars, signal tier badges, lead-time estimates
-- **Analytics** — Type breakdown, backtest metrics (F1=1.00), smart money stats, data source status
+- **Analytics** — Backtest metrics (Precision=100%, F1=0.963), TP=13 FP=0, 120 on-chain findings
 - **Investment Signals** — Sorted by signal tier (IMMEDIATE ACTION first), affected protocols, $ at stake
 - **Protocol State** — Live mETH rate, Merchant Moe reserves, Lendle TVL, Pyth prices
+- **Audit Log** — All 120 on-chain findings with confidence bars and tx hashes
 - **Intel API** — Live JSON feed, on-chain subscription code, `getPublicFindings()` usage
 
 ---
