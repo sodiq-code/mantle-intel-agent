@@ -330,15 +330,4 @@ mantle-intel-agent/
 
 ---
 
-## Built For
-
-**The Turing Test Hackathon 2026**
-- Track: Alpha & Data (Mirana Ventures) — Primary
-- Track: Agentic Economy — Secondary
-- Prize Pool: $100,000
-- GitHub: https://github.com/sodiq-code/mantle-intel-agent
-- Dashboard: https://mantle-intel-agent.vercel.app
-
----
-
 *Every finding. Verified. On-chain.*
