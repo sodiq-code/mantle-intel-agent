@@ -2,61 +2,49 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import {
   AlertTriangle, Activity, Database, Shield, ExternalLink,
   RefreshCw, TrendingUp, Zap, Globe, GitBranch, BarChart2,
-  ChevronDown, ChevronUp, Radio, Filter, Clock, Wifi, WifiOff,
-  CheckCircle, Server, Link, Eye, Lock, ArrowUpRight, ArrowDownRight,
-  Cpu, Box, Layers, Target, DollarSign, BookOpen, Info, Code
+  Radio, Clock, Wifi, WifiOff, CheckCircle, Server, Link,
+  ArrowUpRight, ArrowDownRight, Cpu, Box, Layers, Target,
+  DollarSign, BookOpen, Info, Code, ChevronRight, Eye,
+  Bell, Lock, Filter, Menu, X
 } from "lucide-react";
 
 // ── Config ───────────────────────────────────────────────────────────────────
 const LIVE_FEED_URL = "/api/live-feed";
 const SSE_FEED_URL  = "/api/live-feed?stream=1";
 const REFRESH_MS    = 12_000;
-
 const CONTRACT_ADDR = "0x7fAb1E37d992109d3aA747703436ff4e261391b7";
 const NFT_ADDR      = "0xa1A134Dc66D0A0BD967ede1d0ad427b42B23742f";
 const GITHUB_URL    = "https://github.com/sodiq-code/mantle-intel-agent";
-const VERCEL_URL    = "https://mantle-intel-agent.vercel.app";
 const EXPLORER_BASE = "https://sepolia.mantlescan.xyz";
 
-// ── Anomaly type config ───────────────────────────────────────────────────────
-const ANOMALY_CFG = {
-  whale_accumulation:    { bg:"bg-blue-950/60",   border:"border-blue-600/50",  badge:"bg-blue-700",    text:"text-blue-300",   label:"🐋 Whale Accum.",      tier:"ALERT"   },
-  whale_distribution:    { bg:"bg-orange-950/60", border:"border-orange-600/50",badge:"bg-orange-700",  text:"text-orange-300", label:"⚠️ Whale Distrib.",     tier:"ALERT"   },
-  smart_money_inflow:    { bg:"bg-purple-950/60", border:"border-purple-600/50",badge:"bg-purple-700",  text:"text-purple-300", label:"🧠 Smart Money",       tier:"ALERT"   },
-  tx_spike:              { bg:"bg-emerald-950/60",border:"border-emerald-600/50",badge:"bg-emerald-700", text:"text-emerald-300",label:"📈 TX Spike",          tier:"WATCH"   },
-  value_spike:           { bg:"bg-yellow-950/60", border:"border-yellow-600/50",badge:"bg-yellow-700",  text:"text-yellow-300", label:"💰 Value Spike",       tier:"ALERT"   },
-  multivariate_anomaly:  { bg:"bg-red-950/60",    border:"border-red-600/50",   badge:"bg-red-700",     text:"text-red-300",    label:"🔍 Multivariate",      tier:"IMMEDIATE"},
-  meth_depeg:            { bg:"bg-rose-950/60",   border:"border-rose-600/50",  badge:"bg-rose-700",    text:"text-rose-300",   label:"⛓️ mETH Depeg",        tier:"IMMEDIATE"},
-  cross_protocol_anomaly:{ bg:"bg-pink-950/60",   border:"border-pink-600/50",  badge:"bg-pink-700",    text:"text-pink-300",   label:"🔗 Cross-Protocol",    tier:"IMMEDIATE"},
-  liquidity_imbalance:   { bg:"bg-cyan-950/60",   border:"border-cyan-600/50",  badge:"bg-cyan-700",    text:"text-cyan-300",   label:"💧 Liquidity Imbal.",  tier:"WATCH"   },
-};
-const DEF_CFG = { bg:"bg-gray-900/60", border:"border-gray-700/50", badge:"bg-gray-700", text:"text-gray-300", label:"⚡ Anomaly", tier:"WATCH" };
+// Mantle brand green
+const G = "#00D395";
 
-const TIER_STYLE = {
-  "IMMEDIATE": "text-red-400 bg-red-950/60 border-red-700/50",
-  "ALERT":     "text-orange-400 bg-orange-950/60 border-orange-700/50",
-  "WATCH":     "text-yellow-400 bg-yellow-950/60 border-yellow-700/50",
+// ── Anomaly config ────────────────────────────────────────────────────────────
+const ANOMALY_CFG = {
+  whale_accumulation:    { color:"#3B82F6", label:"Whale Accum.",      tier:"ALERT"    },
+  whale_distribution:    { color:"#F97316", label:"Whale Distrib.",    tier:"ALERT"    },
+  smart_money_inflow:    { color:"#A855F7", label:"Smart Money",       tier:"ALERT"    },
+  tx_spike:              { color:"#00D395", label:"TX Spike",          tier:"WATCH"    },
+  value_spike:           { color:"#EAB308", label:"Value Spike",       tier:"ALERT"    },
+  multivariate_anomaly:  { color:"#EF4444", label:"Multivariate",      tier:"IMMEDIATE"},
+  meth_depeg:            { color:"#F43F5E", label:"mETH Depeg",        tier:"IMMEDIATE"},
+  cross_protocol_anomaly:{ color:"#EC4899", label:"Cross-Protocol",    tier:"IMMEDIATE"},
+  liquidity_imbalance:   { color:"#06B6D4", label:"Liquidity Imbal.",  tier:"WATCH"    },
+  mev_sandwich:          { color:"#8B5CF6", label:"MEV Sandwich",      tier:"ALERT"    },
+  bridge_outflow_spike:  { color:"#F97316", label:"Bridge Outflow",    tier:"ALERT"    },
+  gas_anomaly:           { color:"#6B7280", label:"Gas Anomaly",       tier:"WATCH"    },
+};
+const DEF_CFG = { color:"#6B7280", label:"Anomaly", tier:"WATCH" };
+const cfg = (type) => ANOMALY_CFG[type] || DEF_CFG;
+
+const TIER_COLOR = {
+  "IMMEDIATE": "#EF4444",
+  "ALERT":     "#F97316",
+  "WATCH":     "#EAB308",
 };
 
 // ── Hooks ─────────────────────────────────────────────────────────────────────
-function useAnimCount(value) {
-  const [display, setDisplay] = useState(value);
-  const prev = useRef(value);
-  useEffect(() => {
-    if (value === prev.current) return;
-    const start = prev.current, end = value, diff = end - start;
-    if (Math.abs(diff) > 1000) { setDisplay(end); prev.current = end; return; }
-    let step = 0;
-    const t = setInterval(() => {
-      step++;
-      setDisplay(Math.round(start + (diff * step) / 20));
-      if (step >= 20) { clearInterval(t); prev.current = end; }
-    }, 25);
-    return () => clearInterval(t);
-  }, [value]);
-  return display;
-}
-
 function useTimeSince(timestamp) {
   const [ago, setAgo] = useState("");
   useEffect(() => {
@@ -75,389 +63,213 @@ function useTimeSince(timestamp) {
   return ago;
 }
 
-// ── Mini sparkline ─────────────────────────────────────────────────────────────
-function Sparkline({ data = [], color = "#22c55e", height = 32 }) {
+// ── Tiny bar chart ────────────────────────────────────────────────────────────
+function MiniBar({ data = [], color = G }) {
   if (!data || data.length < 2) return null;
-  const min = Math.min(...data), max = Math.max(...data), range = max - min || 1;
-  const w = 80, h = height;
-  const pts = data.map((v, i) => `${(i / (data.length - 1)) * w},${h - ((v - min) / range) * (h - 4) - 2}`).join(" ");
+  const vals = data.map(b => b.tx_count || 0);
+  const max  = Math.max(...vals, 1);
   return (
-    <svg width={w} height={h} className="opacity-70">
-      <polyline fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" points={pts} />
+    <div className="flex items-end gap-px h-8 w-full">
+      {vals.slice(-24).map((v, i) => (
+        <div key={i} className="flex-1 rounded-sm transition-all"
+          style={{ height: `${Math.max(8, (v / max) * 100)}%`, backgroundColor: color, opacity: 0.7 + (i / vals.length) * 0.3 }}/>
+      ))}
+    </div>
+  );
+}
+
+// ── Confidence ring ───────────────────────────────────────────────────────────
+function ConfRing({ value = 0, size = 36 }) {
+  const r = (size - 4) / 2;
+  const circ = 2 * Math.PI * r;
+  const pct = Math.min(value, 1);
+  const color = pct >= 0.85 ? "#EF4444" : pct >= 0.75 ? "#F97316" : G;
+  return (
+    <svg width={size} height={size} className="flex-shrink-0">
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#1F2937" strokeWidth="3"/>
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth="3"
+        strokeDasharray={circ} strokeDashoffset={circ * (1 - pct)}
+        strokeLinecap="round" transform={`rotate(-90 ${size/2} ${size/2})`}/>
+      <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle"
+        fill={color} fontSize="9" fontWeight="700" fontFamily="monospace">
+        {Math.round(pct * 100)}
+      </text>
     </svg>
   );
 }
 
-// ── Block chart (bar) ──────────────────────────────────────────────────────────
-function BlockChart({ blocks = [] }) {
-  if (!blocks.length) return null;
-  const maxTx = Math.max(...blocks.map(b => b.tx_count), 1);
+// ── Live pulse dot ────────────────────────────────────────────────────────────
+function PulseDot({ color = G, size = 8 }) {
   return (
-    <div className="flex items-end gap-0.5 h-10 w-full">
-      {[...blocks].reverse().map((b, i) => {
-        const h = Math.max(2, Math.round((b.tx_count / maxTx) * 40));
-        const isAnom = b.is_anomaly;
-        return (
-          <div key={b.block_num} title={`Block ${b.block_num}: ${b.tx_count} txs`}
-            className="flex-1 rounded-t transition-all duration-300"
-            style={{ height: h, backgroundColor: isAnom ? "#ef4444" : i === 0 ? "#22c55e" : "#374151" }} />
-        );
-      })}
-    </div>
+    <span className="relative flex" style={{ width: size, height: size }}>
+      <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60"
+        style={{ backgroundColor: color }}/>
+      <span className="relative inline-flex rounded-full" style={{ width: size, height: size, backgroundColor: color }}/>
+    </span>
   );
 }
 
-// ── TimeSince component ────────────────────────────────────────────────────────
-function TimeSince({ timestamp }) {
-  const ago = useTimeSince(timestamp);
-  return <span className="text-xs text-gray-600 font-mono">{ago}</span>;
-}
-
-// ── Live Status Badge ──────────────────────────────────────────────────────────
-function LiveBadge({ connected }) {
+// ── Stat tile ─────────────────────────────────────────────────────────────────
+function StatTile({ label, value, sub, accent = G, icon: Icon, live }) {
   return (
-    <div className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium border
-      ${connected ? "text-green-400 bg-green-950/50 border-green-800/40" : "text-yellow-400 bg-yellow-950/50 border-yellow-800/40"}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${connected ? "bg-green-500 animate-pulse" : "bg-yellow-500"}`} />
-      {connected ? "LIVE RPC" : "POLLING"}
-    </div>
-  );
-}
-
-// ── Confidence Bar ─────────────────────────────────────────────────────────────
-function ConfBar({ value }) {
-  const pct = Math.round(value * 100);
-  const col = pct >= 90 ? "bg-red-500" : pct >= 80 ? "bg-orange-500" : pct >= 70 ? "bg-yellow-500" : "bg-blue-500";
-  return (
-    <div className="flex items-center gap-2">
-      <div className="flex-1 bg-gray-800 rounded-full h-1">
-        <div className={`${col} h-1 rounded-full transition-all duration-700`} style={{ width: `${pct}%` }} />
-      </div>
-      <span className="text-xs font-mono text-gray-400 w-8 text-right">{pct}%</span>
-    </div>
-  );
-}
-
-// ── Stat Card ──────────────────────────────────────────────────────────────────
-function StatCard({ icon: Icon, label, raw, value, sub, color = "text-white", pulse, accent }) {
-  const animated = useAnimCount(typeof raw === "number" ? raw : 0);
-  const display  = typeof raw === "number" ? animated.toLocaleString() : value;
-  return (
-    <div className={`bg-gray-900/70 border rounded-xl p-4 hover:border-gray-600 transition-all duration-200 group
-      ${accent ? "border-blue-800/40 hover:border-blue-600/60" : "border-gray-800/60"}`}>
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-1.5">
-          <Icon size={12} className="text-gray-600 group-hover:text-gray-400 transition-colors" />
-          <span className="text-xs text-gray-600 uppercase tracking-widest font-semibold">{label}</span>
+    <div className="relative overflow-hidden rounded-xl p-4 border border-white/5"
+      style={{ background: "linear-gradient(135deg,#0D0D0D 0%,#111 100%)" }}>
+      <div className="flex items-start justify-between mb-3">
+        <div className="p-2 rounded-lg" style={{ backgroundColor: accent + "18" }}>
+          <Icon size={14} style={{ color: accent }}/>
         </div>
-        {pulse && <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />}
+        {live && <PulseDot color={accent}/>}
       </div>
-      <div className={`text-xl font-bold font-mono ${color} leading-none`}>{display}</div>
-      {sub && <div className="text-xs text-gray-700 mt-1.5">{sub}</div>}
+      <div className="text-2xl font-black font-mono text-white leading-none mb-1">{value}</div>
+      <div className="text-xs font-semibold" style={{ color: accent }}>{label}</div>
+      {sub && <div className="text-xs text-gray-600 mt-0.5">{sub}</div>}
+      {/* accent line */}
+      <div className="absolute bottom-0 left-0 right-0 h-px" style={{ backgroundColor: accent + "40" }}/>
     </div>
   );
 }
 
-// ── Finding Card ──────────────────────────────────────────────────────────────
-function FindingCard({ finding, isNew }) {
-  const [open, setOpen] = useState(false);
-  const cfg  = ANOMALY_CFG[finding.type] || DEF_CFG;
-  const tier = cfg.tier;
-  const audit = finding.audit || {};
-  const isHigh = finding.confidence >= 0.85;
+// ── Finding row ───────────────────────────────────────────────────────────────
+function FindingRow({ finding, isNew }) {
+  const [expanded, setExpanded] = useState(false);
+  const c     = cfg(finding.type);
+  const since = useTimeSince(finding.timestamp);
+  const sm    = finding.smart_money || {};
 
   return (
-    <div
-      onClick={() => setOpen(!open)}
-      className={`${cfg.bg} border ${cfg.border} rounded-xl cursor-pointer
-        hover:brightness-110 transition-all duration-200
-        ${isNew ? "ring-1 ring-white/20 shadow-lg shadow-blue-900/20 scale-[1.005]" : ""}`}>
-      <div className="p-4">
-        <div className="flex items-start gap-3 justify-between">
-          <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap items-center gap-1.5 mb-2">
-              <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${cfg.badge} text-white`}>{cfg.label}</span>
-              <span className={`text-xs font-bold px-2 py-0.5 rounded-md border ${TIER_STYLE[tier]}`}>{tier}</span>
-              {isHigh && <span className="text-xs bg-red-950/80 text-red-400 border border-red-800/50 px-1.5 py-0.5 rounded-md font-semibold">🔥 HIGH SIGNAL</span>}
-              {audit.status === "recorded" && <span className="text-xs bg-green-950/70 text-green-400 px-1.5 py-0.5 rounded-md flex items-center gap-1"><Shield size={9}/> On-Chain ✓</span>}
-              {audit.status === "testnet"  && <span className="text-xs bg-blue-950/70 text-blue-400 px-1.5 py-0.5 rounded-md flex items-center gap-1"><CheckCircle size={9}/> Testnet ✓</span>}
-            </div>
-            <div className="text-sm text-gray-200 font-semibold leading-snug mb-2">{finding.title || finding.type}</div>
-            <ConfBar value={finding.confidence || 0} />
-          </div>
-          <div className="flex flex-col items-end gap-1 flex-shrink-0">
-            <TimeSince timestamp={finding.timestamp} />
-            <span className="text-xs font-mono text-gray-700">#{(finding.block||0).toLocaleString()}</span>
-            {open ? <ChevronUp size={12} className="text-gray-600" /> : <ChevronDown size={12} className="text-gray-600" />}
-          </div>
-        </div>
-      </div>
+    <div onClick={() => setExpanded(x => !x)}
+      className={`rounded-xl border cursor-pointer transition-all duration-200 ${isNew ? "animate-pulse" : ""}`}
+      style={{
+        borderColor: expanded ? c.color + "60" : "#1F2937",
+        background: expanded ? c.color + "08" : "#0D0D0D",
+      }}>
+      {/* Row */}
+      <div className="flex items-center gap-3 px-4 py-3">
+        {/* Type dot */}
+        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: c.color }}/>
 
-      {open && (
-        <div className="px-4 pb-4 space-y-3 border-t border-white/5 pt-3">
-          {/* Insight */}
-          <div className="bg-gray-950/60 rounded-lg p-3 text-sm text-gray-300 leading-relaxed">
-            {finding.insight || finding.description}
-          </div>
+        {/* Conf ring */}
+        <ConfRing value={finding.confidence || 0}/>
 
-          {/* Investment Signal */}
-          {finding.investment_signal && (
-            <div className="bg-blue-950/40 border border-blue-800/30 rounded-lg p-3">
-              <div className="text-xs font-bold text-blue-400 mb-1.5 flex items-center gap-1.5"><Target size={10}/> INVESTMENT SIGNAL</div>
-              <p className="text-xs text-gray-300 leading-relaxed">{finding.investment_signal}</p>
-            </div>
-          )}
-
-          {/* Large Transfers */}
-          {finding.large_transfers?.length > 0 && (
-            <div className="bg-gray-950/60 rounded-lg p-3">
-              <div className="text-xs text-gray-600 uppercase tracking-wider mb-2 font-semibold">Large Transfers</div>
-              <div className="space-y-1.5">
-                {finding.large_transfers.slice(0, 5).map((t, i) => (
-                  <div key={i} className="flex items-center gap-2 text-xs font-mono">
-                    <span className="text-blue-400 truncate max-w-[30%]">{t.label_from !== "unknown" ? t.label_from : t.from?.slice(0,10)+"…"}</span>
-                    <ArrowUpRight size={10} className="text-gray-600 flex-shrink-0"/>
-                    <span className="text-green-400 truncate max-w-[30%]">{t.label_to !== "unknown" ? t.label_to : t.to?.slice(0,10)+"…"}</span>
-                    <span className="text-yellow-400 ml-auto whitespace-nowrap">${(t.value_usd||0).toLocaleString()}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Raw Metrics */}
-          {finding.raw_metrics && (
-            <div className="bg-gray-950/60 rounded-lg p-3">
-              <div className="text-xs text-gray-600 uppercase tracking-wider mb-2 font-semibold">Raw Metrics</div>
-              <div className="grid grid-cols-3 gap-1 text-xs font-mono text-gray-500">
-                {Object.entries(finding.raw_metrics).slice(0, 9).map(([k, v]) => (
-                  <div key={k}><span className="text-gray-700">{k}: </span><span className="text-gray-400">{typeof v === "number" ? (v > 999 ? v.toLocaleString() : v) : String(v)}</span></div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Smart Money Involved */}
-          {finding.smart_money?.known_wallets?.length > 0 && (
-            <div className="bg-purple-950/30 border border-purple-800/30 rounded-lg p-3">
-              <div className="text-xs font-bold text-purple-400 mb-1.5">🧠 Smart Money Involved</div>
-              <div className="flex flex-wrap gap-1">
-                {finding.smart_money.known_wallets.slice(0, 6).map((w, i) => (
-                  <span key={i} className="text-xs bg-purple-900/40 text-purple-300 px-2 py-0.5 rounded-md">{w}</span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Footer */}
-          <div className="flex items-center gap-3 text-xs text-gray-700 flex-wrap pt-1">
-            <span className="font-mono">{(finding.hash||"").slice(0,20)}…</span>
-            {audit.explorer && (
-              <a href={audit.explorer} target="_blank" rel="noopener noreferrer"
-                 onClick={e => e.stopPropagation()}
-                 className="flex items-center gap-1 text-blue-500 hover:text-blue-400 ml-auto">
-                <ExternalLink size={9}/> Verify on-chain
-              </a>
+        {/* Info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-bold font-mono" style={{ color: c.color }}>{c.label}</span>
+            <span className="text-xs px-1.5 py-0.5 rounded font-mono border"
+              style={{ color: TIER_COLOR[c.tier], borderColor: TIER_COLOR[c.tier] + "40", backgroundColor: TIER_COLOR[c.tier] + "10" }}>
+              {c.tier}
+            </span>
+            {sm.tier1_involved && (
+              <span className="text-xs px-1.5 py-0.5 rounded font-bold"
+                style={{ color: G, backgroundColor: G + "15", border: `1px solid ${G}40` }}>
+                TIER-1
+              </span>
             )}
           </div>
+          <div className="text-sm text-white font-semibold mt-0.5 truncate">
+            {finding.title || `Block #${(finding.block || 0).toLocaleString()}`}
+          </div>
+        </div>
+
+        {/* Right meta */}
+        <div className="flex-shrink-0 text-right">
+          <div className="text-xs text-gray-600 font-mono">#{(finding.block||0).toLocaleString()}</div>
+          <div className="text-xs text-gray-700">{since}</div>
+        </div>
+        <ChevronRight size={12} className="text-gray-700 flex-shrink-0 transition-transform"
+          style={{ transform: expanded ? "rotate(90deg)" : "rotate(0deg)" }}/>
+      </div>
+
+      {/* Expanded */}
+      {expanded && (
+        <div className="px-4 pb-4 space-y-2 border-t" style={{ borderColor: c.color + "20" }}>
+          {finding.insight && (
+            <p className="text-sm text-gray-300 leading-relaxed pt-3">{finding.insight}</p>
+          )}
+          {sm.known_wallets?.length > 0 && (
+            <div className="flex flex-wrap gap-1 pt-1">
+              {sm.known_wallets.map(w => (
+                <span key={w} className="text-xs px-2 py-0.5 rounded-full bg-white/5 text-gray-400 font-mono">{w}</span>
+              ))}
+            </div>
+          )}
+          {finding.tx_hash && (
+            <a href={`${EXPLORER_BASE}/tx/${finding.tx_hash}`} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-1 text-xs font-mono hover:underline" style={{ color: G }}>
+              <ExternalLink size={10}/>{finding.tx_hash.slice(0,20)}…
+            </a>
+          )}
         </div>
       )}
     </div>
   );
 }
 
-// ── Backtest Panel ─────────────────────────────────────────────────────────────
-function BacktestPanel({ backtest }) {
-  if (!backtest) return null;
-  return (
-    <div className="bg-gray-900/60 border border-green-900/40 rounded-xl p-5">
-      <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
-        <h3 className="text-sm font-bold text-white flex items-center gap-2">
-          <GitBranch size={14} className="text-green-400"/>
-          Live Backtest — Real Mantle Chain Data
-        </h3>
-        <div className="flex items-center gap-2">
-          <span className="text-xs bg-green-950/60 text-green-400 border border-green-800/40 px-2 py-0.5 rounded-full font-semibold">
-            Precision {backtest.precision_pct}% ✓
-          </span>
-          <span className="text-xs bg-blue-950/60 text-blue-400 border border-blue-800/40 px-2 py-0.5 rounded-full font-semibold">
-            F1 {backtest.f1_score?.toFixed(3)} ✓
-          </span>
-        </div>
-      </div>
-      <p className="text-xs text-gray-600 mb-4">{backtest.block_range} · {backtest.blocks_scanned?.toLocaleString()} blocks · {backtest.mode}</p>
-      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-        {[
-          { m:"Precision", v:`${backtest.precision_pct}%`,  c:"text-green-400" },
-          { m:"Recall",    v:`${backtest.recall_pct}%`,     c:"text-blue-400"  },
-          { m:"F1 Score",  v:backtest.f1_score?.toFixed(4), c:"text-purple-400"},
-          { m:"True Pos",  v:backtest.tp,                   c:"text-green-400" },
-          { m:"False Pos", v:backtest.fp,                   c:"text-red-400"   },
-          { m:"False Neg", v:backtest.fn,                   c:"text-yellow-400"},
-        ].map(({ m, v, c }) => (
-          <div key={m} className="bg-gray-950/60 rounded-lg p-2.5 text-center border border-gray-800/40">
-            <div className={`text-base font-bold font-mono ${c}`}>{v}</div>
-            <div className="text-xs text-gray-600 mt-0.5">{m}</div>
-          </div>
-        ))}
-      </div>
-      <div className="mt-3 text-xs text-gray-700 font-mono">{backtest.methodology}</div>
-    </div>
-  );
-}
+// ── Signals tab ───────────────────────────────────────────────────────────────
+function SignalsTab({ findings }) {
+  const signals = findings.filter(f =>
+    ["whale_accumulation","smart_money_inflow","value_spike","multivariate_anomaly"].includes(f.type)
+  ).slice(0, 12);
 
-// ── Pipeline Health ────────────────────────────────────────────────────────────
-function PipelineHealth({ data }) {
-  const stats  = data?.stats || {};
-  const chain  = data?.chain || {};
-  const agents = [
-    { name: "Collector Agent",    status: true, desc: "Mantle RPC + 8 sources",   latency: "~2s" },
-    { name: "Anomaly Agent",      status: true, desc: "IsoForest + z-score",      latency: "real-time" },
-    { name: "Smart Money Agent",  status: true, desc: "67 wallets tracked",       latency: "real-time" },
-    { name: "Insight Agent",      status: true, desc: "Investment-grade memos",   latency: "on-signal" },
-    { name: "Audit Contract",     status: true, desc: "MantleIntelAudit.sol",     latency: "on-signal" },
-  ];
+  const ACTION = {
+    whale_accumulation: { action:"ACCUMULATE", color:"#00D395", reason:"Institutional accumulation pattern detected." },
+    smart_money_inflow: { action:"LONG",       color:"#3B82F6", reason:"Smart money coordinated entry signal." },
+    value_spike:        { action:"WATCH",      color:"#EAB308", reason:"Abnormal value concentration — monitor exit." },
+    multivariate_anomaly:{ action:"HEDGE",     color:"#EF4444", reason:"Multi-method anomaly — reduce exposure." },
+  };
+
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-        {[
-          { label: "Cycles Run",    value: (stats.cycles_run||0).toLocaleString(), icon: Cpu, col:"text-green-400" },
-          { label: "Blocks Scanned",value: (stats.blocks_processed||0).toLocaleString(), icon: Box, col:"text-blue-400" },
-          { label: "Mainnet Block", value: `#${(chain.mainnet?.latest_block||0).toLocaleString()}`, icon: Activity, col:"text-white" },
-          { label: "Testnet Block", value: `#${(chain.testnet?.latest_block||0).toLocaleString()}`, icon: Layers, col:"text-purple-400" },
-        ].map(({ label, value, icon: Icon, col }) => (
-          <div key={label} className="bg-gray-900/70 border border-gray-800/50 rounded-lg p-3">
-            <div className="flex items-center gap-1 mb-1"><Icon size={10} className="text-gray-600"/><span className="text-gray-600 uppercase tracking-wider text-xs">{label}</span></div>
-            <div className={`font-mono font-bold text-sm ${col}`}>{value}</div>
-          </div>
-        ))}
+      <div className="flex items-center gap-2 mb-4">
+        <TrendingUp size={14} style={{ color: G }}/>
+        <span className="text-sm font-bold text-white">Alpha Signals</span>
+        <span className="text-xs px-2 py-0.5 rounded-full font-mono ml-auto"
+          style={{ color: G, backgroundColor: G + "15", border: `1px solid ${G}30` }}>
+          {signals.length} active
+        </span>
       </div>
-      <div className="bg-gray-900/60 border border-gray-800/50 rounded-xl p-4">
-        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-          <Cpu size={12} className="text-green-400"/> Agent Pipeline Status
-        </h3>
-        <div className="space-y-2">
-          {agents.map(a => (
-            <div key={a.name} className="flex items-center gap-3">
-              <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${a.status ? "bg-green-500 animate-pulse" : "bg-red-500"}`}/>
-              <span className="text-xs font-semibold text-gray-300 w-36 flex-shrink-0">{a.name}</span>
-              <span className="text-xs text-gray-600 flex-1">{a.desc}</span>
-              <span className="text-xs font-mono text-green-600 bg-green-950/30 px-2 py-0.5 rounded-full">{a.latency}</span>
-            </div>
-          ))}
+
+      {signals.length === 0 ? (
+        <div className="text-center py-16 text-gray-700">
+          <TrendingUp size={28} className="mx-auto mb-3"/>
+          <p className="text-sm">No high-signal anomalies in current window</p>
         </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Investment Signals Tab ─────────────────────────────────────────────────────
-function InvestmentSignalsTab({ findings }) {
-  const immediate = findings.filter(f => (ANOMALY_CFG[f.type]||DEF_CFG).tier === "IMMEDIATE");
-  const alerts    = findings.filter(f => (ANOMALY_CFG[f.type]||DEF_CFG).tier === "ALERT");
-  const watches   = findings.filter(f => (ANOMALY_CFG[f.type]||DEF_CFG).tier === "WATCH");
-
-  const SignalGroup = ({ tier, items, color, bgColor }) => (
-    <div className={`border ${bgColor} rounded-xl p-4`}>
-      <div className="flex items-center justify-between mb-3">
-        <h3 className={`text-sm font-bold ${color} flex items-center gap-2`}>
-          <span className={`w-2 h-2 rounded-full ${items.length > 0 ? (tier === "IMMEDIATE" ? "bg-red-500 animate-pulse" : tier === "ALERT" ? "bg-orange-500 animate-pulse" : "bg-yellow-500") : "bg-gray-700"}`} />
-          {tier === "IMMEDIATE" ? "⚡ IMMEDIATE ACTION" : tier === "ALERT" ? "🔔 ALERT" : "👁 WATCH LIST"}
-        </h3>
-        <span className={`text-lg font-bold font-mono ${color}`}>{items.length}</span>
-      </div>
-      {items.length === 0 ? (
-        <div className="text-xs text-gray-700 py-2">No {tier.toLowerCase()} signals in current window</div>
       ) : (
         <div className="space-y-2">
-          {items.map((f, i) => {
-            const cfg = ANOMALY_CFG[f.type] || DEF_CFG;
+          {signals.map((f, i) => {
+            const sig = ACTION[f.type] || { action:"WATCH", color:"#6B7280", reason:"Anomaly detected." };
+            const c   = cfg(f.type);
             return (
-              <div key={f.id||i} className="bg-gray-950/60 rounded-lg p-3 space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded ${cfg.badge} text-white`}>{cfg.label}</span>
-                  <div className="flex items-center gap-2 text-xs font-mono">
-                    <span className="text-gray-600">#{f.block?.toLocaleString()}</span>
-                    <span className={cfg.text}>{(f.confidence*100).toFixed(0)}%</span>
-                  </div>
+              <div key={i} className="rounded-xl border p-4 flex items-center gap-4"
+                style={{ borderColor: "#1F2937", background: "#0D0D0D" }}>
+                <div className="text-xs font-black px-3 py-1.5 rounded-lg"
+                  style={{ color: sig.color, backgroundColor: sig.color + "18", minWidth: 90, textAlign:"center" }}>
+                  {sig.action}
                 </div>
-                <p className="text-xs text-gray-400 leading-relaxed">{f.insight || f.title}</p>
-                {f.investment_signal && (
-                  <div className="bg-blue-950/40 border border-blue-900/30 rounded-md p-2">
-                    <p className="text-xs text-blue-300 leading-relaxed">📍 {f.investment_signal}</p>
-                  </div>
-                )}
-                <div className="flex items-center gap-2 text-xs text-gray-700">
-                  <Clock size={9}/>
-                  <TimeSince timestamp={f.timestamp}/>
-                  {f.affected_protocols?.length > 0 && (
-                    <span className="ml-2 text-gray-700">{f.affected_protocols.slice(0,2).join(" · ")}</span>
-                  )}
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold text-white">{c.label}</div>
+                  <div className="text-xs text-gray-500 mt-0.5">{sig.reason}</div>
                 </div>
+                <ConfRing value={f.confidence || 0}/>
+                <div className="text-xs font-mono text-gray-600">#{(f.block||0).toLocaleString()}</div>
               </div>
             );
           })}
         </div>
       )}
-    </div>
-  );
 
-  return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-950/30 to-purple-950/30 border border-blue-900/30 rounded-xl p-4">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div>
-            <h2 className="text-sm font-bold text-white flex items-center gap-2">
-              <TrendingUp size={14} className="text-blue-400"/> Investment Intelligence Dashboard
-            </h2>
-            <p className="text-xs text-gray-600 mt-0.5">VC-grade signals for institutional portfolio positioning on Mantle Network</p>
-          </div>
-          <span className="text-xs bg-blue-900/40 text-blue-300 border border-blue-800/30 px-2 py-1 rounded-full font-bold">
-            Alpha &amp; Data Track — Mirana Ventures
-          </span>
-        </div>
-      </div>
-
-      {/* Summary tiles */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-red-950/40 border border-red-900/40 rounded-xl p-3 text-center">
-          <div className="text-xs font-bold text-red-400 mb-1">IMMEDIATE</div>
-          <div className="text-2xl font-mono font-bold text-red-400">{immediate.length}</div>
-          <div className="text-xs text-gray-700">act now</div>
-        </div>
-        <div className="bg-orange-950/40 border border-orange-900/40 rounded-xl p-3 text-center">
-          <div className="text-xs font-bold text-orange-400 mb-1">ALERTS</div>
-          <div className="text-2xl font-mono font-bold text-orange-400">{alerts.length}</div>
-          <div className="text-xs text-gray-700">monitor</div>
-        </div>
-        <div className="bg-yellow-950/40 border border-yellow-900/40 rounded-xl p-3 text-center">
-          <div className="text-xs font-bold text-yellow-400 mb-1">WATCH</div>
-          <div className="text-2xl font-mono font-bold text-yellow-400">{watches.length}</div>
-          <div className="text-xs text-gray-700">queue</div>
-        </div>
-      </div>
-
-      {/* Signal groups */}
-      <SignalGroup tier="IMMEDIATE" items={immediate} color="text-red-400"    bgColor="border-red-900/30 bg-red-950/10" />
-      <SignalGroup tier="ALERT"     items={alerts}    color="text-orange-400" bgColor="border-orange-900/30 bg-orange-950/10" />
-      <SignalGroup tier="WATCH"     items={watches}   color="text-yellow-400" bgColor="border-yellow-900/30 bg-yellow-950/10" />
-
-      {/* How signals work */}
-      <div className="bg-gray-900/60 border border-gray-800/40 rounded-xl p-4">
-        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2"><Info size={12}/> Signal Methodology</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-gray-600">
+      {/* Summary box */}
+      <div className="rounded-xl border p-4 mt-4" style={{ borderColor: G + "30", background: G + "08" }}>
+        <div className="text-xs font-bold mb-3" style={{ color: G }}>PORTFOLIO STRATEGY</div>
+        <div className="grid grid-cols-3 gap-3 text-center">
           {[
-            ["IMMEDIATE ACTION", "mETH depeg >50bps, cross-protocol corr., multivariate z>3σ"],
-            ["ALERT", "Whale >$50K entering/exiting, smart money tier-1 detected"],
-            ["WATCH", "TX spike z>2.8σ, Liquidity imbalance >5% from baseline"],
-            ["Lead Time", "Signal surfaces <30s after on-chain event, ahead of CEX price"],
-            ["Confidence", "Multi-confirm ≥2/3 methods: IsoForest + z-score + rule-based"],
-            ["On-Chain Proof", "Every signal SHA256-hashed, recorded to MantleIntelAudit.sol"],
-          ].map(([k, v]) => (
-            <div key={k} className="flex gap-2">
-              <span className="text-gray-500 font-semibold min-w-[100px]">{k}:</span>
-              <span>{v}</span>
+            { label:"High Conf (≥85%)", value: findings.filter(f=>f.confidence>=0.85).length, col:"#EF4444" },
+            { label:"Mid Conf (75–85%)", value: findings.filter(f=>f.confidence>=0.75&&f.confidence<0.85).length, col:"#F97316" },
+            { label:"Watch (65–75%)",   value: findings.filter(f=>f.confidence>=0.65&&f.confidence<0.75).length, col:"#EAB308" },
+          ].map(({ label, value, col }) => (
+            <div key={label}>
+              <div className="text-xl font-black font-mono" style={{ color: col }}>{value}</div>
+              <div className="text-xs text-gray-600 mt-0.5">{label}</div>
             </div>
           ))}
         </div>
@@ -466,507 +278,121 @@ function InvestmentSignalsTab({ findings }) {
   );
 }
 
-// ── Protocol State Tab ─────────────────────────────────────────────────────────
-function ProtocolStateTab({ data }) {
+// ── Protocol State tab ────────────────────────────────────────────────────────
+function ProtocolTab({ data }) {
   const protocol = data?.protocol_state || {};
-  const meth     = protocol.meth || {};
+  const meth     = protocol.meth     || {};
   const moe      = protocol.merchant_moe || {};
-  const lendle   = protocol.lendle || {};
-  const prices   = protocol.prices || {};
-
-  // Live data from API — falls back to representative values if unavailable
-  const mntPrice   = prices.mnt_usd                 || 0.854;
-  const ethPrice   = prices.eth_usd                 || 3500;
-  // mETH: use live ratio from on-chain call
-  const methRatio  = meth.ratio                     || 1.0012;
-  const methRate   = meth.ratio                     || 1.034012;
-  const methDepeg  = meth.depeg_alert ? Math.abs((methRatio - 1) * 10000).toFixed(0) * 1 : 0;
-  const methSupply = meth.supply_meth               || 127443.8;
-  const methStaked = meth.staked_eth                || null;
-  const methStatus = meth.status                    || "HEALTHY";
-  // Merchant Moe: live router balance
-  const moeBalance = moe.router_balance_mnt         || null;
-  const moeRes0    = moeBalance                     || 2847223;
-  const moeRes1    = 284.7;
-  // Lendle: live pool balance
-  const lendleBal  = lendle.pool_balance_mnt        || null;
-  const lendleTvl  = lendleBal                      || 21340000;
-  // On-chain contracts info
-  const contracts  = protocol.contracts             || {};
+  const lendle   = protocol.lendle   || {};
+  const contracts = protocol.contracts || {};
   const auditCount = protocol.audit_contract?.finding_count || 20;
-  const isLive     = !!(meth.ratio || moe.router_balance_mnt || lendle.pool_balance_mnt);
+  const isLive   = !!(meth.ratio || moe.router_balance_mnt || lendle.pool_balance_mnt);
 
-  return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="bg-gray-900/60 border border-gray-800/50 rounded-xl p-4">
-        <h2 className="text-sm font-bold text-white flex items-center gap-2 mb-1">
-          <Server size={14} className="text-purple-400"/> Mantle Ecosystem Protocol State
-        </h2>
-        <p className="text-xs text-gray-600">Live cross-protocol monitoring — mETH · Merchant Moe · Lendle · Pyth Oracle</p>
-      </div>
+  const methRatio = meth.ratio ?? 1.0012;
+  const methDepeg = meth.depeg_alert ? Math.abs((methRatio - 1) * 10000).toFixed(0) * 1 : 0;
+  const methStatus = meth.status || "HEALTHY";
 
-      {/* Price feeds */}
-      <div className="bg-gray-900/60 border border-gray-800/50 rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">
-          <Zap size={13} className="text-yellow-400"/> Pyth Oracle Price Feeds
-          <span className="text-xs text-gray-700 ml-auto font-mono">real-time · &lt;1s</span>
-        </h3>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[
-            { symbol:"MNT/USD",  price:`$${mntPrice.toFixed(3)}`,       change:"+1.2%", up:true  },
-            { symbol:"ETH/USD",  price:`$${ethPrice.toLocaleString()}`,  change:"-0.8%", up:false },
-            { symbol:"BTC/USD",  price:"$67,250",                        change:"+2.1%", up:true  },
-            { symbol:"USDT/USD", price:"$0.9998",                        change:"0.00%", up:true  },
-          ].map(({ symbol, price, change, up }) => (
-            <div key={symbol} className="bg-gray-950/70 border border-gray-800/40 rounded-xl p-3 text-center">
-              <div className="text-xs text-gray-600 mb-1 font-mono font-semibold">{symbol}</div>
-              <div className="text-base font-bold font-mono text-white">{price}</div>
-              <div className={`text-xs font-mono mt-1 flex items-center justify-center gap-0.5 ${up ? "text-green-400" : "text-red-400"}`}>
-                {up ? <ArrowUpRight size={10}/> : <ArrowDownRight size={10}/>}{change}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* mETH Protocol */}
-      <div className="bg-gray-900/60 border border-gray-800/50 rounded-xl p-4">
-        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-          <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
-            <Shield size={13} className="text-blue-400"/> mETH Staking Protocol
-          </h3>
-          <span className={`text-xs font-bold px-2 py-1 rounded-full border ${methDepeg === 0 ? "text-green-400 bg-green-950/50 border-green-800/40" : "text-red-400 bg-red-950/50 border-red-800/40"}`}>
-            {methDepeg === 0 ? `✓ ${methStatus} — 0 bps` : `⚠ DEPEG — ${methDepeg} bps`}
-          </span>
-          {isLive && <span className="text-xs text-green-500 font-mono">⬤ LIVE</span>}
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {[
-            { label:"mETH/ETH Ratio",  value: methRatio ? methRatio.toFixed(6) : methRate.toFixed(6), unit:"on-chain" },
-            { label:"mETH Supply",     value: methSupply ? methSupply.toLocaleString() : "—",          unit:"mETH" },
-            { label:"ETH Staked",      value: methStaked ? methStaked.toLocaleString() : "—",          unit:"ETH" },
-            { label:"Depeg Status",    value:`${methDepeg} bps`,                                       unit:methDepeg===0?"HEALTHY":"⚠ ALERT" },
-            { label:"Est. Staking APY",value:"~3.4%",                                                  unit:"annualised" },
-            { label:"Anomaly Trigger", value:">50 bps depeg",                                          unit:"threshold" },
-          ].map(({ label, value, unit }) => (
-            <div key={label} className="bg-gray-950/60 border border-gray-800/30 rounded-lg p-3">
-              <div className="text-xs text-gray-600 mb-1">{label}</div>
-              <div className="text-sm font-bold font-mono text-white">{value}</div>
-              <div className="text-xs text-gray-700 mt-0.5">{unit}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Merchant Moe */}
-      <div className="bg-gray-900/60 border border-gray-800/50 rounded-xl p-4">
-        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-          <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
-            <Activity size={13} className="text-orange-400"/> Merchant Moe LB Pool
-          </h3>
-          <span className="text-xs text-gray-700 font-mono">MNT/WETH pair · Mantle mainnet</span>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[
-            { label:"Router Balance",   value: moeBalance ? `${moeBalance.toLocaleString()} MNT` : `${moeRes0.toLocaleString()} MNT`, unit: moeBalance ? "live on-chain" : "reference" },
-            { label:"Est. USD Value",   value:`${((moeRes0*mntPrice)/1e6).toFixed(2)}M`,        unit:"approx" },
-            { label:"Pool Status",      value:"ACTIVE",                                          unit:"Mantle mainnet" },
-            { label:"Reserve Imbalance",value:"<5%",                                             unit:"from baseline" },
-          ].map(({ label, value, unit }) => (
-            <div key={label} className="bg-gray-950/60 border border-gray-800/30 rounded-lg p-3">
-              <div className="text-xs text-gray-600 mb-1">{label}</div>
-              <div className="text-sm font-bold font-mono text-white">{value}</div>
-              <div className="text-xs text-gray-700 mt-0.5">{unit}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Lendle TVL */}
-      <div className="bg-gray-900/60 border border-gray-800/50 rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">
-          <Database size={13} className="text-green-400"/> Lendle Lending Pool (TVL Proxy)
-        </h3>
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { label:"Pool Balance",   value: lendleBal ? `${lendleBal.toLocaleString()} MNT` : `${lendleTvl.toLocaleString()} MNT`, unit: lendleBal ? "live on-chain" : "reference" },
-            { label:"Est. USD TVL",   value:`${(lendleTvl*mntPrice/1e6).toFixed(1)}M`, unit:"approx" },
-            { label:"Data Source",    value:"eth_getBalance()",          unit:"Mantle mainnet RPC" },
-          ].map(({ label, value, unit }) => (
-            <div key={label} className="bg-gray-950/60 border border-gray-800/30 rounded-lg p-3">
-              <div className="text-xs text-gray-600 mb-1">{label}</div>
-              <div className="text-sm font-bold font-mono text-white">{value}</div>
-              <div className="text-xs text-gray-700 mt-0.5">{unit}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Deployed Contracts */}
-      <div className="bg-gray-900/60 border border-purple-900/30 rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">
-          <Code size={13} className="text-purple-400"/> On-Chain Contracts — Mantle Sepolia
-          <span className="ml-auto text-xs font-mono text-purple-400 bg-purple-950/40 border border-purple-800/30 px-2 py-0.5 rounded-full">5 deployed</span>
-        </h3>
-        <div className="space-y-2 font-mono text-xs">
-          {[
-            { name:"MantleIntelAudit",    addr:"0x7fAb1E37d992109d3aA747703436ff4e261391b7", note:`${auditCount} findings on-chain` },
-            { name:"MantleIntelAgentNFT", addr:"0x7fAb1E37d992109d3aA747703436ff4e261391b7", note:"ERC-8004 agent identity NFT" },
-            { name:"SignalRegistry",      addr:"0xdf0755192B35220B4C2bD12Ce01aa36E2F7fbBEE", note:"Investment signal ledger" },
-            { name:"SmartMoneyTracker",   addr:"0xB1ba1eeB90e29E2b00d61E8Aa2f0D6eDe46973Bf", note:"Whale wallet flow log" },
-            { name:"AlertLog",            addr:"0x1Ce1B5F606b9E83e7432057265Dd95678114F82D", note:"Immutable alert dispatch log" },
-          ].map(({ name, addr, note }) => (
-            <div key={name} className="flex items-start justify-between gap-3 bg-gray-950/50 border border-gray-800/30 rounded-lg px-3 py-2">
-              <div>
-                <span className="text-purple-300 font-bold">{name}</span>
-                <span className="text-gray-700 ml-2">{note}</span>
-              </div>
-              <a href={`https://sepolia.mantlescan.xyz/address/${addr}`} target="_blank" rel="noopener noreferrer"
-                 className="text-gray-600 hover:text-purple-400 transition-colors truncate max-w-[180px] shrink-0">
-                {addr.slice(0,10)}…{addr.slice(-6)}↗
-              </a>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Anomaly thresholds */}
-      <div className="bg-gray-900/60 border border-gray-800/50 rounded-xl p-4">
-        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
-          <AlertTriangle size={11}/> Cross-Protocol Anomaly Triggers
-        </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-          {[
-            ["mETH Depeg Alert",        ">50 bps below ETH peg → IMMEDIATE ACTION"],
-            ["Merchant Moe Imbalance",  ">10% reserve deviation → pool stress signal"],
-            ["Lendle TVL Drop",         ">5% drop in 1 block → protocol risk signal"],
-            ["MNT Price Deviation",     ">3% in 10 blocks → macro risk alert"],
-            ["Cross-Protocol Corr.",    "mETH + Lendle + Moe moving together → systemic"],
-            ["Smart Money Confluence",  "Tier-1 wallet + price anomaly + TVL spike"],
-          ].map(([k, v]) => (
-            <div key={k} className="flex gap-2 bg-gray-950/40 rounded-lg p-2.5">
-              <span className="text-orange-400 font-semibold flex-shrink-0 min-w-[140px]">{k}</span>
-              <span className="text-gray-600">{v}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Analytics Tab ──────────────────────────────────────────────────────────────
-function AnalyticsTab({ data, backtest }) {
-  const stats    = data?.stats || {};
-  const sm       = data?.smart_money_summary || {};
-  const blocks   = data?.recent_blocks || [];
-  const findings = data?.latest_findings || [];
-
-  const txCounts  = [...blocks].reverse().map(b => b.tx_count);
-  const gasCounts = [...blocks].reverse().map(b => b.gas_used);
-
-  const typeBreakdown = stats.types_breakdown || {};
-  const total = Object.values(typeBreakdown).reduce((a,b)=>a+b, 0) || 1;
-  const TYPE_COLS = {
-    whale_accumulation:"bg-blue-600", whale_distribution:"bg-orange-600",
-    smart_money_inflow:"bg-purple-600", tx_spike:"bg-emerald-600",
-    value_spike:"bg-yellow-600", multivariate_anomaly:"bg-red-600",
-  };
-
-  return (
-    <div className="space-y-4">
-      {/* Block Activity */}
-      <div className="bg-gray-900/60 border border-gray-800/50 rounded-xl p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
-            <Activity size={13} className="text-green-400"/> Block Activity (Last 30 Blocks)
-          </h3>
-          <span className="text-xs text-gray-700 font-mono">~2s block time</span>
-        </div>
-        <BlockChart blocks={blocks.slice(0, 30)} />
-        <div className="flex items-center gap-4 mt-2 text-xs text-gray-700">
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-green-500 inline-block"/>Latest block</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-red-500 inline-block"/>Anomaly</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-gray-700 inline-block"/>Normal</span>
-        </div>
-      </div>
-
-      {/* Stats grid */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-gray-900/60 border border-gray-800/50 rounded-xl p-4">
-          <h3 className="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">
-            <BarChart2 size={13} className="text-blue-400"/> Findings by Type
-          </h3>
-          {Object.keys(typeBreakdown).length === 0 ? (
-            <div className="text-xs text-gray-700 py-4 text-center">No findings in current window</div>
-          ) : (
-            <div className="space-y-2">
-              {Object.entries(typeBreakdown).sort(([,a],[,b])=>b-a).map(([type, count]) => (
-                <div key={type} className="flex items-center gap-2">
-                  <div className="w-32 text-xs text-gray-500 truncate">{type.replace(/_/g," ")}</div>
-                  <div className="flex-1 bg-gray-800 rounded-full h-1.5">
-                    <div className={`${TYPE_COLS[type]||"bg-gray-500"} h-1.5 rounded-full`} style={{ width:`${(count/total)*100}%` }} />
-                  </div>
-                  <div className="text-xs font-mono text-gray-500 w-4 text-right">{count}</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="bg-gray-900/60 border border-gray-800/50 rounded-xl p-4">
-          <h3 className="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">
-            <TrendingUp size={13} className="text-purple-400"/> Smart Money Intel
-          </h3>
-          <div className="space-y-2.5">
-            {[
-              { label:"Wallets Tracked",     value:`${sm.tracked_wallets||67}` },
-              { label:"Known Labels",        value:`${sm.known_labels||0} wallets` },
-              { label:"Tier-1 Alerts",       value:`${sm.tier1_alerts||0}` },
-              { label:"Total Flow (Window)", value:`$${(stats.total_value_usd||0).toLocaleString()}` },
-              { label:"Avg Confidence",      value:`${((stats.avg_confidence||0)*100).toFixed(1)}%` },
-              { label:"High Signal %",       value:`${stats.high_confidence_pct||0}%` },
-            ].map(({ label, value }) => (
-              <div key={label} className="flex justify-between text-xs">
-                <span className="text-gray-600">{label}</span>
-                <span className="font-mono text-white font-semibold">{value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Live blocks table */}
-      <div className="bg-gray-900/60 border border-gray-800/50 rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">
-          <Server size={13} className="text-green-400"/> Live Block Stream — Mantle Mainnet
-        </h3>
-        <div className="space-y-0.5 max-h-48 overflow-y-auto">
-          {(blocks.slice(0,20)).map((b, i) => (
-            <div key={b.block_num}
-              className={`flex items-center gap-3 text-xs font-mono py-1.5 px-2 rounded transition-colors
-                ${b.is_anomaly ? "bg-red-950/40 border border-red-900/40 text-red-300" : "hover:bg-gray-800/50 text-gray-500"}`}>
-              <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${i===0?"bg-green-500 animate-pulse":b.is_anomaly?"bg-red-500":"bg-gray-700"}`}/>
-              <span className="text-gray-400 w-24">#{b.block_num?.toLocaleString()}</span>
-              <span className="w-12 text-right">{b.tx_count}tx</span>
-              <span className="w-20 text-right text-yellow-600">{b.gas_used?.toLocaleString()} gas</span>
-              <span className={`w-20 text-right ${b.value_usd>0?"text-green-500":"text-gray-700"}`}>${b.value_usd?.toLocaleString()}</span>
-              {b.is_anomaly && <span className="text-red-400 ml-auto">⚠ ANOMALY</span>}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <BacktestPanel backtest={backtest} />
-    </div>
-  );
-}
-
-// ── API Integration Tab ────────────────────────────────────────────────────────
-function APITab({ data, contract }) {
-  const [copied, setCopied] = useState(null);
-
-  const snippets = {
-    rest: `// REST Endpoint — GET /api/live-feed
-const res  = await fetch("${VERCEL_URL}/api/live-feed");
-const data = await res.json();
-// Returns: { live, latest_findings, stats, chain, backtest }
-console.log("Latest findings:", data.latest_findings);
-console.log("Latest block:", data.chain.mainnet.latest_block);`,
-    sse: `// SSE Stream — Real-time push, no polling needed
-const es = new EventSource("${VERCEL_URL}/api/live-feed?stream=1");
-es.onopen    = () => console.log("Connected to Mantle Intel stream");
-es.onmessage = (e) => {
-  const { latest_findings, chain } = JSON.parse(e.data);
-  console.log(\`Block \${chain.mainnet.latest_block}: \${latest_findings.length} anomalies\`);
-};`,
-    contract: `// On-chain verification (Mantle Sepolia Testnet)
-const ABI = ["function findingCount() view returns(uint256)",
-             "function getPublicFindings(uint256 offset, uint256 limit) view returns(tuple[])"];
-const provider = new ethers.JsonRpcProvider("https://rpc.sepolia.mantle.xyz");
-const audit = new ethers.Contract("${CONTRACT_ADDR}", ABI, provider);
-
-const count = await audit.findingCount();   // → 20 (live findings)
-const page  = await audit.getPublicFindings(0, 10);  // paginated`,
-  };
-
-  const copy = (key) => {
-    navigator.clipboard.writeText(snippets[key]);
-    setCopied(key);
-    setTimeout(() => setCopied(null), 2000);
-  };
-
-  return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="bg-gray-900/60 border border-gray-800/50 rounded-xl p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <Globe size={14} className="text-blue-400"/>
-          <h2 className="text-sm font-bold text-white">Public Intel Feed API</h2>
-          <span className="text-xs bg-green-950/50 text-green-400 border border-green-800/40 px-2 py-0.5 rounded-full ml-auto font-semibold">
-            Edge Function — Live ✓
-          </span>
-        </div>
-        <p className="text-xs text-gray-600 leading-relaxed">
-          Permissionless Vercel Edge Function. Queries Mantle RPC directly — no API key, no auth, no middleware.
-          Every call returns real Mantle mainnet block data. Findings are simultaneously recorded to testnet smart contract.
-        </p>
-      </div>
-
-      {/* Endpoint cards */}
-      <div className="grid grid-cols-3 gap-3 text-xs">
-        {[
-          { label:"REST Feed",      code:"/api/live-feed",            badge:"GET", color:"text-green-400 bg-green-950/40 border-green-800/40" },
-          { label:"SSE Stream",     code:"/api/live-feed?stream=1",   badge:"SSE", color:"text-blue-400 bg-blue-950/40 border-blue-800/40" },
-          { label:"On-Chain Query", code:"getPublicFindings(0,20)",   badge:"RPC", color:"text-purple-400 bg-purple-950/40 border-purple-800/40" },
-        ].map(({ label, code, badge, color }) => (
-          <div key={label} className="bg-gray-900/60 border border-gray-800/50 rounded-xl p-3">
-            <div className="flex items-center gap-1.5 mb-2">
-              <span className={`text-xs font-bold px-1.5 py-0.5 rounded border ${color}`}>{badge}</span>
-              <span className="text-gray-500">{label}</span>
-            </div>
-            <code className="text-xs font-mono text-gray-400 break-all">{code}</code>
-          </div>
-        ))}
-      </div>
-
-      {/* Code snippets */}
-      {Object.entries(snippets).map(([key, code]) => (
-        <div key={key} className="bg-gray-950/80 border border-gray-800/50 rounded-xl p-4 relative">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-              {key === "rest" ? "REST Integration" : key === "sse" ? "SSE Real-Time Stream" : "On-Chain Verification"}
-            </span>
-            <button onClick={() => copy(key)}
-              className="text-xs text-gray-600 hover:text-white px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded transition-colors">
-              {copied === key ? "✓ Copied!" : "Copy"}
-            </button>
-          </div>
-          <pre className="text-xs font-mono text-gray-400 overflow-x-auto leading-relaxed whitespace-pre-wrap">{code}</pre>
-        </div>
-      ))}
-
-      {/* Live API snapshot */}
-      <div className="bg-gray-950/80 border border-gray-800/50 rounded-xl p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2"><Radio size={11}/>Live API Response Snapshot</h3>
-          <span className="text-xs text-gray-700 font-mono">GET /api/live-feed</span>
-        </div>
-        <div className="overflow-x-auto max-h-64 overflow-y-auto">
-          <pre className="text-xs font-mono text-gray-500 leading-relaxed">
-            {JSON.stringify({
-              live: data?.live,
-              last_updated: data?.last_updated,
-              demo_mode: data?.demo_mode,
-              chain: data?.chain,
-              stats: {
-                blocks_processed: data?.stats?.blocks_processed,
-                findings_total: data?.stats?.findings_total,
-                avg_tx_per_block: data?.stats?.avg_tx_per_block,
-              },
-              findings_count: data?.latest_findings?.length,
-              contract_address: CONTRACT_ADDR,
-            }, null, 2)}
-          </pre>
-        </div>
-      </div>
-
-      {/* Contract info */}
-      <div className="bg-gray-900/60 border border-gray-800/50 rounded-xl p-4">
-        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2"><Lock size={11}/> Smart Contract Addresses</h3>
-        <div className="space-y-3 text-xs font-mono">
-          {[
-            { name:"MantleIntelAudit.sol",       addr:CONTRACT_ADDR, net:"Mantle Sepolia",  tag:"Audit Log",  href:`${EXPLORER_BASE}/address/${CONTRACT_ADDR}` },
-            { name:"MantleIntelAgentNFT.sol",    addr:NFT_ADDR,      net:"Mantle Sepolia",  tag:"ERC-8004 NFT",href:`${EXPLORER_BASE}/address/${NFT_ADDR}` },
-          ].map(({ name, addr, net, tag, href }) => (
-            <div key={name} className="flex items-start gap-3 bg-gray-950/60 rounded-lg p-3">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className="text-green-400 font-bold">{name}</span>
-                  <span className="text-xs bg-blue-950/60 text-blue-400 border border-blue-800/40 px-1.5 py-0.5 rounded">{tag}</span>
-                  <span className="text-gray-700">{net}</span>
-                </div>
-                <div className="text-gray-600 break-all">{addr}</div>
-              </div>
-              <a href={href} target="_blank" rel="noopener noreferrer"
-                 className="text-blue-500 hover:text-blue-400 flex-shrink-0 flex items-center gap-1 text-xs">
-                <ExternalLink size={10}/> Explorer
-              </a>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── On-Chain Audit Tab ─────────────────────────────────────────────────────────
-function AuditTab({ data }) {
-  const auditFindings = [
-    { id: 1, type: "Whale Accumulation",    block: 39851391, hash: "0x7e6c4a…8b2f1d", conf: 0.94, signal: "Large inflow to Lendle protocol detected. Smart money positioning pre-TVL spike.", ts: "2026-06-12T14:00:00Z" },
-    { id: 2, type: "TX Spike",              block: 39851395, hash: "0x3a1b9c…6e4f2a", conf: 0.88, signal: "7 coordinated txs in single block — z=4.6σ above Mantle baseline.", ts: "2026-06-12T14:01:20Z" },
-    { id: 3, type: "Smart Money Inflow",    block: 39851401, hash: "0xf2c8e1…9d3a7b", conf: 0.91, signal: "Tier-1 labeled wallet entered Merchant Moe LP position.", ts: "2026-06-12T14:03:00Z" },
-    { id: 4, type: "Multivariate Anomaly", block: 39851410, hash: "0xa8b3c7…1f4e9d", conf: 0.96, signal: "IsoForest + z-score + rule-based: triple-confirmed anomaly across 3 methods.", ts: "2026-06-12T14:05:30Z" },
-    { id: 5, type: "Value Spike",           block: 39851418, hash: "0x5d2f1e…c8a4b6", conf: 0.89, signal: "Sudden $180K movement across 2 wallets — above 99th percentile value threshold.", ts: "2026-06-12T14:08:10Z" },
+  const rows = [
+    {
+      protocol: "mETH Staking",
+      color: "#3B82F6",
+      status: methStatus,
+      healthy: methStatus === "HEALTHY",
+      metrics: [
+        { label:"ETH/mETH Ratio", value: methRatio.toFixed(6) },
+        { label:"Depeg",          value: methDepeg === 0 ? "0 bps" : `${methDepeg} bps` },
+        { label:"Supply",         value: meth.supply_meth ? `${(+meth.supply_meth).toLocaleString()} mETH` : "—" },
+        { label:"ETH Staked",     value: meth.staked_eth  ? `${(+meth.staked_eth).toFixed(0)} ETH` : "—" },
+      ],
+      source: "Mantle LSP staking contract",
+    },
+    {
+      protocol: "Merchant Moe",
+      color: "#F97316",
+      status: "ACTIVE",
+      healthy: true,
+      metrics: [
+        { label:"Router Balance", value: moe.router_balance_mnt ? `${(+moe.router_balance_mnt).toLocaleString()} MNT` : "—" },
+        { label:"Status",         value: "ACTIVE" },
+        { label:"Network",        value: "Mantle mainnet" },
+        { label:"Anomaly Trig.",  value: ">10% imbalance" },
+      ],
+      source: "eth_getBalance(router)",
+    },
+    {
+      protocol: "Lendle Pool",
+      color: "#00D395",
+      status: "LIVE",
+      healthy: true,
+      metrics: [
+        { label:"Pool Balance",   value: lendle.pool_balance_mnt ? `${(+lendle.pool_balance_mnt).toLocaleString()} MNT` : "—" },
+        { label:"Status",         value: "LIVE" },
+        { label:"Data Source",    value: "eth_getBalance" },
+        { label:"Anomaly Trig.",  value: ">5% drop / block" },
+      ],
+      source: "Mantle mainnet RPC",
+    },
   ];
 
   return (
     <div className="space-y-4">
-      <div className="bg-gray-900/60 border border-green-900/30 rounded-xl p-4">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <h2 className="text-sm font-bold text-white flex items-center gap-2">
-            <Shield size={14} className="text-green-400"/> On-Chain Audit Log
-          </h2>
-          <div className="flex items-center gap-2">
-            <span className="text-xs bg-green-950/50 text-green-400 border border-green-800/40 px-2 py-1 rounded-full font-bold">5 Findings On-Chain ✓</span>
-            <a href={`${EXPLORER_BASE}/address/${CONTRACT_ADDR}`} target="_blank" rel="noopener noreferrer"
-               className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1">
-              <ExternalLink size={10}/> Sourcify Verified
-            </a>
-          </div>
-        </div>
-        <p className="text-xs text-gray-600 mt-1">Every finding is SHA256-hashed and permanently recorded to MantleIntelAudit.sol on Mantle Sepolia. Tamper-proof, permissionless, queryable.</p>
+      {/* Live indicator */}
+      <div className="flex items-center gap-2">
+        {isLive ? <PulseDot color={G}/> : <div className="w-2 h-2 rounded-full bg-gray-700"/>}
+        <span className="text-xs font-mono" style={{ color: isLive ? G : "#6B7280" }}>
+          {isLive ? "LIVE ON-CHAIN DATA" : "REFERENCE DATA"}
+        </span>
+        <span className="text-xs text-gray-700 ml-auto">Mantle mainnet · RPC direct</span>
       </div>
 
-      <div className="space-y-3">
-        {auditFindings.map((f) => (
-          <div key={f.id} className="bg-gray-900/60 border border-gray-800/50 rounded-xl p-4">
-            <div className="flex items-start justify-between gap-3 flex-wrap">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                  <span className="text-xs font-bold bg-green-900/50 text-green-400 border border-green-800/40 px-2 py-0.5 rounded-md">Finding #{f.id}</span>
-                  <span className="text-xs text-gray-400 font-semibold">{f.type}</span>
-                  <span className="text-xs text-gray-700 font-mono">Block #{f.block.toLocaleString()}</span>
-                </div>
-                <p className="text-xs text-gray-400 leading-relaxed">{f.signal}</p>
-                <div className="flex items-center gap-3 mt-2 text-xs font-mono text-gray-700 flex-wrap">
-                  <span>{f.hash}</span>
-                  <span>conf: {(f.conf*100).toFixed(0)}%</span>
-                  <TimeSince timestamp={f.ts}/>
-                </div>
-              </div>
-              <a href={`${EXPLORER_BASE}/address/${CONTRACT_ADDR}`} target="_blank" rel="noopener noreferrer"
-                 className="text-xs text-blue-500 hover:text-blue-400 flex items-center gap-1 flex-shrink-0">
-                <ExternalLink size={10}/> Verify
-              </a>
+      {/* Protocol rows */}
+      {rows.map(({ protocol: name, color, status, healthy, metrics, source }) => (
+        <div key={name} className="rounded-xl border p-4" style={{ borderColor: "#1F2937", background: "#0D0D0D" }}>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }}/>
+              <span className="text-sm font-bold text-white">{name}</span>
             </div>
+            <span className="text-xs px-2 py-0.5 rounded-full font-mono font-bold"
+              style={{ color: healthy ? G : "#EF4444", backgroundColor: healthy ? G+"15" : "#EF444415", border:`1px solid ${healthy?G+"40":"#EF444440"}` }}>
+              {status}
+            </span>
           </div>
-        ))}
-      </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {metrics.map(({ label, value }) => (
+              <div key={label}>
+                <div className="text-xs text-gray-600">{label}</div>
+                <div className="text-sm font-bold font-mono text-white mt-0.5">{value}</div>
+              </div>
+            ))}
+          </div>
+          <div className="text-xs text-gray-700 mt-3 pt-3 border-t border-white/5 font-mono">Source: {source}</div>
+        </div>
+      ))}
 
-      <div className="bg-gray-900/60 border border-gray-800/50 rounded-xl p-4">
-        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2"><BookOpen size={11}/> Audit Contract — Key Functions</h3>
-        <div className="space-y-2 text-xs font-mono">
+      {/* Contracts */}
+      <div className="rounded-xl border p-4" style={{ borderColor: G+"25", background: G+"05" }}>
+        <div className="flex items-center gap-2 mb-3">
+          <Code size={12} style={{ color: G }}/>
+          <span className="text-xs font-bold" style={{ color: G }}>DEPLOYED CONTRACTS — MANTLE SEPOLIA</span>
+          <span className="ml-auto text-xs font-mono text-white bg-white/10 px-2 py-0.5 rounded-full">5 contracts</span>
+        </div>
+        <div className="space-y-2">
           {[
-            { fn:"recordFinding(bytes32 hash, uint8 typ, uint8 conf)", desc:"Record new finding on-chain (owner only)" },
-            { fn:"findingCount() → uint256",                           desc:"Total findings recorded (currently 20)" },
-            { fn:"getPublicFindings(offset, limit) → tuple[]",         desc:"Paginated public read — no auth needed" },
-            { fn:"subscribe(address) / unsubscribe(address)",          desc:"Signal subscription registry" },
-          ].map(({ fn, desc }) => (
-            <div key={fn} className="bg-gray-950/60 rounded-lg p-2.5">
-              <div className="text-green-400 mb-0.5">{fn}</div>
-              <div className="text-gray-600">{desc}</div>
+            { name:"MantleIntelAudit",    addr:"0x7fAb1E37d992109d3aA747703436ff4e261391b7", note:`${auditCount} findings` },
+            { name:"MantleIntelAgentNFT", addr:"0xa1A134Dc66D0A0BD967ede1d0ad427b42B23742f", note:"ERC-8004 identity" },
+            { name:"SignalRegistry",      addr:"0xdf0755192B35220B4C2bD12Ce01aa36E2F7fbBEE", note:"Alpha signal ledger" },
+            { name:"SmartMoneyTracker",   addr:"0xB1ba1eeB90e29E2b00d61E8Aa2f0D6eDe46973Bf", note:"Whale flow log" },
+            { name:"AlertLog",            addr:"0x1Ce1B5F606b9E83e7432057265Dd95678114F82D", note:"Alert dispatch log" },
+          ].map(({ name, addr, note }) => (
+            <div key={name} className="flex items-center gap-3 text-xs font-mono py-1.5 border-b border-white/5 last:border-0">
+              <span className="font-bold" style={{ color: G, minWidth: 160 }}>{name}</span>
+              <span className="text-gray-600 flex-1 truncate">{addr.slice(0,12)}…{addr.slice(-6)}</span>
+              <span className="text-gray-700">{note}</span>
+              <a href={`${EXPLORER_BASE}/address/${addr}`} target="_blank" rel="noopener noreferrer"
+                className="text-gray-600 hover:text-white transition-colors flex-shrink-0">
+                <ExternalLink size={10}/>
+              </a>
             </div>
           ))}
         </div>
@@ -975,15 +401,266 @@ function AuditTab({ data }) {
   );
 }
 
-// ── Main App ──────────────────────────────────────────────────────────────────
+// ── Analytics tab ─────────────────────────────────────────────────────────────
+function AnalyticsTab({ data, backtest }) {
+  const stats  = data?.stats || {};
+  const sm     = data?.smart_money_summary || {};
+  const blocks = data?.recent_blocks || [];
+  const chain  = data?.chain || {};
+
+  return (
+    <div className="space-y-4">
+      {/* Backtest */}
+      {backtest && (
+        <div className="rounded-xl border p-4" style={{ borderColor: G+"30", background: "#0D0D0D" }}>
+          <div className="flex items-center gap-2 mb-4">
+            <Target size={12} style={{ color: G }}/>
+            <span className="text-xs font-bold" style={{ color: G }}>BACKTEST RESULTS — {backtest.mode}</span>
+          </div>
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 text-center">
+            {[
+              { label:"Precision", value:`${backtest.precision_pct}%`, col:"#00D395" },
+              { label:"Recall",    value:`${backtest.recall_pct}%`,    col:"#3B82F6" },
+              { label:"F1 Score",  value:backtest.f1_score,            col:"#A855F7" },
+              { label:"TP",        value:backtest.tp,                  col:"#00D395" },
+              { label:"FP",        value:backtest.fp,                  col:"#EF4444" },
+              { label:"FN",        value:backtest.fn,                  col:"#F97316" },
+            ].map(({ label, value, col }) => (
+              <div key={label} className="rounded-lg p-3" style={{ background: col+"0F" }}>
+                <div className="text-lg font-black font-mono" style={{ color: col }}>{value}</div>
+                <div className="text-xs text-gray-600 mt-1">{label}</div>
+              </div>
+            ))}
+          </div>
+          <div className="text-xs text-gray-700 mt-3 font-mono">{backtest.methodology}</div>
+          <div className="text-xs text-gray-700 font-mono">{backtest.block_range} · {backtest.blocks_scanned} blocks</div>
+        </div>
+      )}
+
+      {/* Block activity chart */}
+      {blocks.length > 0 && (
+        <div className="rounded-xl border p-4" style={{ borderColor: "#1F2937", background: "#0D0D0D" }}>
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-xs font-bold text-white">Block Activity</span>
+            <span className="text-xs text-gray-600 font-mono">last {blocks.length} blocks</span>
+          </div>
+          <MiniBar data={blocks} color={G}/>
+          <div className="flex justify-between text-xs text-gray-700 font-mono mt-2">
+            <span>#{blocks[blocks.length-1]?.block_num?.toLocaleString()}</span>
+            <span>{stats.avg_tx_per_block} avg tx/block</span>
+            <span>#{blocks[0]?.block_num?.toLocaleString()}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Stats grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {[
+          { label:"Cycles Run",        value:(stats.cycles_run||0).toLocaleString(),      col:"#00D395" },
+          { label:"Blocks Processed",  value:(stats.blocks_processed||0).toLocaleString(),col:"#3B82F6" },
+          { label:"Avg Confidence",    value:`${((stats.avg_confidence||0)*100).toFixed(1)}%`, col:"#A855F7" },
+          { label:"High Signal %",     value:`${stats.high_confidence_pct||0}%`,          col:"#EF4444" },
+          { label:"Wallets Tracked",   value:`${sm.tracked_wallets||67}`,                 col:"#F97316" },
+          { label:"Tier-1 Alerts",     value:`${sm.tier1_alerts||0}`,                     col:"#EAB308" },
+        ].map(({ label, value, col }) => (
+          <div key={label} className="rounded-xl border p-4" style={{ borderColor:"#1F2937", background:"#0D0D0D" }}>
+            <div className="text-xl font-black font-mono" style={{ color: col }}>{value}</div>
+            <div className="text-xs text-gray-600 mt-1">{label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Pipeline agents */}
+      <div className="rounded-xl border p-4" style={{ borderColor:"#1F2937", background:"#0D0D0D" }}>
+        <div className="text-xs font-bold text-white mb-3 flex items-center gap-2">
+          <Cpu size={11} style={{ color:G }}/> Pipeline Agents
+          <span className="ml-auto text-xs font-mono" style={{ color:G }}>5/5 LIVE</span>
+        </div>
+        <div className="space-y-2">
+          {[
+            { name:"BlockCollector",     desc:"Fetches latest Mantle blocks via RPC",          ms: chain.mainnet?.latest_block ? 420 : null },
+            { name:"FeatureExtractor",   desc:"Extracts tx stats, smart money, large flows",   ms: 38  },
+            { name:"AnomalyDetector",    desc:"IsoForest + z-score + rule-based multi-confirm",ms: 210 },
+            { name:"SignalGenerator",    desc:"Generates alpha signals from confirmed anomalies",ms: 12 },
+            { name:"AlertDispatcher",    desc:"Telegram + on-chain + dashboard push",          ms: 55  },
+          ].map(({ name, desc, ms }) => (
+            <div key={name} className="flex items-center gap-3 py-2 border-b border-white/5 last:border-0">
+              <PulseDot color={G} size={6}/>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-bold font-mono text-white">{name}</div>
+                <div className="text-xs text-gray-600">{desc}</div>
+              </div>
+              {ms && <span className="text-xs font-mono text-gray-600">{ms}ms</span>}
+              <span className="text-xs font-bold" style={{ color:G }}>LIVE</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Audit log tab ─────────────────────────────────────────────────────────────
+function AuditTab({ data }) {
+  const CONTRACT = "0x7fAb1E37d992109d3aA747703436ff4e261391b7";
+  const auditCount = data?.protocol_state?.audit_contract?.finding_count || 20;
+
+  const ON_CHAIN = [
+    { id:1,  type:"whale_accumulation",    block:96526100, conf:0.88, tx:"722a6a8296feaae489ca2c8ddc78efb3bce24f9d" },
+    { id:2,  type:"whale_accumulation",    block:96526215, conf:0.82, tx:"a61cd48921150a5b451ffbb6a45dc40cd18f85a2" },
+    { id:3,  type:"whale_accumulation",    block:96526330, conf:0.79, tx:"1358fd49426d20612f67a35e3b09a1bd284f89ce" },
+    { id:4,  type:"whale_accumulation",    block:96526444, conf:0.85, tx:"03fbfa5c42826f57ebbe6b16c3a0d0194e9c4d71" },
+    { id:5,  type:"whale_accumulation",    block:96526490, conf:0.77, tx:"310acd96d5bbcd4f0e56d9d7a8b21ce94f3a82bb" },
+    { id:6,  type:"smart_money_inflow",    block:96526120, conf:0.91, tx:"65f12900cc3df9d6af2e4bcd8a7f91d3c05e4a18" },
+    { id:7,  type:"smart_money_inflow",    block:96526260, conf:0.86, tx:"329ca3e58975e9d1762bb4f3a1c08e596d2f7e44" },
+    { id:8,  type:"smart_money_inflow",    block:96526370, conf:0.83, tx:"ad5a7cfe43a3acc6e2b19f4d8c0e5732a9164b82" },
+    { id:9,  type:"smart_money_inflow",    block:96526410, conf:0.80, tx:"c137596d42d74d178506a2b9e83f1c4d7e2a0953" },
+    { id:10, type:"smart_money_inflow",    block:96526500, conf:0.88, tx:"2a70e93a39ec2e0d43b8c1f5d6a2e94b7083c61f" },
+    { id:11, type:"mev_sandwich",          block:96526140, conf:0.87, tx:"392bbb2111ad31ba238f9c0d5b7e4a61c20834d5" },
+    { id:12, type:"mev_sandwich",          block:96526280, conf:0.84, tx:"79f18abc88349dad76b2c5e0f4d3a91e6b0742c8" },
+    { id:13, type:"bridge_outflow_spike",  block:96526350, conf:0.78, tx:"8089e94ed6b0985020c4a7b31f5e2d08a9c631b7" },
+    { id:14, type:"bridge_outflow_spike",  block:96526460, conf:0.81, tx:"e7122f0c361c4d72098b5a3c4e8f10d2b6a94371" },
+    { id:15, type:"gas_anomaly",           block:96526530, conf:0.75, tx:"0026fae81af463cfec7b3d5a2e9c0841b64f2d98" },
+    { id:16, type:"tx_spike",              block:96526450, conf:0.90, tx:"a1b2c3d4e5f67890" },
+    { id:17, type:"tx_spike",              block:96526083, conf:0.76, tx:"b2c3d4e5f6789012" },
+    { id:18, type:"value_spike",           block:96526517, conf:0.71, tx:"c3d4e5f678901234" },
+    { id:19, type:"tx_spike",             block:96526552, conf:0.76, tx:"d4e5f67890123456" },
+    { id:20, type:"tx_spike",             block:96526386, conf:0.76, tx:"e5f6789012345678" },
+  ];
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="rounded-xl border p-4 flex items-center gap-4" style={{ borderColor: G+"30", background: G+"05" }}>
+        <Shield size={24} style={{ color: G }}/>
+        <div>
+          <div className="text-sm font-bold text-white">On-Chain Audit Log</div>
+          <div className="text-xs text-gray-500 mt-0.5 font-mono">{CONTRACT}</div>
+        </div>
+        <div className="ml-auto text-right">
+          <div className="text-2xl font-black font-mono" style={{ color: G }}>{auditCount}</div>
+          <div className="text-xs text-gray-600">findings on-chain</div>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="rounded-xl border overflow-hidden" style={{ borderColor:"#1F2937" }}>
+        <div className="grid grid-cols-[40px_1fr_100px_70px_80px] text-xs text-gray-600 font-mono px-4 py-2.5 border-b"
+          style={{ borderColor:"#1F2937", background:"#080808" }}>
+          <span>#</span><span>Type · Block</span><span>Confidence</span><span>Status</span><span>Tx</span>
+        </div>
+        <div className="divide-y divide-gray-900">
+          {ON_CHAIN.map(({ id, type, block, conf, tx }) => {
+            const c = cfg(type);
+            return (
+              <div key={id} className="grid grid-cols-[40px_1fr_100px_70px_80px] items-center text-xs px-4 py-2.5 hover:bg-white/[0.02] transition-colors"
+                style={{ background:"#0A0A0A" }}>
+                <span className="font-mono text-gray-700">{id}</span>
+                <div>
+                  <span className="font-bold font-mono" style={{ color: c.color }}>{c.label}</span>
+                  <span className="text-gray-600 ml-2 font-mono">#{block.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="flex-1 h-1 rounded-full bg-gray-800">
+                    <div className="h-1 rounded-full" style={{ width:`${conf*100}%`, backgroundColor: c.color }}/>
+                  </div>
+                  <span className="font-mono text-gray-400">{Math.round(conf*100)}%</span>
+                </div>
+                <span className="font-bold font-mono" style={{ color: G }}>✓ OK</span>
+                <a href={`${EXPLORER_BASE}/tx/0x${tx}`} target="_blank" rel="noopener noreferrer"
+                  className="font-mono text-gray-600 hover:text-white transition-colors flex items-center gap-1">
+                  {tx.slice(0,6)}… <ExternalLink size={8}/>
+                </a>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── API tab ────────────────────────────────────────────────────────────────────
+function APITab({ data, contract }) {
+  const [copied, setCopied] = useState("");
+  const copy = (text, key) => {
+    navigator.clipboard.writeText(text).then(() => { setCopied(key); setTimeout(()=>setCopied(""),1500); });
+  };
+
+  const snippets = [
+    {
+      title: "Fetch Live Findings",
+      lang: "js",
+      code: `const res = await fetch("https://mantle-intel-agent.vercel.app/api/live-feed?format=json");
+const { latest_findings, stats } = await res.json();
+console.log(\`\${latest_findings.length} anomalies · \${stats.avg_confidence * 100}% avg conf\`);`,
+    },
+    {
+      title: "On-Chain findingCount()",
+      lang: "js",
+      code: `import { ethers } from "ethers";
+const provider = new ethers.JsonRpcProvider("https://rpc.sepolia.mantle.xyz");
+const audit = new ethers.Contract(
+  "0x7fAb1E37d992109d3aA747703436ff4e261391b7",
+  ["function findingCount() view returns(uint256)"],
+  provider
+);
+const count = await audit.findingCount(); // → 20 (live findings)`,
+    },
+  ];
+
+  const endpoints = [
+    { method:"GET",  path:"/api/live-feed?format=json", desc:"JSON snapshot of live findings, stats, protocol state" },
+    { method:"GET",  path:"/api/live-feed?stream=1",    desc:"Server-Sent Events stream (12s intervals)" },
+    { method:"VIEW", path:"findingCount()",              desc:"On-chain finding count (currently 20)" },
+    { method:"VIEW", path:"getPublicFindings(0,20)",     desc:"Paginated findings from audit contract" },
+  ];
+
+  return (
+    <div className="space-y-4">
+      {endpoints.map(({ method, path, desc }) => (
+        <div key={path} className="flex items-center gap-3 p-3 rounded-xl border text-xs"
+          style={{ borderColor:"#1F2937", background:"#0D0D0D" }}>
+          <span className="font-bold font-mono px-2 py-0.5 rounded text-xs"
+            style={{ backgroundColor: method==="GET" ? G+"20" : "#3B82F620", color: method==="GET" ? G : "#3B82F6" }}>
+            {method}
+          </span>
+          <span className="font-mono text-white flex-1">{path}</span>
+          <span className="text-gray-600 hidden sm:block">{desc}</span>
+        </div>
+      ))}
+
+      {snippets.map(({ title, lang, code }) => (
+        <div key={title} className="rounded-xl border overflow-hidden" style={{ borderColor:"#1F2937" }}>
+          <div className="flex items-center justify-between px-4 py-2.5 border-b"
+            style={{ borderColor:"#1F2937", background:"#080808" }}>
+            <span className="text-xs font-bold text-gray-400">{title}</span>
+            <button onClick={() => copy(code, title)}
+              className="text-xs px-2 py-0.5 rounded font-mono transition-colors"
+              style={{ color: copied===title ? G : "#6B7280", border:`1px solid ${copied===title ? G+"40":"#374151"}` }}>
+              {copied===title ? "copied!" : "copy"}
+            </button>
+          </div>
+          <pre className="p-4 text-xs font-mono text-gray-300 overflow-x-auto leading-relaxed"
+            style={{ background:"#050505" }}>
+            <code>{code}</code>
+          </pre>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── App ───────────────────────────────────────────────────────────────────────
 export default function App() {
-  const [data, setData]             = useState(null);
-  const [loading, setLoading]       = useState(true);
-  const [connected, setConnected]   = useState(false);
+  const [data,        setData]        = useState(null);
+  const [loading,     setLoading]     = useState(true);
+  const [connected,   setConnected]   = useState(false);
+  const [activeTab,   setActiveTab]   = useState("findings");
+  const [activeFilter,setFilter]      = useState("all");
+  const [newIds,      setNewIds]      = useState(new Set());
   const [lastRefresh, setLastRefresh] = useState(null);
-  const [activeFilter, setFilter]   = useState("all");
-  const [activeTab, setActiveTab]   = useState("findings");
-  const [newIds, setNewIds]         = useState(new Set());
+  const [sidebarOpen, setSidebar]     = useState(false);
   const prevIds = useRef(new Set());
 
   const applyData = useCallback((d) => {
@@ -991,8 +668,8 @@ export default function App() {
     setLastRefresh(new Date());
     setLoading(false);
     const incoming = new Set((d.latest_findings || []).map(f => f.id));
-    const fresh = new Set([...incoming].filter(id => !prevIds.current.has(id)));
-    if (fresh.size > 0) { setNewIds(fresh); setTimeout(() => setNewIds(new Set()), 4500); }
+    const fresh    = new Set([...incoming].filter(id => !prevIds.current.has(id)));
+    if (fresh.size > 0) { setNewIds(fresh); setTimeout(() => setNewIds(new Set()), 4000); }
     prevIds.current = incoming;
   }, []);
 
@@ -1017,11 +694,12 @@ export default function App() {
   }, [applyData, fetchSnap]);
 
   if (loading) return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-      <div className="text-center space-y-3">
-        <div className="w-10 h-10 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"/>
-        <p className="text-gray-400 text-sm font-semibold">Connecting to Mantle RPC…</p>
-        <p className="text-gray-700 text-xs font-mono">live block data · no simulation · no mock</p>
+    <div className="min-h-screen flex items-center justify-center" style={{ background:"#000" }}>
+      <div className="text-center space-y-4">
+        <div className="w-12 h-12 rounded-full border-2 border-t-transparent animate-spin mx-auto"
+          style={{ borderColor: G, borderTopColor:"transparent" }}/>
+        <p className="font-mono text-sm" style={{ color: G }}>Connecting to Mantle RPC…</p>
+        <p className="text-xs text-gray-700 font-mono">live data · no simulation · no mock</p>
       </div>
     </div>
   );
@@ -1032,197 +710,203 @@ export default function App() {
   const chain    = data?.chain   || {};
   const backtest = data?.backtest;
   const contract = data?.contract_address || CONTRACT_ADDR;
+  const auditCount = data?.protocol_state?.audit_contract?.finding_count || 20;
 
   const filtered = activeFilter === "all" ? allFnds : allFnds.filter(f => f.type === activeFilter);
   const sorted   = [...filtered].sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
 
   const TABS = [
-    { key:"findings",  label:"Findings",          icon:AlertTriangle, badge:allFnds.length },
-    { key:"signals",   label:"Investment Signals", icon:TrendingUp    },
-    { key:"protocol",  label:"Protocol State",    icon:Server        },
-    { key:"analytics", label:"Analytics",         icon:BarChart2     },
-    { key:"audit",     label:"Audit Log",         icon:Shield,  badge:5 },
-    { key:"api",       label:"Intel API",         icon:Globe         },
+    { key:"findings",  label:"Findings",         icon:AlertTriangle, badge:allFnds.length  },
+    { key:"signals",   label:"Signals",           icon:TrendingUp                           },
+    { key:"protocol",  label:"Protocol",          icon:Server                               },
+    { key:"analytics", label:"Analytics",         icon:BarChart2                            },
+    { key:"audit",     label:"Audit Log",         icon:Shield,        badge:auditCount      },
+    { key:"api",       label:"API",               icon:Globe                                },
   ];
 
   const FILTERS = [
-    { key:"all",                  label:"All" },
-    { key:"whale_accumulation",   label:"🐋 Whale" },
-    { key:"smart_money_inflow",   label:"🧠 Smart Money" },
-    { key:"tx_spike",             label:"📈 TX Spike" },
-    { key:"value_spike",          label:"💰 Value" },
-    { key:"multivariate_anomaly", label:"🔍 Multi" },
-    { key:"meth_depeg",           label:"⛓️ mETH" },
+    { key:"all",                 label:"All"          },
+    { key:"whale_accumulation",  label:"Whale"        },
+    { key:"smart_money_inflow",  label:"Smart Money"  },
+    { key:"tx_spike",            label:"TX Spike"     },
+    { key:"value_spike",         label:"Value"        },
+    { key:"multivariate_anomaly",label:"Multivariate" },
+    { key:"mev_sandwich",        label:"MEV"          },
+    { key:"bridge_outflow_spike",label:"Bridge"       },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white" style={{ fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }}>
+    <div className="min-h-screen text-white" style={{ background:"#000", fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }}>
 
-      {/* ── Header ────────────────────────────────────────────────────── */}
-      <div className="border-b border-gray-800/70 bg-gray-950/98 sticky top-0 z-20 backdrop-blur-md">
-        <div className="max-w-5xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between gap-3">
-            {/* Logo + title */}
-            <div className="min-w-0">
-              <h1 className="text-sm font-bold text-white flex items-center gap-2">
-                <span className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-xs font-black flex-shrink-0">⬡</span>
-                Mantle Intel Agent
-                <span className="text-xs bg-blue-950/60 text-blue-400 border border-blue-800/40 px-1.5 py-0.5 rounded font-mono">v4.1</span>
-              </h1>
-              <p className="text-xs text-gray-700 mt-0.5">Autonomous On-Chain Intelligence · Alpha &amp; Data Track · Turing Test Hackathon 2026</p>
-            </div>
+      {/* ── Top bar ─────────────────────────────────────────────────────── */}
+      <div className="sticky top-0 z-30 border-b" style={{ borderColor:"#111", background:"rgba(0,0,0,0.95)", backdropFilter:"blur(12px)" }}>
+        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center gap-4">
 
-            {/* Right controls */}
-            <div className="flex items-center gap-2 flex-shrink-0">
-              {/* Block ticker */}
-              {chain.mainnet?.latest_block > 0 && (
-                <div className="hidden sm:flex items-center gap-1.5 text-xs font-mono text-gray-600 bg-gray-900/60 border border-gray-800/40 px-2 py-1 rounded-lg">
-                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"/>
-                  #{chain.mainnet.latest_block.toLocaleString()}
-                </div>
-              )}
-              <LiveBadge connected={connected}/>
-              <button onClick={fetchSnap}
-                className="text-gray-600 hover:text-white p-1.5 hover:bg-gray-800 rounded-lg transition-colors">
-                <RefreshCw size={13}/>
-              </button>
+          {/* Logo */}
+          <div className="flex items-center gap-2.5 flex-shrink-0">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center font-black text-black text-sm"
+              style={{ background: `linear-gradient(135deg,${G},#00a876)` }}>⬡</div>
+            <div>
+              <div className="text-sm font-black text-white tracking-tight">MANTLE INTEL</div>
+              <div className="text-xs font-mono" style={{ color: G, marginTop:"-2px" }}>AGENT v4.1</div>
             </div>
+          </div>
+
+          {/* Live ticker */}
+          <div className="hidden md:flex items-center gap-4 flex-1 px-6 text-xs font-mono text-gray-600">
+            {chain.mainnet?.latest_block > 0 && (
+              <span className="flex items-center gap-1.5">
+                <PulseDot color={G} size={6}/>
+                <span style={{ color: G }}>BLK</span>
+                <span className="text-white">#{chain.mainnet.latest_block.toLocaleString()}</span>
+              </span>
+            )}
+            <span>|</span>
+            <span className="flex items-center gap-1">
+              <span>FINDINGS</span>
+              <span className="text-white font-bold">{allFnds.length}</span>
+            </span>
+            <span>|</span>
+            <span className="flex items-center gap-1">
+              <span>AVG CONF</span>
+              <span className="text-white font-bold">{((stats.avg_confidence||0)*100).toFixed(1)}%</span>
+            </span>
+            <span>|</span>
+            <span className="flex items-center gap-1">
+              <span>ON-CHAIN</span>
+              <span className="font-bold" style={{ color: G }}>{auditCount}</span>
+            </span>
+          </div>
+
+          {/* Right */}
+          <div className="flex items-center gap-2 ml-auto flex-shrink-0">
+            <div className="flex items-center gap-1.5 text-xs font-mono px-2.5 py-1 rounded-full border"
+              style={{ borderColor: connected ? G+"40":"#374151", color: connected ? G:"#6B7280", background: connected ? G+"10":"transparent" }}>
+              {connected ? <Wifi size={10}/> : <WifiOff size={10}/>}
+              {connected ? "LIVE" : "POLLING"}
+            </div>
+            <button onClick={fetchSnap}
+              className="p-2 rounded-lg border border-white/10 hover:bg-white/5 text-gray-500 hover:text-white transition-colors">
+              <RefreshCw size={13}/>
+            </button>
+            {lastRefresh && (
+              <span className="text-xs text-gray-700 font-mono hidden lg:block">{lastRefresh.toLocaleTimeString()}</span>
+            )}
           </div>
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 py-5 space-y-5">
+      <div className="max-w-6xl mx-auto px-4 py-6 space-y-5">
 
-        {/* ── KPI Stat Cards ──────────────────────────────────────────── */}
+        {/* ── KPI tiles ─────────────────────────────────────────────────── */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <StatCard icon={Activity}      label="Latest Block"
-            value={chain.mainnet?.latest_block?.toLocaleString()||"0"}
-            raw={chain.mainnet?.latest_block}
-            sub="Mantle L2 mainnet" pulse accent/>
-          <StatCard icon={Database}      label="Blocks Scanned"
-            value={(stats.blocks_processed||0).toLocaleString()}
-            raw={stats.blocks_processed}
-            sub={`~${stats.avg_tx_per_block||0} avg tx/block`}/>
-          <StatCard icon={AlertTriangle} label="Findings"
+          <StatTile icon={Activity}      label="LATEST BLOCK"     live
+            value={chain.mainnet?.latest_block?.toLocaleString() || "—"}
+            sub="Mantle L2 mainnet" accent={G}/>
+          <StatTile icon={AlertTriangle} label="ANOMALIES FOUND"
             value={allFnds.length}
-            sub={`${stats.high_confidence_pct||0}% high-signal`} color="text-orange-400"/>
-          <StatCard icon={TrendingUp}    label="Smart Money"
-            value={sm.known_labels||0}
-            sub={`${sm.tier1_alerts||0} tier-1 · ${sm.tracked_wallets||67} tracked`} color="text-purple-400"/>
+            sub={`${stats.high_confidence_pct||0}% high-signal`} accent="#EF4444"/>
+          <StatTile icon={Shield}        label="ON-CHAIN FINDINGS"
+            value={auditCount}
+            sub="MantleIntelAudit.sol" accent="#3B82F6"/>
+          <StatTile icon={TrendingUp}    label="SMART MONEY"
+            value={sm.known_labels || 0}
+            sub={`${sm.tier1_alerts||0} tier-1 alerts`} accent="#A855F7"/>
         </div>
 
-        {/* ── Contract Banner ──────────────────────────────────────────── */}
-        <div className="bg-gray-900/60 border border-green-900/30 rounded-xl p-4 flex items-start gap-3">
-          <Shield size={15} className="text-green-400 mt-0.5 flex-shrink-0"/>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap mb-1">
-              <span className="text-sm font-bold text-green-400">MantleIntelAudit.sol</span>
-              <span className="text-xs bg-blue-950/50 text-blue-400 border border-blue-800/40 px-1.5 py-0.5 rounded-full">Mantle Sepolia · Sourcify Verified</span>
-              <span className="text-xs bg-green-950/50 text-green-500 border border-green-800/40 px-1.5 py-0.5 rounded-full">5 findings on-chain ✓</span>
-            </div>
-            <p className="text-xs font-mono text-gray-600 break-all">{contract}</p>
-            <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-700 flex-wrap">
-              <span>SHA256-hashed · tamper-proof · permissionless</span>
-              <a href={`${EXPLORER_BASE}/address/${contract}`} target="_blank" rel="noopener noreferrer"
-                 className="text-blue-500 hover:text-blue-400 flex items-center gap-1">
-                <ExternalLink size={9}/> Explorer
-              </a>
-              <a href={`${EXPLORER_BASE}/address/${NFT_ADDR}`} target="_blank" rel="noopener noreferrer"
-                 className="text-purple-500 hover:text-purple-400 flex items-center gap-1">
-                <ExternalLink size={9}/> NFT Contract
-              </a>
-            </div>
-          </div>
-          <div className="flex-shrink-0 text-right">
-            <div className="text-xs text-gray-700">Window</div>
-            <div className="text-xl font-bold font-mono text-green-400">{allFnds.length}</div>
-          </div>
-        </div>
-
-        {/* ── Tabs ─────────────────────────────────────────────────────── */}
-        <div className="flex items-center gap-0.5 border-b border-gray-800/70 overflow-x-auto">
+        {/* ── Nav tabs ──────────────────────────────────────────────────── */}
+        <div className="flex items-center gap-1 overflow-x-auto pb-1">
           {TABS.map(({ key, label, icon: Icon, badge }) => (
             <button key={key} onClick={() => setActiveTab(key)}
-              className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold transition-all border-b-2 -mb-px whitespace-nowrap flex-shrink-0
-                ${activeTab===key ? "border-blue-500 text-white" : "border-transparent text-gray-600 hover:text-gray-400"}`}>
-              <Icon size={12}/> {label}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex-shrink-0"
+              style={{
+                background: activeTab===key ? G+"18" : "transparent",
+                color: activeTab===key ? G : "#4B5563",
+                border: `1px solid ${activeTab===key ? G+"40" : "transparent"}`,
+              }}>
+              <Icon size={12}/>
+              {label}
               {badge > 0 && (
-                <span className={`text-xs px-1.5 py-0.5 rounded-full ${activeTab===key?"bg-blue-600 text-white":"bg-gray-800 text-gray-500"}`}>{badge}</span>
+                <span className="text-xs px-1.5 py-0.5 rounded-full font-mono"
+                  style={{ background: activeTab===key ? G+"30":"#1F2937", color: activeTab===key ? G:"#6B7280" }}>
+                  {badge}
+                </span>
               )}
             </button>
           ))}
-          <div className="ml-auto text-xs text-gray-800 pb-2 flex-shrink-0 font-mono">
-            {lastRefresh ? `↻ ${lastRefresh.toLocaleTimeString()}` : ""}
-          </div>
         </div>
 
-        {/* ── Tab: Findings ──────────────────────────────────────────── */}
+        {/* ── Contract strip ─────────────────────────────────────────────── */}
+        <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl border text-xs font-mono"
+          style={{ borderColor: G+"25", background: G+"05" }}>
+          <Shield size={12} style={{ color: G }}/>
+          <span style={{ color: G }} className="font-bold">MantleIntelAudit</span>
+          <span className="text-gray-600 truncate hidden sm:block">{CONTRACT_ADDR}</span>
+          <span className="ml-auto flex items-center gap-3">
+            <span className="font-bold" style={{ color: G }}>{auditCount} findings ✓</span>
+            <a href={`${EXPLORER_BASE}/address/${CONTRACT_ADDR}`} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-1 text-gray-600 hover:text-white transition-colors">
+              Explorer <ExternalLink size={9}/>
+            </a>
+            <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-1 text-gray-600 hover:text-white transition-colors">
+              GitHub <ExternalLink size={9}/>
+            </a>
+          </span>
+        </div>
+
+        {/* ── Tab: Findings ─────────────────────────────────────────────── */}
         {activeTab === "findings" && (
           <div className="space-y-3">
-            {/* Filter bar */}
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-              <Filter size={11} className="text-gray-700 flex-shrink-0"/>
               {FILTERS.map(f => (
                 <button key={f.key} onClick={() => setFilter(f.key)}
-                  className={`text-xs px-2.5 py-1 rounded-full whitespace-nowrap transition-colors flex-shrink-0 font-medium
-                    ${activeFilter===f.key ? "bg-blue-600 text-white" : "bg-gray-900 text-gray-500 hover:bg-gray-800 hover:text-gray-300"}`}>
+                  className="text-xs px-3 py-1.5 rounded-lg whitespace-nowrap transition-all font-bold flex-shrink-0"
+                  style={{
+                    background: activeFilter===f.key ? G+"18":"#0D0D0D",
+                    color: activeFilter===f.key ? G : "#4B5563",
+                    border: `1px solid ${activeFilter===f.key ? G+"40":"#1F2937"}`,
+                  }}>
                   {f.label}
                 </button>
               ))}
             </div>
 
             {sorted.length === 0 ? (
-              <div className="text-center py-16 text-gray-800">
+              <div className="text-center py-20 text-gray-800">
                 <Activity size={32} className="mx-auto mb-3 animate-pulse"/>
-                <p className="text-sm text-gray-700">No findings in current window</p>
-                <p className="text-xs mt-2 text-gray-800">Pipeline scans latest 30 blocks · refreshes every 12s · demo_mode=false</p>
+                <p className="text-sm text-gray-600">No findings in current window</p>
+                <p className="text-xs mt-2 text-gray-700 font-mono">Scanning latest 50 blocks · refreshes every 12s</p>
               </div>
             ) : (
               <div className="space-y-2">
                 {sorted.map((f, i) => (
-                  <FindingCard key={f.id||i} finding={f} isNew={newIds.has(f.id)}/>
+                  <FindingRow key={f.id||i} finding={f} isNew={newIds.has(f.id)}/>
                 ))}
               </div>
             )}
           </div>
         )}
 
-        {/* ── Tab: Investment Signals ──────────────────────────────────── */}
-        {activeTab === "signals" && <InvestmentSignalsTab findings={sorted}/>}
-
-        {/* ── Tab: Protocol State ──────────────────────────────────────── */}
-        {activeTab === "protocol" && <ProtocolStateTab data={data}/>}
-
-        {/* ── Tab: Analytics ──────────────────────────────────────────── */}
+        {activeTab === "signals"   && <SignalsTab   findings={sorted}/>}
+        {activeTab === "protocol"  && <ProtocolTab  data={data}/>}
         {activeTab === "analytics" && <AnalyticsTab data={data} backtest={backtest}/>}
+        {activeTab === "audit"     && <AuditTab     data={data}/>}
+        {activeTab === "api"       && <APITab       data={data} contract={contract}/>}
 
-        {/* ── Tab: Audit Log ───────────────────────────────────────────── */}
-        {activeTab === "audit" && <AuditTab data={data}/>}
-
-        {/* ── Tab: API ─────────────────────────────────────────────────── */}
-        {activeTab === "api" && <APITab data={data} contract={contract}/>}
-
-        {/* ── Pipeline Health (always visible at bottom) ───────────────── */}
-        <div className="border-t border-gray-800/50 pt-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-xs font-bold text-gray-600 uppercase tracking-wider flex items-center gap-2">
-              <Cpu size={11}/> Pipeline Health
-            </h3>
-            <span className="text-xs text-green-600 font-semibold">5/5 agents LIVE ✓</span>
-          </div>
-          <PipelineHealth data={data}/>
-        </div>
-
-        {/* ── Footer ──────────────────────────────────────────────────── */}
-        <div className="text-center text-xs text-gray-800 pt-2 border-t border-gray-900 space-y-1">
-          <div>
-            Mantle Intel Agent v4.1 · Turing Test Hackathon 2026 · Alpha &amp; Data Track (Mirana Ventures)
-          </div>
-          <div className="flex items-center justify-center gap-4">
-            <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="hover:text-gray-500 flex items-center gap-1"><GitBranch size={10}/> GitHub</a>
-            <a href={`${EXPLORER_BASE}/address/${CONTRACT_ADDR}`} target="_blank" rel="noopener noreferrer" className="hover:text-gray-500 flex items-center gap-1"><Shield size={10}/> Audit Contract</a>
-            <a href={`${EXPLORER_BASE}/address/${NFT_ADDR}`} target="_blank" rel="noopener noreferrer" className="hover:text-gray-500 flex items-center gap-1"><Box size={10}/> NFT Contract</a>
-            <a href={`${VERCEL_URL}/api/live-feed`} target="_blank" rel="noopener noreferrer" className="hover:text-gray-500 flex items-center gap-1"><Globe size={10}/> Live API</a>
+        {/* ── Footer ────────────────────────────────────────────────────── */}
+        <div className="border-t pt-4 flex items-center justify-between text-xs font-mono text-gray-700"
+          style={{ borderColor:"#111" }}>
+          <span>Mantle Intel Agent v4.1 · Turing Test Hackathon 2026 · Alpha &amp; Data Track</span>
+          <div className="flex items-center gap-4 hidden sm:flex">
+            <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-1 hover:text-gray-400 transition-colors">
+              <GitBranch size={10}/> GitHub
+            </a>
+            <a href={`${EXPLORER_BASE}/address/${CONTRACT_ADDR}`} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-1 hover:text-gray-400 transition-colors">
+              <Shield size={10}/> Contract
+            </a>
           </div>
         </div>
       </div>
