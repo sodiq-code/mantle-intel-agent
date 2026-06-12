@@ -54,6 +54,11 @@
 
 ## Phase 2 — Multi-Protocol Intelligence (Q4 2026)
 
+### AI & Signal Upgrades
+- [ ] **Allora Network integration** — Decentralized ML inference for on-chain price prediction signals (same provider as Turing Arena, ecosystem-aligned)
+- [ ] **AltLLM agent reasoning** — LLM-powered rationale generation for each finding, sealed pre-publication
+- [ ] **Limitless prediction market signals** — Crowd-implied odds as confirming signal for whale accumulation alerts
+
 **Target: Broadest Mantle ecosystem coverage**
 
 ### Protocol Coverage Expansion

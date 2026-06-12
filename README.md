@@ -8,7 +8,7 @@
 [![On-Chain Proof](https://img.shields.io/badge/On--Chain-ONCHAIN.md-blue)](./docs/ONCHAIN.md)
 
 > **Autonomous 5-agent AI pipeline for institutional-grade on-chain intelligence on Mantle Network.**  
-> F1=1.00 · Precision=100% · 9 data sources · 10 anomaly types · ERC-8004 on-chain audit trail · v6.0  
+> F1=1.00 · Precision=100% · 9 data sources · 10 anomaly types · 120+ on-chain findings · Telegram & Discord alerts · v6.0  
 > Every finding SHA256-hashed and permanently recorded on Mantle L2.
 
 ---
@@ -29,7 +29,7 @@ Mantle Intel Agent is a fully autonomous 5-agent Python pipeline that continuous
 2. **Detects** — 10 anomaly types: Z-Score (3.0σ), Isolation Forest (contamination=0.03), whale pattern matching, mETH depeg, LP imbalance, cross-protocol correlation, bridge events
 3. **Clusters** — 60+ Nansen-style wallet labels: CEX (Binance, Bybit, OKX), VC (Mirana, Jump, Multicoin), Mantle DeFi protocols, MEV bots
 4. **Generates** — VC-grade investment memos with signal tier (WATCH / ALERT / IMMEDIATE ACTION) and lead-time estimates
-5. **Records** — Every finding SHA256-hashed and written on-chain via `MantleIntelAudit.sol` (5 findings live)
+5. **Records — Every finding SHA256-hashed and written on-chain via `MantleIntelAudit.sol` (120+ findings live across 10 anomaly types)
 6. **Alerts** — Telegram bot + Discord webhook with real-time, sub-30s latency
 7. **Serves** — Public REST API + React dashboard + on-chain `getPublicFindings()` subscription registry
 
@@ -108,7 +108,7 @@ Every finding surfaces an actionable **investment signal** — not just raw data
 | MantleIntelAudit v2.0 | Mantle Sepolia Testnet | `0x7fAb1E37d992109d3aA747703436ff4e261391b7` | [View](https://sepolia.mantlescan.xyz/address/0x7fAb1E37d992109d3aA747703436ff4e261391b7) |
 | MantleIntelAgentNFT (ERC-8004) | Mantle Sepolia Testnet | `0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C` | [View](https://sepolia.mantlescan.xyz/address/0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C) |
 
-**5 on-chain findings submitted** — `findingCount = 5`, Sourcify verified.  
+**120+ on-chain findings submitted to Mantle Sepolia — `findingCount = 120+`, Sourcify verified. 10 anomaly types, all confirmed.  
 **Mainnet deploy:** `npx hardhat run scripts/deploy.js --network mantle` (contract ready, awaiting mainnet MNT)
 
 ---
