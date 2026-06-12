@@ -119,24 +119,43 @@ Every finding surfaces an actionable **investment signal** — not just raw data
 
 ### Live Feed — Real-time anomaly findings
 ![Live Feed](./docs/screenshots/dashboard.png)
+*Live Feed tab — autonomous pipeline detecting anomalies in real Mantle mainnet blocks. Confidence bars, signal tier badges (IMMEDIATE / HIGH / MEDIUM), and lead-time estimates per finding. ON-CHAIN counter shows 120 findings logged to Mantle Sepolia.*
+
+---
 
 ### Analytics — Precision 100% · F1 0.963 · 120 On-Chain Findings
 ![Analytics](./docs/screenshots/analytics.png)
+*Analytics tab — backtest results on 395 real mainnet blocks (no simulation, no seed). TP=13, FP=0, FN=1. Precision 100% means every signal fired was a true anomaly. F1=0.9630. Multi-confirm gate (≥2/3 sub-signals) is why false positives are zero.*
 
-### Audit Log — 120 findings on-chain (Mantle Sepolia)
+---
+
+### Audit Log — 120 findings logged on-chain (Mantle Sepolia)
 ![Audit Log](./docs/screenshots/audit_log.png)
+*Audit Log tab — all 120 on-chain findings submitted to `MantleIntelAudit` contract (`0x7fAb...1b7`) on Mantle Sepolia. Each entry includes anomaly type, block number, confidence score, SHA-256 tamper-evident hash, and Mantlescan tx link.*
 
-### Protocol State — mETH, Merchant Moe, Lendle live
+---
+
+### Protocol State — mETH ratio, Merchant Moe, Lendle TVL live
 ![Protocol State](./docs/screenshots/protocol_state.png)
+*Protocol State tab — live on-chain reads: mETH/ETH ratio (depeg monitor), Merchant Moe router MNT reserves, Lendle pool balance. All sourced directly via RPC — no third-party API keys required.*
 
-### Investment Signals
+---
+
+### Investment Signals — Sorted by urgency, with $ at stake
 ![Signals](./docs/screenshots/signals.png)
+*Investment Signals tab — findings ranked by signal tier (IMMEDIATE ACTION → HIGH → MEDIUM). Each signal shows affected protocol, estimated $ at risk, recommended action (ACCUMULATE / HEDGE / MONITOR), and confidence score.*
 
-### Intel API — Live JSON feed
+---
+
+### Intel API — Live JSON feed + on-chain subscription
 ![API](./docs/screenshots/api_feed.png)
+*Intel API tab — REST endpoint (`/api/live-feed?format=json`) returning live findings, backtest stats, and protocol state. SSE stream available. On-chain subscription via `SignalRegistry` contract. Copy-paste ethers.js code snippet shown for integration.*
 
-### MantleIntelAudit Contract (Mantle Sepolia)
+---
+
+### MantleIntelAudit Contract — Mantle Sepolia Explorer
 ![Contract](./docs/screenshots/contract.png)
+*MantleIntelAudit contract on Mantlescan (`0x7fAb1E37d992109d3aA747703436ff4e261391b7`). findingCount=120 confirmed. Deployed block 39,851,391. Sourcify-verified. Functions: `submitFinding()`, `getPublicFindings(offset,limit)`, `subscribe()`, `unsubscribe()`.*
 
 **Tabs:**
 - **Live Feed** — Real-time findings with confidence bars, signal tier badges, lead-time estimates
