@@ -9,6 +9,14 @@
 
 ---
 
+## Demo Video
+
+[![Mantle Intel Agent — Demo Video](https://img.youtube.com/vi/yPErNZW2hR0/maxresdefault.jpg)](https://youtu.be/yPErNZW2hR0)
+
+> **[▶ Watch on YouTube](https://youtu.be/yPErNZW2hR0)** — Full walkthrough: live anomaly detection, on-chain findings, backtest, dashboard, ERC-8004 NFT identity, and Telegram alerts.
+
+---
+
 ## What It Does
 
 Mantle Intel Agent is a fully autonomous 5-agent Python pipeline that:
@@ -281,6 +289,44 @@ mantle-intel-agent/
 ├── data/dashboard.json    # Live findings (20+ entries)
 └── DORAHACKS_PITCH.md
 ```
+
+---
+
+## Screenshots
+
+### Live Dashboard — Real-time Anomaly Findings Feed
+![Live Dashboard](docs/screenshots/dashboard.png)
+> Autonomous agent streaming live Mantle L2 findings — block 96,566,055, 100% high-signal, 21 smart money alerts. SHA-256 hashed and recorded on-chain via `MantleIntelAudit.sol`.
+
+---
+
+### MantleIntelAudit Contract — 10 On-Chain `recordFinding` Transactions
+![Audit Contract on Mantlescan](docs/screenshots/contract.png)
+> `0x7fAb1E37d992109d3aA747703436ff4e261391b7` on Mantle Sepolia Testnet. Every AI finding is permanently written on-chain — verifiable by anyone on the Mantle Explorer.
+
+---
+
+### ERC-8004 NFT Contract — On-Chain Agent Identity
+![ERC-8004 NFT Contract](docs/screenshots/nft_contract.png)
+> `0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C` — Agent identity NFT deployed on Mantle Sepolia. Machine-verifiable. Immutable. Tied to the audit contract.
+
+---
+
+### NFT Mint Transaction — Status: Success
+![NFT Mint TX](docs/screenshots/nft_mint_tx.png)
+> Mint TX `0x3b5ffc...` — Block 39,815,592, Jun 11 2026. `Mint 1 of Mantle Intel Agent Identity` confirmed on Mantle Sepolia. Real on-chain proof of agent deployment.
+
+---
+
+### Sourcify Verification — Full Source Match
+![Sourcify Verified](docs/screenshots/sourcify.png)
+> `MantleIntelAudit.sol` fully verified on [Sourcify](https://sourcify.dev). Open, trustless, and permissionlessly auditable by any protocol or developer.
+
+---
+
+### Live Public API Feed — Real Mantle Blocks, Demo Mode Off
+![Live API Feed](docs/screenshots/api_feed.png)
+> `GET /api/live-feed?format=json` — `demo_mode: false`, real Mantle RPC blocks. Any developer or agent can query this public endpoint with zero setup.
 
 ---
 
