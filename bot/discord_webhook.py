@@ -1,0 +1,136 @@
+"""
+Mantle Intel Agent — Discord Webhook Notifier
+Sends finding alerts to a Discord channel via webhook URL.
+No bot token required — just set DISCORD_WEBHOOK_URL in .env
+
+Usage:
+  export DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
+  The pipeline calls DiscordWebhook.push(finding, insight_text) automatically.
+"""
+import os
+import json
+import urllib.request
+import urllib.error
+from datetime import datetime, timezone
+import structlog
+
+logger = structlog.get_logger(__name__)
+
+ANOMALY_COLORS = {
+    "whale_accumulation":   0x22C55E,   # green
+    "whale_distribution":   0xEF4444,   # red
+    "smart_money_inflow":   0x3B82F6,   # blue
+    "tx_spike":             0xF59E0B,   # amber
+    "value_spike":          0xA855F7,   # purple
+    "multivariate_anomaly": 0x06B6D4,   # cyan
+}
+
+ANOMALY_LABELS = {
+    "whale_accumulation":   "🐋 Whale Accumulation",
+    "whale_distribution":   "⚠️ Whale Distribution",
+    "smart_money_inflow":   "🧠 Smart Money Inflow",
+    "tx_spike":             "📈 TX Volume Spike",
+    "value_spike":          "💰 Value Spike",
+    "multivariate_anomaly": "🔍 Multivariate Anomaly",
+}
+
+EXPLORER = "https://sepolia.mantlescan.xyz"
+CONTRACT = os.getenv("AUDIT_CONTRACT_ADDRESS", "0x7fAb1E37d992109d3aA747703436ff4e261391b7")
+
+
+class DiscordWebhook:
+    """Sends finding alerts to Discord via webhook URL."""
+
+    def __init__(self, webhook_url: str = ""):
+        self.webhook_url = webhook_url or os.getenv("DISCORD_WEBHOOK_URL", "")
+        self.log = logger.bind(component="discord_webhook")
+
+    @property
+    def is_configured(self) -> bool:
+        return bool(self.webhook_url and self.webhook_url.startswith("https://discord.com/api/webhooks/"))
+
+    def push(self, finding: dict, insight_text: str = "") -> bool:
+        """Send a finding alert to Discord. Returns True on success."""
+        if not self.is_configured:
+            self.log.debug("webhook_not_configured", msg="Set DISCORD_WEBHOOK_URL to enable Discord alerts")
+            return False
+
+        try:
+            payload = self._build_payload(finding, insight_text)
+            data = json.dumps(payload).encode("utf-8")
+            req = urllib.request.Request(
+                self.webhook_url,
+                data=data,
+                headers={"Content-Type": "application/json"},
+                method="POST"
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                success = resp.status in (200, 204)
+                if success:
+                    self.log.info("discord_alert_sent",
+                                  finding_id=finding.get("id"),
+                                  block=finding.get("block"))
+                return success
+        except urllib.error.HTTPError as e:
+            self.log.error("discord_webhook_http_error", status=e.code, reason=e.reason)
+        except Exception as e:
+            self.log.error("discord_webhook_failed", error=str(e))
+        return False
+
+    def _build_payload(self, finding: dict, insight_text: str) -> dict:
+        atype   = finding.get("type", "anomaly")
+        block   = finding.get("block", 0)
+        conf    = finding.get("confidence_pct", finding.get("confidence", 0))
+        fhash   = finding.get("hash", "")
+        audit   = finding.get("audit", {})
+        tx      = audit.get("tx_hash", "")
+        label   = ANOMALY_LABELS.get(atype, f"⚡ {atype.replace('_', ' ').title()}")
+        color   = ANOMALY_COLORS.get(atype, 0x6366F1)
+
+        insight = insight_text or finding.get("insight", finding.get("summary", ""))
+        if len(insight) > 900:
+            insight = insight[:900] + "..."
+
+        fields = [
+            {"name": "Block", "value": f"`{block:,}`", "inline": True},
+            {"name": "Confidence", "value": f"**{conf}%**", "inline": True},
+            {"name": "Contract", "value": f"[{CONTRACT[:10]}...]({EXPLORER}/address/{CONTRACT})", "inline": True},
+        ]
+
+        if fhash:
+            fields.append({
+                "name": "SHA-256 Hash",
+                "value": f"`{fhash[:32]}...`",
+                "inline": False
+            })
+
+        if tx and audit.get("status") == "recorded":
+            fields.append({
+                "name": "On-Chain Proof",
+                "value": f"[View TX on Mantle Explorer]({EXPLORER}/tx/{tx})",
+                "inline": False
+            })
+
+        return {
+            "username": "Mantle Intel Agent",
+            "avatar_url": "https://raw.githubusercontent.com/sodiq-code/mantle-intel-agent/main/docs/logo_480.png",
+            "embeds": [{
+                "title": label,
+                "description": insight,
+                "color": color,
+                "fields": fields,
+                "footer": {
+                    "text": f"Mantle Intel Agent · {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}"
+                },
+                "url": f"{EXPLORER}/address/{CONTRACT}"
+            }]
+        }
+
+
+# ── Singleton ────────────────────────────────────────────────────────────────
+_webhook = DiscordWebhook()
+
+
+def push_finding(finding: dict, insight_text: str = "") -> bool:
+    """Module-level helper. Call from pipeline."""
+    return _webhook.push(finding, insight_text)

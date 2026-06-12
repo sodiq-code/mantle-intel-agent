@@ -27,7 +27,7 @@ Mantle Intel Agent is a fully autonomous 5-agent Python pipeline that:
 3. **Clusters** wallets using 60+ Nansen-style labels (CEX, VC, DeFi protocols, MEV bots)
 4. **Generates** actionable natural language insights per finding
 5. **Records** every finding on-chain via `MantleIntelAudit.sol` (SHA256 hash)
-6. **Alerts** via Telegram bot + Discord bot with `/compare` signal history
+6. **Alerts** via Telegram bot + Discord webhook (real-time, no bot token required) with `/compare` signal history
 7. **Serves** findings via public dashboard + REST API + on-chain `getPublicFindings()`
 
 ---
@@ -180,8 +180,18 @@ No API key required — all labels are hardcoded from public on-chain data.
 
 ---
 
-## Discord Bot Commands
+## Discord Webhook Alerts
 
+No bot token required. Set `DISCORD_WEBHOOK_URL` in `.env` and the pipeline pushes rich embed alerts automatically on every finding.
+
+```
+# Create webhook: Discord Server → Edit Channel → Integrations → Webhooks → New Webhook
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/YOUR_ID/YOUR_TOKEN
+```
+
+Each alert includes: anomaly type, block, confidence score, SHA-256 hash, and a direct Mantle Explorer link to the on-chain proof.
+
+**Discord Bot Commands** (full bot — optional):
 ```
 !status              — Pipeline status
 !latest              — Last 5 findings (rich embeds)

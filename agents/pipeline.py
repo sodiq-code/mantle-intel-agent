@@ -24,6 +24,7 @@ from agents.anomaly.anomaly_agent       import AnomalyAgent, AnomalyFinding
 from agents.smart_money.smart_money_agent import SmartMoneyAgent
 from agents.insight.insight_agent       import InsightAgent
 from agents.audit.audit_agent           import AuditAgent
+from bot.discord_webhook                import push_finding as discord_push
 
 logger = structlog.get_logger(__name__)
 
@@ -135,6 +136,12 @@ class MantleIntelPipeline:
                         await self.on_finding(dashboard_card, insight_text)
                     except Exception as cb_e:
                         self.logger.warning("callback_failed", error=str(cb_e))
+
+                # Discord webhook alert (no bot token required — set DISCORD_WEBHOOK_URL)
+                try:
+                    discord_push(dashboard_card, insight_text)
+                except Exception as dc_e:
+                    self.logger.warning("discord_webhook_failed", error=str(dc_e))
 
             except Exception as e:
                 self.logger.error("finding_processing_failed",
