@@ -108,7 +108,7 @@ Every finding surfaces an actionable **investment signal** — not just raw data
 | MantleIntelAudit v2.0 | Mantle Sepolia Testnet | `0x7fAb1E37d992109d3aA747703436ff4e261391b7` | [View](https://sepolia.mantlescan.xyz/address/0x7fAb1E37d992109d3aA747703436ff4e261391b7) |
 | MantleIntelAgentNFT (ERC-8004) | Mantle Sepolia Testnet | `0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C` | [View](https://sepolia.mantlescan.xyz/address/0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C) |
 
-**120+ on-chain findings submitted to Mantle Sepolia — `findingCount = 120+`, Sourcify verified. 10 anomaly types, all confirmed.  
+**120 on-chain findings submitted to Mantle Sepolia — `findingCount = 120`, Sourcify verified. 10 anomaly types, all confirmed.  
 **Mainnet deploy:** `npx hardhat run scripts/deploy.js --network mantle` (contract ready, awaiting mainnet MNT)
 
 ---
