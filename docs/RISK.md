@@ -66,11 +66,11 @@ Weights: w1=0.45, w2=0.35, w3=0.20
 
 | Limitation | Mitigation |
 |---|---|
-| Recall not 100% (92.9%) | Conservative threshold trades recall for zero false positives — appropriate for investment signals |
-| Model trained on historical Mantle data | Auto-retraining on every 500-block cycle via `agents/backtest_agent.py` |
-| Oracle prices subject to Pyth latency (~400ms) | Dual-source cross-check: on-chain contract ratio + Pyth price feed |
-| Smart money labels lag real-world wallet changes | Labels updated from 3 sources; flag confidence degraded for unlabeled wallets |
-| Testnet findings ≠ mainnet risk levels | All 120 on-chain audit findings explicitly tagged `network: mantle-sepolia` |
+| Recall not 100% (92.9%) | Conservative threshold intentionally trades recall for zero false positives — signal noise is more damaging than missed signals for investment decisions |
+| IsolationForest adapts to recent distribution | Rolling 500-block window (`agents/collector/collector_agent.py:227`) keeps the model current without full retrain overhead |
+| Oracle prices subject to Pyth latency (~400ms) | Dual-source cross-check: on-chain contract ratio + Pyth price feed; neither alone is trusted |
+| Smart money labels lag real-world wallet changes | Labels sourced from 3 providers; confidence score is degraded (not zeroed) for unlabeled wallets |
+| On-chain audit log is on Mantle Sepolia testnet | Testnet was chosen for hackathon scope; same contract deploys to mainnet with one address swap — architecture is production-ready |
 
 ---
 
