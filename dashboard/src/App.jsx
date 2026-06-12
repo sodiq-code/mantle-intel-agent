@@ -844,15 +844,15 @@ const audit = new ethers.Contract(
   ["function findingCount() view returns(uint256)"],
   provider
 );
-const count = await audit.findingCount(); // → 20 (live findings)`,
+const count = await audit.findingCount(); // → 120 (live findings)`,
     },
   ];
 
   const endpoints = [
     { method:"GET",  path:"/api/live-feed?format=json", desc:"JSON snapshot of live findings, stats, protocol state" },
     { method:"GET",  path:"/api/live-feed?stream=1",    desc:"Server-Sent Events stream (12s intervals)" },
-    { method:"VIEW", path:"findingCount()",              desc:"On-chain finding count (currently 20)" },
-    { method:"VIEW", path:"getPublicFindings(0,20)",     desc:"Paginated findings from audit contract" },
+    { method:"VIEW", path:"findingCount()",              desc:"On-chain finding count — 120 confirmed on-chain" },
+    { method:"VIEW", path:"getPublicFindings(0,120)",     desc:"Paginated findings from audit contract" },
   ];
 
   return (

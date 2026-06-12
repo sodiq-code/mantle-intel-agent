@@ -343,6 +343,14 @@ async function buildSnapshot() {
       tp: 13, fp: 0, fn: 1,
       note:           "Real on-chain data, no simulation, no seed",
     },
+    protocol_state: {
+      audit_contract: {
+        address:       CONTRACT_TESTNET,
+        finding_count: 120,
+        network:       "Mantle Sepolia",
+        explorer:      `https://sepolia.mantlescan.xyz/address/${CONTRACT_TESTNET}`,
+      },
+    },
     intel_feed: {
       enabled: true,
       endpoint: "/api/live-feed",
