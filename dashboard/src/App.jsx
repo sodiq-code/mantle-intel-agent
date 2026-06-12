@@ -748,7 +748,7 @@ export default function App() {
               style={{ background: `linear-gradient(135deg,${G},#00a876)` }}>⬡</div>
             <div>
               <div className="text-sm font-black text-white tracking-tight">MANTLE INTEL</div>
-              <div className="text-xs font-mono" style={{ color: G, marginTop:"-2px" }}>AGENT v4.1</div>
+              <div className="text-xs font-mono" style={{ color: G, marginTop:"-2px" }}>AGENT v5.0</div>
             </div>
           </div>
 
@@ -897,7 +897,7 @@ export default function App() {
         {/* ── Footer ────────────────────────────────────────────────────── */}
         <div className="border-t pt-4 flex items-center justify-between text-xs font-mono text-gray-700"
           style={{ borderColor:"#111" }}>
-          <span>Mantle Intel Agent v4.1 · Turing Test Hackathon 2026 · Alpha &amp; Data Track</span>
+          <span>Mantle Intel Agent v5.0 · Turing Test Hackathon 2026 · Alpha &amp; Data Track</span>
           <div className="flex items-center gap-4 hidden sm:flex">
             <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-1 hover:text-gray-400 transition-colors">

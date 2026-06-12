@@ -162,19 +162,28 @@ class SmartMoneyAgent:
         self._cluster_cache: list[WalletCluster] = []
         self._signals: deque = deque(maxlen=500)  # v2: rolling 500-signal history
         self.logger = logger.bind(agent="smart_money")
+        # Expose labeled wallet registry as instance attr (for test discovery)
+        self._labeled_wallets = KNOWN_LABELS
 
     # ── Ingestion ─────────────────────────────────────────────────────────────
 
     def ingest_blocks(self, blocks: list) -> None:
         for block in blocks:
-            for tx in block.large_transfers:
-                self._wallet_activity[tx["from"]].append({
-                    "block":      tx["block"],
-                    "value_usd":  tx.get("value_usd", 0),
-                    "to":         tx.get("to", ""),
-                    "label_to":   tx.get("label_to", "unknown"),
+            # Accept both dict blocks and object blocks
+            if isinstance(block, dict):
+                large_transfers = block.get("large_transfers") or []
+                block_num = block.get("number", block.get("block_num", 0))
+            else:
+                large_transfers = getattr(block, "large_transfers", None) or []
+                block_num = getattr(block, "block_num", 0)
+            for tx in large_transfers:
+                self._wallet_activity[tx.get("from", tx.get("from_addr", ""))].append({
+                    "block":       tx.get("block", block_num),
+                    "value_usd":   tx.get("value_usd", 0),
+                    "to":          tx.get("to", tx.get("to_addr", "")),
+                    "label_to":    tx.get("label_to", "unknown"),
                     "is_contract": tx.get("is_contract", False),
-                    "timestamp":  tx.get("timestamp", time.time()),
+                    "timestamp":   tx.get("timestamp", time.time()),
                 })
 
     # ── Analysis ──────────────────────────────────────────────────────────────
@@ -366,7 +375,14 @@ class SmartMoneyAgent:
     def _detect_smart_money_signals(self, blocks: list) -> list[SmartMoneySignal]:
         signals = []
         for block in blocks:
-            for tx in block.large_transfers:
+            # Accept both dict and object blocks
+            if isinstance(block, dict):
+                large_transfers = block.get("large_transfers") or []
+                _block_num = block.get("number", block.get("block_num", 0))
+            else:
+                large_transfers = getattr(block, "large_transfers", None) or []
+                _block_num = getattr(block, "block_num", 0)
+            for tx in large_transfers:
                 from_addr  = tx.get("from", "").lower()
                 label_info = KNOWN_LABELS.get(from_addr, {"label": "unknown", "type": "retail", "tier": 3, "tags": []})
                 label_from = label_info["label"]
@@ -388,7 +404,7 @@ class SmartMoneyAgent:
                         action="accumulate",
                         protocol=label_to,
                         value_usd=round(value_usd, 2),
-                        block_height=tx.get("block", block.block_num),
+                        block_height=tx.get("block", _block_num),
                         confidence=min(0.97, conf),
                         rationale=(
                             f"${value_usd:,.0f} flowing from {label_from} [T{label_info.get('tier',2)}] "
@@ -410,7 +426,7 @@ class SmartMoneyAgent:
                         action=action,
                         protocol=label_to,
                         value_usd=round(value_usd, 2),
-                        block_height=tx.get("block", block.block_num),
+                        block_height=tx.get("block", _block_num),
                         confidence=0.88,
                         rationale=(
                             f"VC/fund wallet {label_from} [T{label_info.get('tier',2)}] moved "
@@ -430,7 +446,7 @@ class SmartMoneyAgent:
                         action="accumulate" if tx.get("is_contract") else "distribute",
                         protocol=label_to,
                         value_usd=round(value_usd, 2),
-                        block_height=tx.get("block", block.block_num),
+                        block_height=tx.get("block", _block_num),
                         confidence=0.85,
                         rationale=(
                             f"Alpha wallet {label_from} active on Mantle. "
@@ -451,7 +467,7 @@ class SmartMoneyAgent:
                         action="accumulate",
                         protocol=label_to,
                         value_usd=round(value_usd, 2),
-                        block_height=tx.get("block", block.block_num),
+                        block_height=tx.get("block", _block_num),
                         confidence=round(conf, 4),
                         rationale=(
                             f"Unlabeled wallet moved ${value_usd:,.0f} into {label_to} on Mantle. "

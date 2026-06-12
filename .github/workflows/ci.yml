@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Python Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install pytest pytest-cov numpy scikit-learn scipy structlog httpx web3
+
+      - name: Run test suite
+        run: |
+          pytest tests/ -v --tb=short --cov=agents --cov-report=term-missing
+
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install lint tools
+        run: pip install flake8 pyflakes
+
+      - name: Lint agents/
+        run: flake8 agents/ --max-line-length=120 --ignore=E501,W503,E203 --exclude=__pycache__
+
+      - name: Lint backtest/
+        run: flake8 backtest/ --max-line-length=120 --ignore=E501,W503,E203 --exclude=__pycache__
+
+  integrity:
+    name: Finding Hash Integrity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: pip install pytest numpy scikit-learn scipy structlog httpx
+
+      - name: Run hash integrity checks
+        run: pytest tests/test_hash_integrity.py -v
+
+  backtest:
+    name: Backtest Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: pip install pytest numpy scikit-learn scipy structlog httpx
+
+      - name: Run backtest regression
+        run: pytest tests/test_backtest.py -v

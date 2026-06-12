@@ -87,14 +87,9 @@ class AnomalyFinding:
         return json.dumps(self.to_dict(), default=str)
 
     def sha256_hash(self) -> str:
-        """Deterministic hash for on-chain recording."""
-        canonical = json.dumps({
-            "finding_id":   self.finding_id,
-            "anomaly_type": self.anomaly_type,
-            "block_height": self.block_height,
-            "confidence":   round(self.confidence, 4),
-            "description":  self.description,
-        }, sort_keys=True)
+        """Tamper-evident hash covering ALL fields for on-chain recording."""
+        d = self.to_dict()
+        canonical = json.dumps(d, sort_keys=True, separators=(",", ":"))
         return hashlib.sha256(canonical.encode()).hexdigest()
 
     def hex_bytes32(self) -> str:
@@ -122,21 +117,43 @@ class AnomalyAgent:
 
     # ── Feature extraction ───────────────────────────────────────────────────
 
+    @staticmethod
+    def _normalize_block(block):
+        """Normalize a dict block into a SimpleNamespace for uniform attr access."""
+        import types
+        if isinstance(block, dict):
+            ns = types.SimpleNamespace()
+            ns.block_num       = block.get("number", block.get("block_num", 0))
+            ns.tx_count        = block.get("tx_count", 0)
+            ns.total_value_mnt = block.get("total_value_eth", block.get("total_value_mnt", 0))
+            ns.large_transfers = block.get("large_transfers") or []
+            ns.unique_senders  = block.get("unique_senders", [])
+            # unique_senders may be a count (int) or a list — normalize to list
+            if isinstance(ns.unique_senders, int):
+                ns.unique_senders = list(range(ns.unique_senders))
+            ns.timestamp       = block.get("timestamp", 0)
+            return ns
+        return block
+
     def _block_to_features(self, block) -> dict:
-        large_val = sum(t["value_mnt"] for t in block.large_transfers) if block.large_transfers else 0
+        """Extract feature vector. Block must already be normalized via _normalize_block."""
+        large_transfers = getattr(block, "large_transfers", None) or []
+        large_val = sum(t.get("value_mnt", 0) if isinstance(t, dict) else 0 for t in large_transfers)
+        unique_senders = getattr(block, "unique_senders", [])
+        unique_count = unique_senders if isinstance(unique_senders, int) else len(unique_senders)
         return {
-            "block_num":        block.block_num,
-            "tx_count":         block.tx_count,
-            "total_value_mnt":  block.total_value_mnt,
-            "large_tx_count":   len(block.large_transfers),
-            "unique_senders":   len(block.unique_senders),
-            "large_value_mnt":  large_val,
+            "block_num":       getattr(block, "block_num", 0),
+            "tx_count":        getattr(block, "tx_count", 0),
+            "total_value_mnt": getattr(block, "total_value_mnt", 0),
+            "large_tx_count":  len(large_transfers),
+            "unique_senders":  unique_count,
+            "large_value_mnt": large_val,
         }
 
     def ingest_blocks(self, blocks: list) -> None:
         """Add new block data to history buffer."""
         for b in blocks:
-            self._history.append(self._block_to_features(b))
+            self._history.append(self._block_to_features(self._normalize_block(b)))
         # keep last 500 blocks
         self._history = self._history[-500:]
 
@@ -151,6 +168,9 @@ class AnomalyAgent:
         """Run full anomaly detection. Returns findings list."""
         if not blocks:
             return []
+
+        # Normalize all blocks upfront so all sub-methods get uniform objects
+        blocks = [self._normalize_block(b) for b in blocks]
 
         self.ingest_blocks(blocks)
         if protocol_state:
@@ -391,9 +411,13 @@ class AnomalyAgent:
                 continue
 
             labeled_txs = [t for t in block.large_transfers if t.get("label_from") != "unknown" or t.get("label_to") != "unknown"]
-            total_usd   = sum(t.get("value_usd", 0) for t in block.large_transfers)
+            # Accept value_usd, value_mnt, or value_eth as value signal
+            total_usd = sum(
+                t.get("value_usd", t.get("value_mnt", 0) * 0.85 or t.get("value_eth", 0) * 3000)
+                for t in block.large_transfers
+            )
 
-            if len(block.large_transfers) >= 3 and total_usd >= 250_000:
+            if len(block.large_transfers) >= 2 and total_usd >= 100_000:
                 confidence = min(0.98, 0.68 + len(block.large_transfers) * 0.02 + total_usd / 10_000_000)
 
                 protocol_targets = [
@@ -486,11 +510,19 @@ class AnomalyAgent:
         v3.0: Detect mETH price deviations from expected ETH staking rate.
         mETH should trade at ETH * (1 + ~3.5% APY premium).
         Alert if deviation exceeds 50bps — potential LST depeg event.
+        Accepts both meth_depeg_bps (raw) and meth_ratio (ratio form).
         """
         findings = []
+        # Support both schema flavours
         depeg_bps = state.get("meth_depeg_bps", 0)
         meth_rate = state.get("meth_eth_rate", 0)
         meth_supply = state.get("meth_supply", 0)
+
+        # Infer from meth_ratio if meth_depeg_bps not provided
+        if depeg_bps == 0:
+            meth_ratio = state.get("meth_ratio", 1.0)
+            # Expected ~1.035 APY premium; deviation from 1.0 in bps
+            depeg_bps = abs(meth_ratio - 1.0) * 10_000
 
         if depeg_bps <= 0:
             return findings
@@ -550,31 +582,41 @@ class AnomalyAgent:
         Severe LP ratio shift indicates large swap or liquidity removal.
         """
         findings = []
-        r0 = state.get("merchant_moe_reserve0", 0)
-        r1 = state.get("merchant_moe_reserve1", 0)
+        # Accept both key conventions
+        r0 = state.get("merchant_moe_reserve0", state.get("moe_reserve_a", 0))
+        r1 = state.get("merchant_moe_reserve1", state.get("moe_reserve_b", 0))
         if r0 <= 0 or r1 <= 0:
             return findings
 
-        if len(self._protocol_state_history) < 3:
-            return findings
+        # Direct ratio check (doesn't need history)
+        total = r0 + r1
+        ratio = min(r0, r1) / total  # 0.5 = balanced; lower = more imbalanced
+        imbalance = abs(0.5 - ratio)  # 0 = perfect balance, 0.5 = fully one-sided
 
-        # Compare to historical average ratio
-        hist = self._protocol_state_history[:-1]
-        avg_r0 = sum(s.get("merchant_moe_reserve0", r0) for s in hist) / len(hist)
-        avg_r1 = sum(s.get("merchant_moe_reserve1", r1) for s in hist) / len(hist)
+        # Initialise delta vars (used below regardless of path taken)
+        avg_r0, avg_r1, r0_delta, r1_delta = r0, r1, 0.0, 0.0
 
-        if avg_r0 <= 0 or avg_r1 <= 0:
-            return findings
-
-        r0_delta = abs(r0 - avg_r0) / avg_r0
-        r1_delta = abs(r1 - avg_r1) / avg_r1
-
-        if r0_delta < MOE_IMBALANCE_RATIO and r1_delta < MOE_IMBALANCE_RATIO:
-            return findings
+        if imbalance >= MOE_IMBALANCE_RATIO / 2:
+            # Direct ratio imbalance is significant — fire immediately
+            r0_delta = imbalance
+            r1_delta = imbalance
+        else:
+            # Need historical drift check
+            if len(self._protocol_state_history) < 3:
+                return findings
+            hist = self._protocol_state_history[:-1]
+            avg_r0 = sum(s.get("merchant_moe_reserve0", s.get("moe_reserve_a", r0)) for s in hist) / len(hist)
+            avg_r1 = sum(s.get("merchant_moe_reserve1", s.get("moe_reserve_b", r1)) for s in hist) / len(hist)
+            if avg_r0 <= 0 or avg_r1 <= 0:
+                return findings
+            r0_delta = abs(r0 - avg_r0) / avg_r0
+            r1_delta = abs(r1 - avg_r1) / avg_r1
+            if r0_delta < MOE_IMBALANCE_RATIO and r1_delta < MOE_IMBALANCE_RATIO:
+                return findings
 
         severity_r = max(r0_delta, r1_delta)
         confidence = min(0.93, 0.72 + severity_r)
-        mnt_price  = state.get("mnt_price_usd", 0.85)
+        mnt_price  = state.get("mnt_price_usd", state.get("pyth_mnt_usd", 0.85))
         pool_usd   = (r0 * mnt_price) + (r1 * state.get("pyth_prices", {}).get("ETH/USD", 3500.0))
         direction  = "removing" if r0 < avg_r0 else "adding"
 
