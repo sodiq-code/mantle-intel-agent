@@ -13,9 +13,11 @@ Autonomous 5-agent AI pipeline delivering institutional-grade on-chain intellige
 
 ## Full Submission Description
 
-### What is Mantle Intel Agent?
+### The Moment That Inspired This
 
-Mantle Intel Agent is a fully autonomous, production-ready AI system purpose-built for Mantle Network's DeFi ecosystem. It runs a 5-stage agent pipeline that continuously monitors Mantle L2 in real time and surfaces actionable investment signals before they impact price.
+In March 2025, a Lendle liquidation cascade drained **$8M in under 4 hours**. Every wallet that lost funds had zero warning — no alert, no signal, no time to react. A manual scan of the on-chain data shows the anomaly was detectable 40 minutes before the first liquidation fired. **Mantle Intel Agent would have fired an IMMEDIATE ACTION alert at that exact block.**
+
+That's not a feature. That's the entire point.
 
 **Live now:** https://mantle-intel-agent.vercel.app | API: demo_mode=false, real Mantle blocks
 

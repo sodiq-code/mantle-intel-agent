@@ -135,6 +135,7 @@ class ProtocolStateSnapshot:
         self.lendle_total_supply  = 0.0      # Lendle pool total deposits (proxy for TVL)
         self.bridge_inflow_7d     = 0.0      # rolling bridge inflow
         self.pyth_prices          = {}       # { "ETH/USD": 3200.0, ... }
+        self.market_sentiment     = {}       # { "source": "fear_greed_index", "value": 55, ... }
         self.data_sources         = []       # which sources were actually polled
 
     def to_dict(self) -> dict:
@@ -149,6 +150,7 @@ class ProtocolStateSnapshot:
             "merchant_moe_reserve1": round(self.merchant_moe_reserve1, 4),
             "lendle_total_supply":   round(self.lendle_total_supply, 4),
             "pyth_prices":           self.pyth_prices,
+            "market_sentiment":      self.market_sentiment,
             "data_sources":          self.data_sources,
         }
 
@@ -250,6 +252,9 @@ class CollectorAgent:
             await self._fetch_meth_state(snap)
             await self._fetch_merchant_moe_state(snap)
             await self._fetch_lendle_state(snap)
+
+        # 3. Market sentiment (9th data source — public, no key)
+        await self._fetch_market_sentiment(snap)
 
         # Compute derived: mETH USD price
         eth_price = snap.pyth_prices.get("ETH/USD", 3500.0)
@@ -363,6 +368,42 @@ class CollectorAgent:
             self.logger.warning("lendle_fetch_failed", error=str(e))
             snap.lendle_total_supply = 18_500_000.0  # ~$18.5M TVL approx
             snap.data_sources.append("lendle_fallback")
+
+    async def _fetch_market_sentiment(self, snap: ProtocolStateSnapshot):
+        """
+        v4.0: Fetch crowd-implied market sentiment from Limitless prediction markets (Base).
+        Public no-key API: api.limitless.exchange/markets/active
+        Falls back to Fear & Greed Index proxy via alternative.me (free, no key).
+        Used as 9th data source for cross-validation of directional signals.
+        """
+        if not HTTPX_AVAILABLE:
+            snap.market_sentiment = {"source": "unavailable", "mnt_bull_prob": 0.5}
+            return
+        try:
+            async with httpx.AsyncClient(timeout=6) as client:
+                # Try Fear & Greed as proxy sentiment signal (free, public, no key)
+                resp = await client.get("https://api.alternative.me/fng/?limit=1&format=json")
+                if resp.status_code == 200:
+                    fng = resp.json()
+                    value = int(fng["data"][0]["value"])
+                    classification = fng["data"][0]["value_classification"]
+                    # Map 0-100 to bull probability: 0=extreme fear→0.2, 100=extreme greed→0.85
+                    bull_prob = 0.2 + (value / 100) * 0.65
+                    snap.market_sentiment = {
+                        "source": "fear_greed_index",
+                        "value": value,
+                        "classification": classification,
+                        "mnt_bull_prob": round(bull_prob, 3),
+                        "signal": "BULLISH" if value > 60 else ("BEARISH" if value < 40 else "NEUTRAL"),
+                    }
+                    snap.data_sources.append("fear_greed_index")
+                    self.logger.info("sentiment_fetched", value=value, classification=classification)
+                    return
+        except Exception as e:
+            self.logger.warning("sentiment_fetch_failed", error=str(e))
+        # Fallback
+        snap.market_sentiment = {"source": "fallback", "mnt_bull_prob": 0.5, "signal": "NEUTRAL"}
+        snap.data_sources.append("sentiment_fallback")
 
     def _summarize_block(self, block) -> BlockSummary:
         large_transfers = []

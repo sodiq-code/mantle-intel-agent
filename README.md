@@ -5,9 +5,10 @@
 [![Hackathon](https://img.shields.io/badge/Hackathon-Turing%20Test%202026-purple)](https://dorahacks.io)
 [![Backtest](https://img.shields.io/badge/Backtest-F1%3D1.00%20%7C%20Precision%3D100%25-brightgreen)](./backtest/results_live.md)
 [![API](https://img.shields.io/badge/API-Live%20%7C%20demo__mode%3Dfalse-brightgreen)](https://mantle-intel-agent.vercel.app/api/live-feed?format=json)
+[![On-Chain Proof](https://img.shields.io/badge/On--Chain-ONCHAIN.md-blue)](./docs/ONCHAIN.md)
 
 > **Autonomous 5-agent AI pipeline for institutional-grade on-chain intelligence on Mantle Network.**  
-> F1=1.00 · Precision=100% · 8 data sources · 10 anomaly types · ERC-8004 on-chain audit trail  
+> F1=1.00 · Precision=100% · 9 data sources · 10 anomaly types · ERC-8004 on-chain audit trail · v6.0  
 > Every finding SHA256-hashed and permanently recorded on Mantle L2.
 
 ---
@@ -24,7 +25,7 @@
 
 Mantle Intel Agent is a fully autonomous 5-agent Python pipeline that continuously monitors the Mantle L2 ecosystem and surfaces **investment-grade signals** before they impact price:
 
-1. **Collects** — Real-time Mantle RPC blocks + Pyth oracle prices + mETH contract state + Merchant Moe reserves + Lendle TVL (8 data sources, no centralized API key required)
+1. **Collects** — Real-time Mantle RPC blocks + Pyth oracle prices + mETH contract state + Merchant Moe reserves + Lendle TVL + Fear & Greed market sentiment (9 data sources, no centralized API key required)
 2. **Detects** — 10 anomaly types: Z-Score (3.0σ), Isolation Forest (contamination=0.03), whale pattern matching, mETH depeg, LP imbalance, cross-protocol correlation, bridge events
 3. **Clusters** — 60+ Nansen-style wallet labels: CEX (Binance, Bybit, OKX), VC (Mirana, Jump, Multicoin), Mantle DeFi protocols, MEV bots
 4. **Generates** — VC-grade investment memos with signal tier (WATCH / ALERT / IMMEDIATE ACTION) and lead-time estimates
