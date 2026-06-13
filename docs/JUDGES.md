@@ -108,8 +108,8 @@ Tests cover:
 ## 6. Telegram Bot
 
 **Bot:** @MantleIntelBot  
-**Token:** `8261331880:AAEGeltCkbDhGPEs1lS4eAuRTo6HkTIcMPs`  
-**Chat ID:** `6774697368`
+**Token:** `[REDACTED]`  
+**Chat ID:** `[REDACTED]`
 
 Commands: `/status`, `/findings`, `/compare`, `/help`
 
