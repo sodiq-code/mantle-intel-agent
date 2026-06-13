@@ -173,7 +173,7 @@ Each detected anomaly is translated into an actionable investment signal — not
 | **mETH Protocol** | ETH/mETH exchange rate (depeg trigger: >50bps), total supply, staking flows |
 | **Merchant Moe DEX** | LP reserve imbalance (trigger: >30%), routing impact, whale LP entry/exit |
 | **Lendle (Lending)** | TVL changes, health factor proxies, liquidation cascade risk |
-| **Agni Finance** | Wallet flow tracking, cross-protocol correlation with Lendle |
+| **Agni Finance** | Direct RPC read — MNT/USDT V3 pool liquidity (pool `0xD08C50F7`, fee=0.05%), liquidity shift detection (trigger: >20%), LP withdrawal signals |
 | **Mantle Bridge** | Large cross-chain inflows/outflows, bridge spike detection |
 | **Pyth Oracle** | MNT/USD, ETH/USD, BTC/USD, USDT/USD — real-time price context |
 
@@ -260,6 +260,7 @@ Response fields include: `demo_mode: false`, `source: mantle_rpc_live`, `network
 | Pyth Hermes API | MNT/USD, ETH/USD, BTC/USD, USDT/USD | <1s | No |
 | mETH Contract (RPC) | ETH/mETH exchange rate, total supply | Per block | No |
 | Merchant Moe LB Pair (RPC) | Pool reserves (token0/token1) | Per block | No |
+| Agni Finance V3 Pool (RPC) | MNT/USDT pool liquidity — direct `liquidity()` call, pool `0xD08C50F7`, fee=0.05% | Per block | No |
 | Lendle Pool (RPC) | Total supply (TVL proxy) | Per block | No |
 | MantleIntelAudit.sol (RPC) | Finding history, subscriptions | Immutable | No |
 | 60+ Nansen-style wallet labels | CEX / VC / MEV / Protocol classification | Static v1 | No |

@@ -186,6 +186,7 @@ class AnomalyAgent:
         if protocol_state:
             candidates.extend(self._meth_depeg_detection(protocol_state))
             candidates.extend(self._merchant_moe_imbalance_detection(protocol_state))
+            candidates.extend(self._agni_liquidity_detection(protocol_state))
         candidates.extend(self._cross_protocol_correlation_detection(blocks))
 
         # Build block→signals map (for multi-confirm logic)
@@ -650,6 +651,58 @@ class AnomalyAgent:
             ),
             affected_protocols=["Merchant Moe", "Agni Finance", "FusionX"],
             method="reserve_analysis",
+        ))
+
+        return findings
+
+    def _agni_liquidity_detection(self, protocol_state: dict) -> list[AnomalyFinding]:
+        """
+        v5.0: Detect significant liquidity drops in Agni Finance MNT/USDT V3 pool.
+        Pool: 0xD08C50F7E69e9aeb2867DefF4A8053d9A855e26A (mainnet, fee=500)
+        Liquidity drop >20% from rolling average signals large LP withdrawal.
+        """
+        findings = []
+        liquidity = protocol_state.get("agni_liquidity", 0)
+        if not liquidity or liquidity == 0:
+            return findings
+
+        hist = self._protocol_history[-30:] if len(self._protocol_history) >= 5 else []
+        if not hist:
+            return findings
+
+        hist_liq = [h.get("agni_liquidity", 0) for h in hist if h.get("agni_liquidity", 0) > 0]
+        if not hist_liq:
+            return findings
+
+        avg_liq = sum(hist_liq) / len(hist_liq)
+        if avg_liq == 0:
+            return findings
+
+        delta = (liquidity - avg_liq) / avg_liq  # negative = liquidity removed
+
+        if abs(delta) < 0.20:  # <20% change — ignore
+            return findings
+
+        direction = "removing" if delta < 0 else "adding"
+        severity  = "high" if abs(delta) > 0.35 else "medium"
+
+        findings.append(AnomalyFinding(
+            anomaly_type="agni_liquidity_shift",
+            severity=severity,
+            confidence=min(0.55 + abs(delta), 0.92),
+            block_height=protocol_state.get("block_number", 0),
+            description=(
+                f"Agni Finance MNT/USDT pool liquidity {direction}: "
+                f"{delta*100:.1f}% shift from 30-snapshot average. "
+                f"Current: {liquidity:,} | Avg: {avg_liq:,.0f}. "
+                f"Fee tier: 0.05%. Direct RPC read from pool 0xD08C50F7."
+            ),
+            investment_signal=(
+                f"Agni Finance MNT/USDT liquidity {direction} ({abs(delta)*100:.1f}%). "
+                f"{'Reduced depth increases slippage on MNT/USDT trades — large actors may be exiting.' if direction == 'removing' else 'New liquidity entering Agni MNT/USDT — potential accumulation signal.'}"
+            ),
+            affected_protocols=["Agni Finance"],
+            method="agni_liquidity_rpc",
         ))
 
         return findings

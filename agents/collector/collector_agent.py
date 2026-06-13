@@ -44,6 +44,8 @@ MANTLE_PROTOCOLS = {
     "merchant_moe":       "0x85f8628a0fa2A8C4A4a20A4c6432f57E45eF4E8e",
     "merchant_moe_lb":    "0x5c6ee304399dbdb9c8ef030ab642b10820db8f56",   # LB pair WETH/MNT
     "agni_finance":       "0x319B69888B0d11cEC22caA5034e25FfFBDc88421",
+    "agni_factory":       "0x25780dc8Fc3cfBD75F33bFDAB65e969b603b2035",  # Agni V3 factory (mainnet)
+    "agni_mnt_usdt_pool": "0xD08C50F7E69e9aeb2867DefF4A8053d9A855e26A",  # MNT/USDT 0.05% pool
     "lendle":             "0x35b594f4cAba8B4D595c67F02fF4A619cc0e349F",
     "lendle_data_prov":   "0x7Cf03b40F8C0fDeBF9C3D8a4a2fdEc2F0F0e37B0",  # Lendle Pool Data Provider
     "fusionx":            "0x530D2b6c4aE42e2Ab45EAe8B7cFAF0FBA8F3D2f7",
@@ -133,6 +135,8 @@ class ProtocolStateSnapshot:
         self.merchant_moe_reserve0= 0.0      # token0 reserve in MNT
         self.merchant_moe_reserve1= 0.0      # token1 reserve in WETH
         self.lendle_total_supply  = 0.0      # Lendle pool total deposits (proxy for TVL)
+        self.agni_liquidity       = 0        # Agni Finance MNT/USDT pool active liquidity (raw)
+        self.agni_fee_tier        = 500      # pool fee tier (bps * 100 — 500 = 0.05%)
         self.bridge_inflow_7d     = 0.0      # rolling bridge inflow
         self.pyth_prices          = {}       # { "ETH/USD": 3200.0, ... }
         self.market_sentiment     = {}       # { "source": "fear_greed_index", "value": 55, ... }
@@ -149,6 +153,8 @@ class ProtocolStateSnapshot:
             "merchant_moe_reserve0": round(self.merchant_moe_reserve0, 4),
             "merchant_moe_reserve1": round(self.merchant_moe_reserve1, 4),
             "lendle_total_supply":   round(self.lendle_total_supply, 4),
+            "agni_liquidity":        self.agni_liquidity,
+            "agni_fee_tier":         self.agni_fee_tier,
             "pyth_prices":           self.pyth_prices,
             "market_sentiment":      self.market_sentiment,
             "data_sources":          self.data_sources,
@@ -252,6 +258,7 @@ class CollectorAgent:
             await self._fetch_meth_state(snap)
             await self._fetch_merchant_moe_state(snap)
             await self._fetch_lendle_state(snap)
+            await self._fetch_agni_state(snap)
 
         # 3. Market sentiment (9th data source — public, no key)
         await self._fetch_market_sentiment(snap)
@@ -368,6 +375,28 @@ class CollectorAgent:
             self.logger.warning("lendle_fetch_failed", error=str(e))
             snap.lendle_total_supply = 18_500_000.0  # ~$18.5M TVL approx
             snap.data_sources.append("lendle_fallback")
+
+    async def _fetch_agni_state(self, snap: ProtocolStateSnapshot):
+        """
+        Poll Agni Finance MNT/USDT V3 pool (0xD08C50F7) for active liquidity.
+        Agni is a Uniswap V3 fork — pool exposes liquidity() directly via RPC.
+        Factory: 0x25780dc8Fc3cfBD75F33bFDAB65e969b603b2035
+        Pool: MNT/USDT 0.05% fee tier — getPool(MNT, USDT, 500)
+        """
+        AGNI_POOL_ABI = [
+            {"inputs": [], "name": "liquidity", "outputs": [{"type": "uint128"}], "stateMutability": "view", "type": "function"},
+            {"inputs": [], "name": "fee", "outputs": [{"type": "uint24"}], "stateMutability": "view", "type": "function"},
+        ]
+        try:
+            pool_addr = Web3.to_checksum_address(MANTLE_PROTOCOLS["agni_mnt_usdt_pool"])
+            contract  = self._w3.eth.contract(address=pool_addr, abi=AGNI_POOL_ABI)
+            snap.agni_liquidity = contract.functions.liquidity().call()
+            snap.agni_fee_tier  = contract.functions.fee().call()
+            snap.data_sources.append("agni_rpc")
+        except Exception as e:
+            self.logger.warning("agni_fetch_failed", error=str(e))
+            snap.agni_liquidity = 0
+            snap.data_sources.append("agni_fallback")
 
     async def _fetch_market_sentiment(self, snap: ProtocolStateSnapshot):
         """
