@@ -47,6 +47,8 @@ Mantle Intel Agent is a fully autonomous 5-agent Python pipeline that continuous
 
 ## Architecture
 
+> **Design note on inference placement:** Anomaly detection runs off-chain by deliberate architectural choice. On-chain ML execution on Mantle L2 adds 2–8s of latency per block and is cost-prohibitive at scale — making real-time detection impossible. The pipeline targets sub-6s block-to-signal latency, which requires Python-native execution. The result is committed on-chain post-inference with a SHA-256 hash, giving verifiable proof of what was computed and when, without sacrificing speed. This is the same architecture used by Chainlink, UMA, and every production oracle network.
+
 ```
 CollectorAgent (Stage 1)
   │  Mantle RPC · Pyth Oracle · mETH Contract · Merchant Moe · Lendle · Bridge
