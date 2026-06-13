@@ -1,133 +1,86 @@
 # Mantle Intel Agent
 
-[![Live Dashboard](https://img.shields.io/badge/Live%20Demo-mantle--intel--agent.vercel.app-blue)](https://mantle-intel-agent.vercel.app)
-[![Contract](https://img.shields.io/badge/Contract-Mantle%20Sepolia-green)](https://sepolia.mantlescan.xyz/address/0x7fAb1E37d992109d3aA747703436ff4e261391b7)
-[![Hackathon](https://img.shields.io/badge/Hackathon-Turing%20Test%202026-purple)](https://dorahacks.io)
-[![Backtest](https://img.shields.io/badge/Backtest-F1%3D1.00%20%7C%20Precision%3D100%25-brightgreen)](./backtest/results_live.md)
-[![API](https://img.shields.io/badge/API-Live%20%7C%20demo__mode%3Dfalse-brightgreen)](https://mantle-intel-agent.vercel.app/api/live-feed?format=json)
-[![On-Chain Proof](https://img.shields.io/badge/On--Chain-ONCHAIN.md-blue)](./docs/ONCHAIN.md)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-mantle--intel--agent.vercel.app-00ff88?style=for-the-badge)](https://mantle-intel-agent.vercel.app)
+[![YouTube](https://img.shields.io/badge/Demo%20Video-YouTube-red?style=for-the-badge&logo=youtube)](https://youtu.be/AuGx1f44Qfw)
+[![Contract](https://img.shields.io/badge/Audit%20Contract-Mantle%20Sepolia-green?style=for-the-badge)](https://sepolia.mantlescan.xyz/address/0x7fAb1E37d992109d3aA747703436ff4e261391b7)
+[![Sourcify](https://img.shields.io/badge/Sourcify-Exact%20Match%20✓-brightgreen?style=for-the-badge)](https://sourcify.dev/#/lookup/0x7fAb1E37d992109d3aA747703436ff4e261391b7)
+[![F1 Score](https://img.shields.io/badge/F1%20Score-0.963-blue?style=for-the-badge)](./backtest/results_live.md)
+[![On-Chain Findings](https://img.shields.io/badge/On--Chain%20Findings-120-orange?style=for-the-badge)](./docs/ONCHAIN.md)
 
-> **Autonomous 5-agent AI pipeline for institutional-grade on-chain intelligence on Mantle Network.**  
-> F1=1.00 · Precision=100% · 9 data sources · 10 anomaly types · 120+ on-chain findings · Telegram & Discord alerts · v6.0  
-> Every finding SHA256-hashed and permanently recorded on Mantle L2.
-
----
-
-## Live Proof — Real Screenshots from Production
-
-> All screenshots taken live from the running system on **June 13, 2026**. No mock data, no staging environment.
-
----
-
-### API Live Feed — `/api/live-feed?format=json`
-![API Live Feed](./docs/screenshots/proofs/api_live_feed.png)
-*Live JSON response from the production API. Shows `demo_mode: false`, `network: mainnet`, `finding_count: 120`, real block numbers, `source: mantle_rpc_live`. Contracts array confirms both deployed contract addresses. Data sourced directly from Mantle RPC — no intermediaries.*
-
----
-
-### Audit Contract — 163 Transactions on Mantle Sepolia
-![Audit Contract Mantlescan](./docs/screenshots/proofs/audit_contract_mantlescan.png)
-*`MantleIntelAudit v2.0` contract (`0x7fAb1E37d992109d3aA747703436ff4e261391b7`) on Mantle Sepolia Testnet. **163 total transactions** — all `Record Finding` method calls submitted by the autonomous pipeline. Contract has green "Source Code" verified badge. Latest txn: block 39,880,468 (live at time of screenshot).*
-
----
-
-### NFT Contract — ERC-8004 Agent Identity (Minted)
-![NFT Contract Mantlescan](./docs/screenshots/proofs/nft_contract_mantlescan.png)
-*`MantleIntelAgentNFT (ERC-8004)` contract (`0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C`). Token tracker shows `ERC20: Mantle Intel Agen...(MIAI)`. Mint transaction `0x3b5ffc0285b...` confirmed at block **39,815,592** — agent identity permanently recorded on-chain. Contract verified (Source Code badge visible).*
-
----
-
-### Sourcify — Exact Match Verification ✅
-![Sourcify Verified](./docs/screenshots/proofs/sourcify_verified.png)
-*Sourcify.eth contract lookup for `0x7fAb1E37d992109d3aA747703436ff4e261391b7`. Shows **Exact Match** for both Creation and Runtime bytecode on **Mantle Sepolia Testnet (Chain ID: 5003)**. Verified at `2026-06-12`. [Sourcify Repo →](https://repo.sourcify.dev/contracts/full_match/5003/0x7fAb1E37d992109d3aA747703436ff4e261391b7/)*
-
-**API proof (Sourcify status = `"perfect"`):**
-```bash
-curl "https://sourcify.dev/server/check-all-by-addresses?addresses=0x7fAb1E37d992109d3aA747703436ff4e261391b7&chainIds=5003"
-# → [{"address":"0x7fAb1E37...","chainIds":[{"chainId":"5003","status":"perfect"}]}]
-```
-
----
-
-### Telegram Bot Alert — Live Push ✅
-![Telegram Alert](./docs/screenshots/proofs/api_live_feed.png)
-*Real Telegram alert fired and confirmed delivered to chat ID `6774697368` at `2026-06-13 00:14:46 UTC`. Log: `alert_pushed · chat=6774697368 · component=telegram_bot · finding_id=test-001`. Message includes anomaly type, block, confidence %, SHA256 hash, and on-chain explorer link.*
-
----
-
-### Contract Transactions — All `Record Finding` calls
-![Contract Transactions](./docs/screenshots/proofs/contract_transactions.png)
-*Transaction history tab for the audit contract. Every row is a `Record Finding` method call from the autonomous pipeline agent wallet (`0xB47Ba223...85698DAEa`). Continuous submissions across blocks 39,880,454 → 39,880,468 — pipeline actively running at time of screenshot.*
-
----
-
-### Contract Read Functions
-![Contract Read Functions](./docs/screenshots/proofs/contract_read_functions.png)
-*Read-contract view — exposes `getPublicFindings(offset, limit)`, `findingCount`, and `subscribers` functions. All publicly callable with no wallet required.*
-
----
-
-## Live Dashboard — All Tabs
-
-> All screenshots captured live from **[mantle-intel-agent.vercel.app](https://mantle-intel-agent.vercel.app)** — block ~96,590,032, real Mantle mainnet data, no mocks.
-
-### Findings (Live Feed)
-![Live Feed Tab](./docs/screenshots/proofs/dash_livefeed.png)
-*Block 96,590,032 — LIVE badge active. 120 on-chain findings stored to `MantleIntelAudit` contract. TX Spike anomaly detected at 78% confidence with WATCH signal. Filter tabs: Whale · Smart Money · TX Spike · Value · Multivariate · MEV · Bridge.*
-
-### Alpha Signals
-![Signals Tab](./docs/screenshots/proofs/dash_signals.png)
-*Signals tab — real-time investment signal tiers: High Conf (≥85%), Mid Conf (75–85%), Watch (65–75%). Portfolio strategy panel shows live anomaly count across tiers. Block 96,590,044 at 80.8% avg conf.*
-
-### Analytics (Backtest Results)
-![Analytics Tab](./docs/screenshots/proofs/dash_analytics.png)
-*Backtest on real Mantle mainnet data (blocks 96,520,081–96,520,580, 395 blocks): **Precision 100% · Recall 92.9% · F1 Score 0.963**. 13 TP, 0 FP, 1 FN. Algorithm: IsolationForest + z-score + rule-based + multi-confirm. 1,931,800 cycles run, 67 wallets tracked.*
-
-### On-Chain Audit Log
-![Audit Log Tab](./docs/screenshots/proofs/dash_auditlog.png)
-*120 findings written on-chain to `0x7fAb1E37d992109d3aA747703436ff4e261391b7`. Live table shows type, block number, confidence %, status OK, and Mantlescan TX link for each entry. Entries include Whale Accum., Smart Money, and MEV Sandwich — all at 77–91% confidence.*
-
-### REST API
-![API Tab](./docs/screenshots/proofs/dash_api.png)
-*Built-in API reference: `GET /api/live-feed?format=json` (JSON snapshot), `GET /api/live-feed?stream=1` (SSE 12s intervals), `VIEW findingCount()` (120 confirmed on-chain), `VIEW getPublicFindings(0,120)` (paginated from audit contract). Code snippets for both REST and on-chain access.*
-
-### Protocol State (Live RPC)
-![Protocol Tab](./docs/screenshots/proofs/dash_protocol.png)
-*Live on-chain protocol monitoring via Mantle mainnet RPC: mETH Staking (ETH/mETH ratio 1.001200 — HEALTHY), Merchant Moe DEX (ACTIVE, >10% imbalance trigger), Lendle Pool (LIVE, >5% drop/block trigger). All sourced directly from contracts, no third-party API.*
-
-### ROI Calculator
-![ROI Calc Tab](./docs/screenshots/proofs/dash_roi.png)
-*Investment signal ROI modeler: $50K portfolio · Pro $99/mo tier · 2 events/yr → **$16,130 expected savings · 1258% ROI · 0.9mo payback**. Scenario breakdown: Lendle Liquidation Cascade ($5,400 avg avoided), Whale Exit ($5,950 avg avoided).*
-
-### AI Reasoning Chain
-![Reasoning Tab](./docs/screenshots/proofs/dash_reasoning.png)
-*Per-block agent thought stream for mETH/USD: 91% confidence WATCH signal. 5-step chain — (1) Data Ingestion: mETH rate 1.00413 ETH, Pyth oracle $1,663.23; (2) Z-Score: z=-2.27σ below threshold but rising; (3) Cross-validation: Lendle health factor 1.12; (4) Merchant Moe LP: 48.7/51.3% ratio; (5) Signal Decision: WATCH, set alert at -55bps.*
+> **Autonomous 5-agent AI pipeline for institutional-grade on-chain intelligence on Mantle Network.**
+> Real-time anomaly detection · 120 on-chain findings · F1=0.963 · 9 data sources · 10 anomaly types · Telegram & Discord alerts · ERC-8004 NFT identity · zero mock data
 
 ---
 
 ## Demo Video
 
-[![Mantle Intel Agent — Demo Video](https://img.youtube.com/vi/yPErNZW2hR0/maxresdefault.jpg)](https://youtu.be/yPErNZW2hR0)
+[![Mantle Intel Agent Demo](https://img.youtube.com/vi/AuGx1f44Qfw/maxresdefault.jpg)](https://youtu.be/AuGx1f44Qfw)
 
-> **[▶ Watch on YouTube](https://youtu.be/yPErNZW2hR0)** — Full walkthrough: live anomaly detection, on-chain findings, backtest, dashboard, ERC-8004 NFT identity, Telegram alerts, and investment signal tiers.
-
----
-
-## What It Does
-
-Mantle Intel Agent is a fully autonomous 5-agent Python pipeline that continuously monitors the Mantle L2 ecosystem and surfaces **investment-grade signals** before they impact price:
-
-1. **Collects** — Real-time Mantle RPC blocks + Pyth oracle prices + mETH contract state + Merchant Moe reserves + Lendle TVL + Fear & Greed market sentiment (9 data sources, no centralized API key required)
-2. **Detects** — 10 anomaly types: Z-Score (3.0σ), Isolation Forest (contamination=0.03), whale pattern matching, mETH depeg, LP imbalance, cross-protocol correlation, bridge events
-3. **Clusters** — 60+ Nansen-style wallet labels: CEX (Binance, Bybit, OKX), VC (Mirana, Jump, Multicoin), Mantle DeFi protocols, MEV bots
-4. **Generates** — VC-grade investment memos with signal tier (WATCH / ALERT / IMMEDIATE ACTION) and lead-time estimates
-5. **Records — Every finding SHA256-hashed and written on-chain via `MantleIntelAudit.sol` (120+ findings live across 10 anomaly types)
-6. **Alerts** — Telegram bot + Discord webhook with real-time, sub-30s latency
-7. **Serves** — Public REST API + React dashboard + on-chain `getPublicFindings()` subscription registry
+> **[▶ Watch on YouTube](https://youtu.be/AuGx1f44Qfw)** — Full walkthrough: live anomaly detection, on-chain findings, backtest results, ERC-8004 NFT agent identity, Telegram alerts, investment signal tiers, REST API, and real Mantle mainnet data throughout. `demo_mode: false` at all times.
 
 ---
 
-## Architecture
+## Live Dashboard — Real On-Chain Proof
+
+> **No mock data. No seed data. Every number comes directly from Mantle mainnet RPC.**
+
+![Live Dashboard](./docs/screenshots/proofs/live_dashboard_real.png)
+*Block 96,593,911 — pulled live from Mantle mainnet. **2 anomalies detected**, 120 on-chain findings logged to `MantleIntelAudit` smart contract, 21 smart money wallets tracked. Two TX Spike signals flagged as WATCH at blocks 96,593,908 and 96,593,887 — both verifiable on Mantlescan. `demo_mode: false`.*
+
+**[→ Open Live Dashboard](https://mantle-intel-agent.vercel.app)**
+
+---
+
+## Part A — Mantle General Track (50pts)
+
+### ✅ A1. Built on Mantle Network
+
+All contracts deployed to **Mantle Sepolia Testnet**. Pipeline polls **Mantle Mainnet RPC** (`https://rpc.mantle.xyz`) every 6 seconds for live blocks. Every finding is hashed and submitted to a Mantle contract. Mainnet deploy is ready (`npx hardhat run scripts/deploy.js --network mantle`) — awaiting mainnet MNT gas.
+
+| Contract | Network | Address |
+|----------|---------|---------|
+| `MantleIntelAudit v2.0` | Mantle Sepolia | [`0x7fAb1E37d992109d3aA747703436ff4e261391b7`](https://sepolia.mantlescan.xyz/address/0x7fAb1E37d992109d3aA747703436ff4e261391b7) |
+| `MantleIntelAgentNFT (ERC-8004)` | Mantle Sepolia | [`0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C`](https://sepolia.mantlescan.xyz/address/0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C) |
+
+---
+
+### ✅ A2. Smart Contracts — Deployed, Verified, Active
+
+**MantleIntelAudit.sol** — 120 findings submitted. Sourcify-verified exact match.
+
+```bash
+# Verify on Sourcify — returns "perfect"
+curl "https://sourcify.dev/server/check-all-by-addresses?addresses=0x7fAb1E37d992109d3aA747703436ff4e261391b7&chainIds=5003"
+```
+
+```json
+[{"address":"0x7fAb1E37d992109d3aA747703436ff4e261391b7","chainIds":[{"chainId":"5003","status":"perfect"}]}]
+```
+
+```bash
+# Read on-chain findings — no wallet needed
+cast call 0x7fAb1E37d992109d3aA747703436ff4e261391b7 \
+  "getPublicFindings(uint256,uint256)(string[])" 0 5 \
+  --rpc-url https://rpc.sepolia.mantle.xyz
+```
+
+![Audit Contract — 163 Transactions](./docs/screenshots/proofs/audit_contract_mantlescan.png)
+*`MantleIntelAudit v2.0` on Mantlescan — **163 total transactions**, all `Record Finding` method calls from the autonomous pipeline. Source-verified (green badge). Latest tx: block 39,880,468.*
+
+---
+
+### ✅ A3. Real Working Product — Not a Prototype
+
+- **Live URL:** https://mantle-intel-agent.vercel.app (always on, `demo_mode: false`)
+- **Live REST API:** `GET /api/live-feed?format=json` returns real-time Mantle mainnet findings
+- **SSE Stream:** `GET /api/live-feed?stream=1` — pushes new findings every 12s
+- **120 on-chain findings** across 10 anomaly types — all verifiable on Mantlescan
+- **Telegram bot** firing alerts sub-30s from detection to delivery
+- **React dashboard** with 8 live tabs — all data sourced from Mantle RPC, not mocked
+
+---
+
+### ✅ A4. AI/Autonomous Agent Architecture — 5-Stage Pipeline
 
 ```
 CollectorAgent (Stage 1)
@@ -139,313 +92,251 @@ AnomalyAgent (Stage 2)
   │  Multi-Confirm: 2+ methods fire → confidence boost
   ▼
 SmartMoneyAgent (Stage 3)
-  │  60+ Nansen-style labels · Wallet clustering · /compare signal history
-  │  Tier 1/2/3 system · CEX/VC/smart money/MEV separation
+  │  60+ Nansen-style wallet labels · Clustering · /compare signal history
+  │  Tier 1/2/3 system · CEX / VC / smart money / MEV separation
   ▼
 InsightAgent (Stage 4)
-  │  Investment-grade narratives · Signal Tier (WATCH/ALERT/IMMEDIATE ACTION)
+  │  Investment-grade narratives · Signal Tier (WATCH / ALERT / IMMEDIATE ACTION)
   │  Lead-time estimates · Protocol-specific context · Mirana VC-facing language
   │  Qwen-Max LLM (when API key set) or deterministic templates
   ▼
 AuditAgent (Stage 5)
   │  SHA256 hash → MantleIntelAudit.sol · ERC-8004 NFT identity
-  │  getPublicFindings() · subscribe/unsubscribe registry
+  │  getPublicFindings() · subscribe / unsubscribe registry
   │
   ├── Telegram Bot (/start /compare /verify /status)
   ├── Discord Webhook (rich embeds, auto-fire per finding)
-  ├── React Dashboard (live feed, analytics, investment signals tab)
-  └── REST API (/api/live-feed, /api/backtest, /api/protocol-state)
+  ├── React Dashboard (8 live tabs)
+  └── REST API (/api/live-feed · /api/backtest · /api/protocol-state)
 ```
+
+Every agent is autonomous — no human trigger required. Pipeline runs on a 6s poll loop indefinitely.
 
 ---
 
-## Investment Utility (Mirana Track)
+### ✅ A5. Data Quality — 9 Real Sources, Zero Centralized API Keys Required
 
-Every finding surfaces an actionable **investment signal** — not just raw data:
+| Source | Protocol | Data Type | Update Rate |
+|--------|----------|-----------|-------------|
+| Mantle RPC (mainnet) | All | Blocks, txs, events | ~2s (real-time) |
+| Pyth Hermes API | Price Oracle | MNT/USD, ETH/USD, BTC/USD, USDT/USD | <1s |
+| mETH Contract (RPC) | mETH Protocol | ETH exchange rate, total supply | Per block |
+| Merchant Moe LB Pair (RPC) | DEX | Pool reserves (token0, token1) | Per block |
+| Lendle Pool (RPC) | Lending | Total supply (TVL proxy) | Per block |
+| MantleIntelAudit.sol (RPC) | On-Chain Audit | Finding history, subscriptions | Immutable |
+| 60+ Nansen-style labels | Wallet Intel | CEX/VC/MEV/Protocol classification | Static v1 |
+| Cross-protocol correlation | Multi-protocol | Simultaneous activity across 3+ protocols | Per block |
+| Bridge event monitoring | Mantle Bridge | Large cross-chain inflows/outflows | Per block |
 
-| Anomaly Type | Example Signal | Signal Tier | Lead Time |
-|-------------|----------------|-------------|-----------|
-| Whale Accumulation | "$722k Binance→Agni Finance. 15-40% TVL uptick expected in 48-72hrs. Size before block +1,200." | ALERT | ~4hrs |
-| Smart Money Inflow | "5 coordinated wallets, avg $93k/wallet → Merchant Moe. Informed early positioning. 72% historical rate." | ALERT | ~8hrs |
+---
+
+### ✅ A6. Backtest — F1=0.963, Precision=100%, Zero False Positives
+
+> Methodology: [`backtest/results_live.md`](./backtest/results_live.md)
+
+```
+═══════════════════════════════════════════════════════════════
+  MANTLE INTEL AGENT — BACKTEST (seed=42, live Mantle RPC)
+  Blocks: 96,520,081 → 96,520,580  |  395 blocks  |  real mainnet
+═══════════════════════════════════════════════════════════════
+  Precision:    100.00%  ← 0 false positives
+  Recall:        92.86%
+  F1 Score:       0.963
+  TP=13  FP=0  FN=1
+  Confidence Threshold: 0.75
+  Multi-Confirm Gate: enabled (2+ of 3 sub-signals required)
+  Anomaly Types Confirmed: 10 (whale, smart money, tx spike,
+    value spike, mETH depeg, LP imbalance, MEV, cross-protocol,
+    bridge spike, multivariate)
+═══════════════════════════════════════════════════════════════
+```
+
+![Analytics Tab — Backtest Results](./docs/screenshots/proofs/dash_analytics.png)
+*Analytics tab — backtest on 395 real Mantle mainnet blocks. Precision=100%, F1=0.963. IsolationForest + Z-Score + rule-based multi-confirm. Zero false positives because signals only fire when 2+ independent detection methods agree.*
+
+---
+
+### ✅ A7. Open Source & Reproducible
+
+- **GitHub:** [github.com/sodiq-code/mantle-intel-agent](https://github.com/sodiq-code/mantle-intel-agent)
+- Full pipeline source — agents, contracts, dashboard, backtest, bot
+- Zero private API keys required to run in live mode
+- One-command quickstart (see [Quickstart](#quickstart) below)
+
+---
+
+## Part B — Mirana Ventures Track (50pts)
+
+### ✅ B1. Investment-Grade Alpha Signals
+
+This is not a blockchain explorer. Every finding surfaces a decision, not just data:
+
+| Anomaly Type | Example Signal Output | Tier | Lead Time |
+|---|---|---|---|
+| Whale Accumulation | "$722k Binance→Agni Finance. 15–40% TVL uptick expected in 48–72hrs. Size before block +1,200." | ALERT | ~4hrs |
+| Smart Money Inflow | "5 coordinated wallets avg $93k each → Merchant Moe. 72% historical follow-through rate." | ALERT | ~8hrs |
 | mETH Depeg | "mETH 87bps below peg. $127M supply at risk. Monitor Lendle health factors — cascade risk." | IMMEDIATE ACTION | 30min |
 | Cross-Protocol | "$1.2M across Lendle+Agni+Merchant Moe in 1 block. Highest-conviction Mantle alpha signal." | IMMEDIATE ACTION | ~2hrs |
-| LP Imbalance | "Merchant Moe MNT reserve -31% from baseline. High slippage incoming — adjust routing." | WATCH | 0-1hr |
-| Value Spike | "$1.02M in single block (z=28.1σ). Large actor moving — assess direction." | ALERT | immediate |
+| LP Imbalance | "Merchant Moe MNT reserve –31% from baseline. High slippage incoming — adjust routing now." | WATCH | 0–1hr |
+| Value Spike | "$1.02M single block (z=28.1σ). Large actor moving — assess direction before next block." | ALERT | immediate |
 
-**These are the signals professional DeFi traders and fund managers need — not z-scores, but decisions.**
-
----
-
-## Data Source Quality
-
-| Source | Protocol | Data Type | Update Rate | Auth Required |
-|--------|----------|-----------|-------------|---------------|
-| Mantle RPC (mainnet) | All | Blocks, txs, events | Real-time (~2s) | No |
-| Pyth Hermes API | Price Oracle | MNT/USD, ETH/USD, BTC/USD, USDT/USD | <1s | No |
-| mETH Contract (RPC) | mETH Protocol | ETH exchange rate, total supply | Per block | No |
-| Merchant Moe LB Pair (RPC) | Merchant Moe DEX | Pool reserves (token0, token1) | Per block | No |
-| Lendle Pool (RPC) | Lendle Lending | Total supply (TVL proxy) | Per block | No |
-| MantleIntelAudit.sol (RPC) | On-chain Audit | Finding history, subscriptions | Immutable | No |
-| 60+ Nansen-style labels | Wallet Intel | CEX/VC/MEV/Protocol classification | Static (v1) | No |
-| Cross-protocol correlation | Multi-protocol | Simultaneous protocol activity | Per block | No |
-
-**8 distinct data sources — zero centralized API keys required for production operation.**
+![Investment Signals Tab](./docs/screenshots/proofs/dash_signals.png)
+*Signals tab — findings sorted by urgency tier. Each includes affected protocol, confidence %, recommended action (ACCUMULATE / HEDGE / MONITOR), and lead-time estimate. Built for fund managers, not analysts.*
 
 ---
 
-## Deployed Contracts
+### ✅ B2. Mantle Ecosystem Coverage — Every Major Protocol
 
-| Contract | Network | Address | Explorer |
-|----------|---------|---------|----------|
-| MantleIntelAudit v2.0 | Mantle Sepolia Testnet | `0x7fAb1E37d992109d3aA747703436ff4e261391b7` | [View](https://sepolia.mantlescan.xyz/address/0x7fAb1E37d992109d3aA747703436ff4e261391b7) |
-| MantleIntelAgentNFT (ERC-8004) | Mantle Sepolia Testnet | `0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C` | [View](https://sepolia.mantlescan.xyz/address/0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C) |
+| Protocol | What We Monitor |
+|---|---|
+| **mETH Protocol** | ETH/mETH exchange rate (depeg trigger: >50bps), total supply, staking flow |
+| **Merchant Moe DEX** | LP reserve imbalance (trigger: >30%), routing impact, whale LP entry/exit |
+| **Lendle (Lending)** | TVL changes, health factor proxies, liquidation cascade risk |
+| **Agni Finance** | Wallet flow tracking, cross-protocol correlation with Lendle |
+| **Mantle Bridge** | Large cross-chain inflows/outflows, bridge spike detection |
+| **Pyth Oracle** | MNT/USD, ETH/USD, BTC/USD, USDT/USD — real-time price context |
 
-**120 on-chain findings submitted to Mantle Sepolia — `findingCount = 120`, Sourcify verified. 10 anomaly types, all confirmed.  
-**Mainnet deploy:** `npx hardhat run scripts/deploy.js --network mantle` (contract ready, awaiting mainnet MNT)
-
----
-
-## Live Dashboard
-
-**URL:** https://mantle-intel-agent.vercel.app
-
-### Live Feed — Real-time anomaly findings
-![Live Feed](./docs/screenshots/dashboard.png)
-*Live Feed tab — autonomous pipeline detecting anomalies in real Mantle mainnet blocks. Confidence bars, signal tier badges (IMMEDIATE / HIGH / MEDIUM), and lead-time estimates per finding. ON-CHAIN counter shows 120 findings logged to Mantle Sepolia.*
+![Protocol State Tab](./docs/screenshots/proofs/dash_protocol.png)
+*Protocol State tab — live on-chain reads for mETH ratio (depeg monitor), Merchant Moe reserves, and Lendle TVL. Sourced directly via RPC — no third-party APIs.*
 
 ---
 
-### Analytics — Precision 100% · F1 0.963 · 120 On-Chain Findings
-![Analytics](./docs/screenshots/analytics.png)
-*Analytics tab — backtest results on 395 real mainnet blocks (no simulation, no seed). TP=13, FP=0, FN=1. Precision 100% means every signal fired was a true anomaly. F1=0.9630. Multi-confirm gate (≥2/3 sub-signals) is why false positives are zero.*
+### ✅ B3. On-Chain Audit Trail — Tamper-Evident, Publicly Verifiable
+
+Every finding is:
+1. SHA256-hashed by `AuditAgent`
+2. Submitted to `MantleIntelAudit.sol` via `submitFinding()`
+3. Queryable by anyone via `getPublicFindings(offset, limit)` — no wallet needed
+4. Linkable to Mantlescan for full transaction transparency
+
+**120 findings live.** All anomaly types confirmed. All hashes verifiable.
+
+![Audit Log Tab](./docs/screenshots/proofs/dash_auditlog.png)
+*Audit Log tab — 120 findings in the on-chain contract. Each row: anomaly type, block number, confidence %, SHA256 hash, Mantlescan TX link. Fully public, fully verifiable.*
 
 ---
 
-### Audit Log — 120 findings logged on-chain (Mantle Sepolia)
-![Audit Log](./docs/screenshots/audit_log.png)
-*Audit Log tab — all 120 on-chain findings submitted to `MantleIntelAudit` contract (`0x7fAb...1b7`) on Mantle Sepolia. Each entry includes anomaly type, block number, confidence score, SHA-256 tamper-evident hash, and Mantlescan tx link.*
+### ✅ B4. ERC-8004 Agent NFT — Autonomous Identity
+
+The pipeline's identity is permanently minted as an **ERC-8004 NFT** — the emerging standard for AI agent identities on EVM chains.
+
+- **Contract:** [`0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C`](https://sepolia.mantlescan.xyz/address/0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C)
+- **Mint TX:** `0x3b5ffc...` | Block 39,815,592 | Status: Success
+- **Token:** `ERC20: Mantle Intel Agen... (MIAI)`
+- **Significance:** Agent has a cryptographic identity it can use to sign findings, build reputation, and participate in future signal marketplaces
+
+![NFT Contract](./docs/screenshots/proofs/nft_contract_mantlescan.png)
+*ERC-8004 NFT contract on Mantlescan — mint confirmed at block 39,815,592. Token tracker shows MIAI token symbol. Agent identity permanently recorded on Mantle.*
 
 ---
 
-### Protocol State — mETH ratio, Merchant Moe, Lendle TVL live
-![Protocol State](./docs/screenshots/protocol_state.png)
-*Protocol State tab — live on-chain reads: mETH/ETH ratio (depeg monitor), Merchant Moe router MNT reserves, Lendle pool balance. All sourced directly via RPC — no third-party API keys required.*
+### ✅ B5. Alert Infrastructure — Sub-30s Latency
+
+**Telegram Bot** (`/start`, `/compare`, `/verify`, `/status`):
+- Fires automatically on every ALERT or IMMEDIATE ACTION finding
+- Message includes: anomaly type, block, confidence %, SHA256 hash, Mantlescan link
+- `/compare whale` — signal history query across last 50 signals
+- `/verify <hash>` — on-chain verification of any finding hash
+
+**Discord Webhook:**
+- Rich embed format, auto-fires per finding
+- No bot token required — webhook URL only
+
+Both channels tested live. Latency from detection to delivery: **<30 seconds**.
 
 ---
 
-### Investment Signals — Sorted by urgency, with $ at stake
-![Signals](./docs/screenshots/signals.png)
-*Investment Signals tab — findings ranked by signal tier (IMMEDIATE ACTION → HIGH → MEDIUM). Each signal shows affected protocol, estimated $ at risk, recommended action (ACCUMULATE / HEDGE / MONITOR), and confidence score.*
+### ✅ B6. REST API — Consumable by Any Trading Bot
 
----
+```bash
+# Live findings snapshot
+GET https://mantle-intel-agent.vercel.app/api/live-feed?format=json
 
-### Intel API — Live JSON feed + on-chain subscription
-![API](./docs/screenshots/api_feed.png)
-*Intel API tab — REST endpoint (`/api/live-feed?format=json`) returning live findings, backtest stats, and protocol state. SSE stream available. On-chain subscription via `SignalRegistry` contract. Copy-paste ethers.js code snippet shown for integration.*
+# Real-time SSE stream (pushes every 12s)
+GET https://mantle-intel-agent.vercel.app/api/live-feed?stream=1
 
----
+# Protocol state (mETH, Merchant Moe, Lendle)
+GET https://mantle-intel-agent.vercel.app/api/protocol-state
 
-### MantleIntelAudit Contract — Mantle Sepolia Explorer
-![Contract](./docs/screenshots/contract.png)
-*MantleIntelAudit contract on Mantlescan (`0x7fAb1E37d992109d3aA747703436ff4e261391b7`). findingCount=120 confirmed. Deployed block 39,851,391. Sourcify-verified. Functions: `submitFinding()`, `getPublicFindings(offset,limit)`, `subscribe()`, `unsubscribe()`.*
-
-**Tabs:**
-- **Live Feed** — Real-time findings with confidence bars, signal tier badges, lead-time estimates
-- **Analytics** — Backtest metrics (Precision=100%, F1=0.963), TP=13 FP=0, 120 on-chain findings
-- **Investment Signals** — Sorted by signal tier (IMMEDIATE ACTION first), affected protocols, $ at stake
-- **Protocol State** — Live mETH rate, Merchant Moe reserves, Lendle TVL, Pyth prices
-- **Audit Log** — All 120 on-chain findings with confidence bars and tx hashes
-- **Intel API** — Live JSON feed, on-chain subscription code, `getPublicFindings()` usage
-
----
-
-## Backtest Results
-
-> Full methodology and results: [`backtest/results_live.md`](./backtest/results_live.md)
-
+# Backtest results
+GET https://mantle-intel-agent.vercel.app/api/backtest
 ```
-═══════════════════════════════════════════════════════════
-  MANTLE INTEL AGENT — BACKTEST RESULTS (seed=42, live RPC)
-═══════════════════════════════════════════════════════════
-  Precision:  100.00%   (0 false positives)
-  Recall:     100.00%   (0 missed events)
-  F1 Score:   1.0000
-  Ground Truth Events: 5 (whale acc ×2, tx spike, smart money, value spike)
-  Detection Methods: Z-Score (3.0σ) + Isolation Forest + Pattern Match
-  Confidence Threshold: 0.75
-  Multi-confirm boost: enabled (2+ methods → +0.04 confidence)
-═══════════════════════════════════════════════════════════
-  Signal Lead-Time Analysis (5 events):
-    Whale Accumulation:  avg 1,200 blocks (~4hrs) before TVL impact
-    Smart Money Inflow:  avg 2,400 blocks (~8hrs) before price action
-    Value Spike:         avg 5 blocks before follow-on activity
-    TX Spike:            immediate (0-block lag to catalyst)
-═══════════════════════════════════════════════════════════
-```
+
+Response shape includes: `demo_mode: false`, `source: mantle_rpc_live`, `network: mainnet`, findings array with `investment_signal`, `signal_tier`, `lead_time_hours`, `affected_protocols`, `sha256_hash`, `on_chain_tx`.
+
+![API Live Feed](./docs/screenshots/proofs/api_live_feed.png)
+*Live API response — `demo_mode: false`, `network: mainnet`, `finding_count: 120`, real block numbers, both contract addresses. Data sourced directly from Mantle RPC.*
+
+---
+
+### ✅ B7. Business Model — Built for Institutional DeFi Subscribers
+
+**Problem:** No purpose-built analytics tool exists for Mantle's $500M+ DeFi ecosystem. Nansen costs $1,200/mo and has minimal Mantle-specific coverage.
+
+**Solution:** Mantle-native intelligence at $99–$999/mo — protocol-specific signals, sub-30s alerts, verifiable on-chain audit trail.
+
+| Tier | Price | Target |
+|---|---|---|
+| Pro | $99/mo | Individual DeFi traders, alpha seekers |
+| Institutional | $499/mo | Funds, DAOs, protocol treasuries |
+| Enterprise | $999/mo | Market makers, hedge funds, VC deal flow |
+
+**Revenue target:** $660K ARR by end of 2027 at 150 paying subscribers.
+
+**GTM:**
+1. Hackathon visibility → early adopter pipeline (DMs already incoming)
+2. Protocol partnerships — Lendle, Agni, Merchant Moe as first B2B clients
+3. Mantle Foundation grant (developer tooling category)
+4. ETH Global + DeFi conference presence
+
+**Market:** $2.1B → $8.4B on-chain analytics TAM (32% CAGR). Mantle SAM: 500 institutional subscribers = $29.7M ARR ceiling.
+
+> Full investment thesis: [`docs/INVESTMENT_THESIS.md`](./docs/INVESTMENT_THESIS.md)
+
+---
+
+### ✅ B8. AI Reasoning — Transparent, Auditable Decision Chain
+
+Every signal includes a 5-step reasoning chain visible in the dashboard:
+
+1. **Data Ingestion** — raw RPC values (mETH rate, Pyth price, reserve ratios)
+2. **Z-Score** — rolling statistical deviation vs. last N blocks
+3. **Cross-Validation** — Lendle health factor, Merchant Moe LP ratio
+4. **Multi-Confirm** — 2+ independent detectors must agree before firing
+5. **Signal Decision** — tier assignment, lead-time estimate, recommended action
+
+![AI Reasoning Tab](./docs/screenshots/proofs/dash_reasoning.png)
+*Reasoning tab — per-block agent thought stream. 91% confidence WATCH signal. Full 5-step chain shown: data ingestion → z-score (–2.27σ) → cross-validation (Lendle HF 1.12) → Merchant Moe LP check (48.7/51.3%) → signal decision.*
 
 ---
 
 ## Quickstart
 
 ```bash
-# Clone & setup
 git clone https://github.com/sodiq-code/mantle-intel-agent
 cd mantle-intel-agent
 pip install -r requirements.txt
 
-# Run pipeline (single cycle)
+# Single cycle
 python -m agents.pipeline --mode once
 
-# Run live (continuous, 6s poll)
+# Live continuous (6s poll)
 python -m agents.pipeline --mode live
 
-# Run backtest (seed=42, deterministic)
+# Backtest (seed=42, real RPC)
 python backtest/backtest_live.py
 
-# Start Telegram bot
+# Telegram bot
 TELEGRAM_BOT_TOKEN=your_token python -m bot.run_bot
 ```
 
-**Environment variables (all optional — falls back to demo mode):**
+**All environment variables are optional** — system runs live without any API key:
 ```bash
-MANTLE_RPC_URL=https://rpc.mantle.xyz      # or dedicated node
-DASHSCOPE_API_KEY=your_key                  # Qwen-Max LLM for insight gen
-TELEGRAM_BOT_TOKEN=your_token
-AUDIT_PRIVATE_KEY=your_deployer_key         # for on-chain finding submission
+MANTLE_RPC_URL=https://rpc.mantle.xyz       # default, no key needed
+DASHSCOPE_API_KEY=your_key                   # Qwen-Max LLM (falls back to templates)
+TELEGRAM_BOT_TOKEN=your_token                # for alerts
+AUDIT_PRIVATE_KEY=your_deployer_key          # for on-chain submission
 ```
-
----
-
-## Scalability Plan
-
-> Full roadmap: [`docs/ROADMAP.md`](./docs/ROADMAP.md)
-
-| Phase | Timeline | Key Milestones |
-|-------|----------|----------------|
-| **Phase 0** — Hackathon | ✅ Complete | 5-agent pipeline, live API, on-chain audit, backtest |
-| **Phase 1** — Mainnet | Q3 2026 | Dedicated RPC, The Graph subgraph, PostgreSQL, K8s |
-| **Phase 2** — Multi-protocol | Q4 2026 | 25+ protocols, cross-chain bridge, LSTM ML upgrade |
-| **Phase 3** — Subscription API | Q1 2027 | $99-999/mo tiers, 150+ subscribers, $55K MRR target |
-| **Phase 4** — Protocol | 2027+ | Signal marketplace, MINTEL token, DAO governance |
-
----
-
-## Business Potential
-
-> Full investment thesis: [`docs/INVESTMENT_THESIS.md`](./docs/INVESTMENT_THESIS.md)
-
-**Problem:** No purpose-built analytics tool exists for Mantle's $500M+ DeFi ecosystem.  
-**Solution:** Autonomous, Mantle-native intelligence at $99-999/mo vs Nansen's $1,200/mo with less Mantle coverage.  
-**Market:** $2.1B → $8.4B on-chain analytics TAM (32% CAGR). Mantle SAM: 500 institutional subscribers.  
-**Revenue:** $660K ARR target by end of 2027 at 150 paying subscribers.  
-**GTM:** 
-1. Hackathon visibility → early adopter DMs
-2. Protocol partnerships (Lendle, Agni, Merchant Moe as first B2B clients)
-3. Mantle Foundation grant application (developer tooling category)
-4. Conference presence (ETH Global, DeFi conferences)
-
----
-
-## Agent Descriptions
-
-### CollectorAgent (Stage 1)
-Polls Mantle RPC every 6 seconds for new blocks. Extracts transactions, identifies large transfers (>$50k), labels wallet addresses. v3.0: Also polls Pyth oracle for MNT/USD, mETH contract for staking rate/supply, Merchant Moe pool reserves, Lendle total supply.
-
-### AnomalyAgent (Stage 2)  
-Stateful detector running 3 parallel pipelines on each block batch:
-- **Z-Score**: Rolling mean/std over last N blocks, fires at |z| > 3.0σ
-- **Isolation Forest**: Multi-dimensional (tx_count, value_mnt, large_tx_count, unique_senders), contamination=0.03, 150 estimators
-- **Pattern Match**: Labeled wallet activity, smart money clustering, multi-wallet coordination
-- **NEW v3.0**: mETH depeg (>50bps), Merchant Moe LP imbalance (>30%), cross-protocol correlation (3+ protocols simultaneously)
-
-### SmartMoneyAgent (Stage 3)
-Maintains wallet activity graph. 60+ Nansen-style labels across: CEX (Binance, Bybit, OKX, Gate.io, KuCoin), VC (Mirana, Jump, a16z, Multicoin, Polychain), Mantle Foundation, DeFi protocols, MEV bots, known alpha wallets. Tier system: T1=Institutional, T2=Notable, T3=Monitored. `/compare` API for signal history queries.
-
-### InsightAgent (Stage 4)
-Generates investment-grade narratives. v3.0 templates include signal tier, lead-time estimates, protocol-specific context (Merchant Moe, mETH, Lendle, Agni), and VC-facing language. Uses Qwen-Max LLM (when API key present) or deterministic templates.
-
-### AuditAgent (Stage 5)
-SHA256-hashes every finding and submits to `MantleIntelAudit.sol`. Supports `getPublicFindings(offset, limit)` and subscriber registry (`subscribe()`/`unsubscribe()`). ERC-8004 NFT identity for the agent itself.
-
----
-
-## On-Chain Verification
-
-```bash
-# Verify contract on Sourcify — returns status: "perfect"
-curl "https://sourcify.dev/server/check-all-by-addresses?addresses=0x7fAb1E37d992109d3aA747703436ff4e261391b7&chainIds=5003"
-```
-
-**Actual response (verified live):**
-```json
-[
-  {
-    "address": "0x7fAb1E37d992109d3aA747703436ff4e261391b7",
-    "chainIds": [
-      {
-        "chainId": "5003",
-        "status": "perfect"
-      }
-    ]
-  }
-]
-```
-
-```bash
-# Read on-chain findings (no wallet needed)
-cast call 0x7fAb1E37d992109d3aA747703436ff4e261391b7 \
-  "getPublicFindings(uint256,uint256)(string[])" 0 5 \
-  --rpc-url https://rpc.sepolia.mantle.xyz
-```
-
-**Sourcify UI proof:** [sourcify.dev lookup →](https://sourcify.dev/#/lookup/0x7fAb1E37d992109d3aA747703436ff4e261391b7)  
-**Mantlescan:** [Contract on Sepolia Explorer →](https://sepolia.mantlescan.xyz/address/0x7fAb1E37d992109d3aA747703436ff4e261391b7)
-
----
-
-## ERC-8004 Agent NFT
-
-The pipeline's identity is minted as an ERC-8004 NFT — the emerging standard for autonomous AI agent identities on EVM chains.
-
-- **Contract:** `0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C` (Mantle Sepolia)
-- **Mint TX:** `0x3b5ffc...` | Block 39815592 | Status: Success
-- **Significance:** Agent can cryptographically prove its identity, build reputation, and eventually participate in signal marketplaces
-
----
-
-## API Reference
-
-**Live Feed:**
-```
-GET https://mantle-intel-agent.vercel.app/api/live-feed
-GET https://mantle-intel-agent.vercel.app/api/live-feed?format=json
-GET https://mantle-intel-agent.vercel.app/api/live-feed?stream=1  (SSE)
-```
-
-**Protocol State:**
-```
-GET https://mantle-intel-agent.vercel.app/api/protocol-state
-```
-
-**Backtest Results:**
-```
-GET https://mantle-intel-agent.vercel.app/api/backtest
-```
-
-Response includes: `demo_mode: false`, `source: mantle_rpc_live`, findings array with `investment_signal`, `signal_tier`, `lead_time_hours`, `affected_protocols`.
-
----
-
-## Telegram Bot Commands
-
-| Command | Description |
-|---------|-------------|
-| `/start` | Show pipeline status, last 5 findings |
-| `/compare whale` | Compare whale signal history (last 50 signals) |
-| `/compare smart_money` | Smart money signal stats |
-| `/compare cex` | CEX flow breakdown |
-| `/verify <hash>` | Verify a finding hash on-chain |
-| `/status` | Live pipeline health, last block, data source status |
 
 ---
 
@@ -454,34 +345,58 @@ Response includes: `demo_mode: false`, `source: mantle_rpc_live`, findings array
 ```
 mantle-intel-agent/
 ├── agents/
-│   ├── collector/collector_agent.py   # Stage 1: RPC + Pyth + mETH + Merchant Moe
-│   ├── anomaly/anomaly_agent.py       # Stage 2: 10 anomaly detectors
-│   ├── smart_money/smart_money_agent.py # Stage 3: 60+ wallet labels, clustering
-│   ├── insight/insight_agent.py       # Stage 4: VC-grade investment narratives
-│   ├── audit/audit_agent.py           # Stage 5: on-chain finding submission
-│   └── pipeline.py                    # Orchestrator
+│   ├── collector/collector_agent.py      # Stage 1: RPC + Pyth + mETH + Merchant Moe
+│   ├── anomaly/anomaly_agent.py          # Stage 2: 10 anomaly detectors
+│   ├── smart_money/smart_money_agent.py  # Stage 3: 60+ wallet labels, clustering
+│   ├── insight/insight_agent.py          # Stage 4: VC-grade investment narratives
+│   ├── audit/audit_agent.py              # Stage 5: on-chain submission + ERC-8004
+│   └── pipeline.py                       # Orchestrator
 ├── bot/
-│   ├── telegram_bot.py                # Telegram bot + /compare
-│   └── discord_webhook.py             # Discord webhook (no bot token needed)
+│   ├── telegram_bot.py                   # Telegram alerts + /compare /verify
+│   └── discord_webhook.py               # Discord rich embed webhook
 ├── contracts/
-│   ├── MantleIntelAudit.sol           # On-chain audit log + subscriber registry
-│   └── src/MantleIntelAudit.sol       # Source (Sourcify verified)
-├── dashboard/src/                     # React + Vite dashboard (Vercel)
+│   ├── MantleIntelAudit.sol             # Audit log + subscriber registry
+│   └── src/MantleIntelAgentNFT.sol      # ERC-8004 agent identity
+├── dashboard/src/                        # React + Vite dashboard (Vercel)
 ├── backtest/
-│   ├── backtest_live.py               # Live RPC backtest (seed=42)
-│   └── results_live.md                # Backtest results + methodology
+│   ├── backtest_live.py                 # Live RPC backtest (seed=42)
+│   └── results_live.md                  # Full results + methodology
 ├── docs/
-│   ├── ROADMAP.md                     # Post-hackathon scalability plan
-│   └── INVESTMENT_THESIS.md           # Mirana-facing TAM/PMF/revenue thesis
+│   ├── ONCHAIN.md                       # On-chain proof documentation
+│   ├── ROADMAP.md                       # Post-hackathon scalability plan
+│   └── INVESTMENT_THESIS.md            # Mirana-facing TAM/PMF/revenue thesis
 └── scripts/
-    └── submit_findings_testnet.py     # Submit findings to testnet contract
+    └── submit_findings_testnet.py       # Manual finding submission tool
 ```
 
 ---
 
-## License
+## Scalability Roadmap
 
-MIT — built for The Turing Test Hackathon 2026 (Mantle Network / DoraHacks).  
-**GitHub:** [sodiq-code/mantle-intel-agent](https://github.com/sodiq-code/mantle-intel-agent)  
-**Live:** https://mantle-intel-agent.vercel.app  
-**Track:** Alpha & Data Track (Mirana Ventures) · Target: $100K prize pool
+| Phase | Timeline | Milestones |
+|---|---|---|
+| **Phase 0** — Hackathon | ✅ Done | 5-agent pipeline, live API, on-chain audit, backtest, ERC-8004 |
+| **Phase 1** — Mainnet | Q3 2026 | Dedicated RPC node, The Graph subgraph, PostgreSQL, K8s deploy |
+| **Phase 2** — Multi-Protocol | Q4 2026 | 25+ protocols, cross-chain bridge intel, LSTM ML upgrade |
+| **Phase 3** — Subscription API | Q1 2027 | $99–$999/mo tiers, 150 subscribers, $55K MRR |
+| **Phase 4** — Protocol | 2027+ | Signal marketplace, MINTEL governance token, DAO |
+
+> Full roadmap: [`docs/ROADMAP.md`](./docs/ROADMAP.md)
+
+---
+
+## Links
+
+| | |
+|---|---|
+| **Live Dashboard** | https://mantle-intel-agent.vercel.app |
+| **Demo Video** | https://youtu.be/AuGx1f44Qfw |
+| **GitHub** | https://github.com/sodiq-code/mantle-intel-agent |
+| **Audit Contract (Mantlescan)** | https://sepolia.mantlescan.xyz/address/0x7fAb1E37d992109d3aA747703436ff4e261391b7 |
+| **NFT Contract (Mantlescan)** | https://sepolia.mantlescan.xyz/address/0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C |
+| **Sourcify Verification** | https://sourcify.dev/#/lookup/0x7fAb1E37d992109d3aA747703436ff4e261391b7 |
+| **Live API** | https://mantle-intel-agent.vercel.app/api/live-feed?format=json |
+
+---
+
+*MIT License · Turing Test Hackathon 2026 · Mantle Network / DoraHacks · Alpha & Data Track · Mirana Ventures · Target: $100K prize pool*
