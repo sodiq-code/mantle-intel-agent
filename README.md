@@ -195,13 +195,14 @@ Every signal includes a transparent, auditable 5-step reasoning trace:
 
 ---
 
-## ERC-8004 Agent NFT — Autonomous Identity
+## ERC-8004 Agent NFT — First Mantle Deployment of the Agent Identity Standard
 
-The pipeline's identity is permanently minted as an **ERC-8004 NFT**, the emerging standard for autonomous AI agent identities on EVM chains.
+Mantle Intel Agent is among the **first deployments of ERC-8004 on Mantle** — the emerging standard for autonomous AI agent identities on EVM chains. This is not a cosmetic NFT. It gives the pipeline a cryptographically verifiable on-chain identity, separate from a human wallet.
 
 - **Contract:** [`0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C`](https://sepolia.mantlescan.xyz/address/0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C)
-- **Mint:** Block 39,815,592 · Status: Success · Token: `MIAI`
-- The agent can cryptographically sign findings, build verifiable reputation, and participate in future signal marketplaces
+- **Mint TX:** Block 39,815,592 · Status: Success · Token: `MIAI`
+- **What it enables:** The agent signs findings with its NFT identity, building a verifiable on-chain reputation trail — not tied to any human wallet. Future signal marketplaces, DAO governance, and cross-agent coordination can permissionlessly verify who fired each signal and when.
+- **Why it matters:** No existing Mantle analytics tool (Nansen, Dune, Parsec) has an on-chain agent identity. Every finding Mantle Intel Agent fires is cryptographically attributable to this NFT — tamper-evident from detection to chain.
 
 ![ERC-8004 NFT Contract](./docs/screenshots/proofs/nft_contract_mantlescan.png)
 *ERC-8004 NFT contract on Mantlescan — mint confirmed at block 39,815,592. Token tracker shows MIAI symbol. Agent identity permanently on Mantle.*
@@ -372,6 +373,82 @@ mantle-intel-agent/
 | **NFT Contract** | https://sepolia.mantlescan.xyz/address/0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C |
 | **Sourcify Verification** | https://sourcify.dev/#/lookup/0x7fAb1E37d992109d3aA747703436ff4e261391b7 |
 | **Live API** | https://mantle-intel-agent.vercel.app/api/live-feed?format=json |
+
+---
+
+---
+
+## On-Chain Signal Subscription — Composable by Design
+
+Any trading bot, protocol, or dashboard can subscribe to Mantle Intel Agent's signal feed directly on-chain — no API key, no centralized gatekeeping.
+
+```solidity
+// Subscribe your contract or wallet to the intel feed
+// Network: Mantle Sepolia (Chain ID 5003)
+// Contract: 0x7fAb1E37d992109d3aA747703436ff4e261391b7
+
+interface IMantleIntelAudit {
+    function subscribe(string calldata subscriptionType) external;
+    function unsubscribe() external;
+    function isSubscribed(address subscriber) external view returns (bool);
+    function getPublicFindings(uint256 offset, uint256 limit) external view returns (string[] memory);
+}
+
+// Subscribe from any wallet or smart contract
+IMantleIntelAudit intel = IMantleIntelAudit(0x7fAb1E37d992109d3aA747703436ff4e261391b7);
+intel.subscribe("whale");        // subscribe to whale anomaly signals
+intel.subscribe("meth_depeg");   // subscribe to mETH depeg alerts
+intel.subscribe("all");          // subscribe to all signal types
+
+// Check subscription status
+bool active = intel.isSubscribed(msg.sender);
+
+// Pull latest findings — no auth required
+string[] memory findings = intel.getPublicFindings(0, 10);
+```
+
+```bash
+# CLI — check subscription status
+cast call 0x7fAb1E37d992109d3aA747703436ff4e261391b7 \
+  "isSubscribed(address)(bool)" YOUR_WALLET_ADDRESS \
+  --rpc-url https://rpc.sepolia.mantle.xyz
+
+# Pull last 10 findings (read-only, no wallet needed)
+cast call 0x7fAb1E37d992109d3aA747703436ff4e261391b7 \
+  "getPublicFindings(uint256,uint256)(string[])" 0 10 \
+  --rpc-url https://rpc.sepolia.mantle.xyz
+```
+
+This makes the agent **composable** — other protocols, trading bots, and dashboards can plug into the signal feed on-chain without any off-chain dependency.
+
+---
+
+## Quick Start — 3 Ways to Access Intelligence
+
+**1. Hit the live API (no setup)**
+```bash
+curl "https://mantle-intel-agent.vercel.app/api/live-feed?format=json" | python3 -m json.tool
+# Returns: real Mantle block numbers, live anomaly findings, demo_mode: false
+```
+
+**2. Subscribe to Telegram alerts**
+Search `@MantleIntelBot` on Telegram. Type `/start` to see live findings. `/status` for pipeline health. No sign-up required.
+
+**3. Query findings on-chain**
+```bash
+cast call 0x7fAb1E37d992109d3aA747703436ff4e261391b7 \
+  "getPublicFindings(uint256,uint256)(string[])" 0 5 \
+  --rpc-url https://rpc.sepolia.mantle.xyz
+```
+Every finding is permanently on-chain, publicly readable, no wallet needed.
+
+---
+
+## Built for Mirana's Thesis
+
+Mirana Ventures backs verifiable data infrastructure for institutional DeFi. Mantle Intel Agent is purpose-built for exactly that thesis: a tamper-evident, on-chain intelligence layer for the Mantle ecosystem — giving institutional actors the signal quality and audit trail they need to deploy capital with confidence.
+
+No existing Mantle analytics tool (Nansen, Dune, Parsec) offers a tamper-evident on-chain audit trail for every signal fired. Every finding Mantle Intel Agent emits is SHA-256 hashed, recorded on-chain, and publicly verifiable — a data infrastructure primitive, not just a dashboard.
 
 ---
 
