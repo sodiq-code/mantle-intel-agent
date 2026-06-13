@@ -104,6 +104,8 @@ cast call 0x7fAb1E37d992109d3aA747703436ff4e261391b7 \
 
 ## On-Chain Audit Trail
 
+> Full on-chain proof documentation: [`docs/ONCHAIN.md`](./docs/ONCHAIN.md)
+
 Every signal the system fires is permanently recorded:
 
 1. `AuditAgent` computes `SHA256(finding_json)`
@@ -327,6 +329,8 @@ mantle-intel-agent/
 
 ## Business Model
 
+> Full investment thesis: [`docs/INVESTMENT_THESIS.md`](./docs/INVESTMENT_THESIS.md)
+
 **Problem:** No purpose-built analytics layer exists for Mantle's $500M+ DeFi ecosystem. Nansen charges $1,200/mo with minimal Mantle-specific coverage.
 
 **Solution:** Mantle-native intelligence at $99–$999/mo — protocol-specific signals, sub-30s alerts, tamper-evident on-chain audit trail, and a public API consumable by any trading system.
@@ -344,6 +348,8 @@ mantle-intel-agent/
 ---
 
 ## Roadmap
+
+> Full scalability plan: [`docs/ROADMAP.md`](./docs/ROADMAP.md)
 
 | Phase | Timeline | Milestones |
 |---|---|---|
