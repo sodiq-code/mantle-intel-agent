@@ -325,7 +325,8 @@ mantle-intel-agent/
 └── docs/
     ├── ONCHAIN.md                        # On-chain proof documentation
     ├── ROADMAP.md                        # Post-hackathon scalability plan
-    └── INVESTMENT_THESIS.md             # TAM / PMF / revenue thesis
+    ├── INVESTMENT_THESIS.md             # TAM / PMF / revenue thesis
+    └── SECURITY.md                       # Slither static analysis — 0 critical/high findings
 ```
 
 ---
