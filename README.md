@@ -376,3 +376,7 @@ mantle-intel-agent/
 ---
 
 *MIT License · Built for the Turing Test Hackathon 2026 · Mantle Network / DoraHacks · Alpha & Data Track · Mirana Ventures*
+
+---
+
+<p align="center">Built by <strong>JIMOH SODIQ</strong></p>
