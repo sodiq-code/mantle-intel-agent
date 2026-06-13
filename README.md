@@ -67,6 +67,44 @@ curl "https://sourcify.dev/server/check-all-by-addresses?addresses=0x7fAb1E37d99
 
 ---
 
+## Live Dashboard — All Tabs
+
+> All screenshots captured live from **[mantle-intel-agent.vercel.app](https://mantle-intel-agent.vercel.app)** — block ~96,590,032, real Mantle mainnet data, no mocks.
+
+### Findings (Live Feed)
+![Live Feed Tab](./docs/screenshots/proofs/dash_livefeed.png)
+*Block 96,590,032 — LIVE badge active. 120 on-chain findings stored to `MantleIntelAudit` contract. TX Spike anomaly detected at 78% confidence with WATCH signal. Filter tabs: Whale · Smart Money · TX Spike · Value · Multivariate · MEV · Bridge.*
+
+### Alpha Signals
+![Signals Tab](./docs/screenshots/proofs/dash_signals.png)
+*Signals tab — real-time investment signal tiers: High Conf (≥85%), Mid Conf (75–85%), Watch (65–75%). Portfolio strategy panel shows live anomaly count across tiers. Block 96,590,044 at 80.8% avg conf.*
+
+### Analytics (Backtest Results)
+![Analytics Tab](./docs/screenshots/proofs/dash_analytics.png)
+*Backtest on real Mantle mainnet data (blocks 96,520,081–96,520,580, 395 blocks): **Precision 100% · Recall 92.9% · F1 Score 0.963**. 13 TP, 0 FP, 1 FN. Algorithm: IsolationForest + z-score + rule-based + multi-confirm. 1,931,800 cycles run, 67 wallets tracked.*
+
+### On-Chain Audit Log
+![Audit Log Tab](./docs/screenshots/proofs/dash_auditlog.png)
+*120 findings written on-chain to `0x7fAb1E37d992109d3aA747703436ff4e261391b7`. Live table shows type, block number, confidence %, status OK, and Mantlescan TX link for each entry. Entries include Whale Accum., Smart Money, and MEV Sandwich — all at 77–91% confidence.*
+
+### REST API
+![API Tab](./docs/screenshots/proofs/dash_api.png)
+*Built-in API reference: `GET /api/live-feed?format=json` (JSON snapshot), `GET /api/live-feed?stream=1` (SSE 12s intervals), `VIEW findingCount()` (120 confirmed on-chain), `VIEW getPublicFindings(0,120)` (paginated from audit contract). Code snippets for both REST and on-chain access.*
+
+### Protocol State (Live RPC)
+![Protocol Tab](./docs/screenshots/proofs/dash_protocol.png)
+*Live on-chain protocol monitoring via Mantle mainnet RPC: mETH Staking (ETH/mETH ratio 1.001200 — HEALTHY), Merchant Moe DEX (ACTIVE, >10% imbalance trigger), Lendle Pool (LIVE, >5% drop/block trigger). All sourced directly from contracts, no third-party API.*
+
+### ROI Calculator
+![ROI Calc Tab](./docs/screenshots/proofs/dash_roi.png)
+*Investment signal ROI modeler: $50K portfolio · Pro $99/mo tier · 2 events/yr → **$16,130 expected savings · 1258% ROI · 0.9mo payback**. Scenario breakdown: Lendle Liquidation Cascade ($5,400 avg avoided), Whale Exit ($5,950 avg avoided).*
+
+### AI Reasoning Chain
+![Reasoning Tab](./docs/screenshots/proofs/dash_reasoning.png)
+*Per-block agent thought stream for mETH/USD: 91% confidence WATCH signal. 5-step chain — (1) Data Ingestion: mETH rate 1.00413 ETH, Pyth oracle $1,663.23; (2) Z-Score: z=-2.27σ below threshold but rising; (3) Cross-validation: Lendle health factor 1.12; (4) Merchant Moe LP: 48.7/51.3% ratio; (5) Signal Decision: WATCH, set alert at -55bps.*
+
+---
+
 ## Demo Video
 
 [![Mantle Intel Agent — Demo Video](https://img.youtube.com/vi/yPErNZW2hR0/maxresdefault.jpg)](https://youtu.be/yPErNZW2hR0)
