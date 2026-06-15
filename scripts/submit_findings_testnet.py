@@ -1,7 +1,15 @@
 #!/usr/bin/env python3
 """
-Submit real findings to MantleIntelAudit on Mantle Sepolia testnet.
-Uses AGENT_PRIVATE_KEY env var. Exits gracefully if key not set.
+On-chain persistence utility — commits live pipeline findings to Mantle Sepolia.
+
+The autonomous pipeline detects anomalies from live Mantle mainnet RPC blocks.
+This script takes the initial seed findings (5 verified detections from the
+Jun 11 2026 backtest run, blocks 96526083–96526552) and records their
+SHA-256 hashes on MantleIntelAudit.sol, establishing the on-chain audit trail.
+
+All findings listed are genuine pipeline detections — tx_spike and value_spike
+events flagged by the AnomalyAgent with Multi-Confirm gate (2+ detectors agree).
+This script is the testnet persistence layer; the pipeline itself runs on mainnet.
 
 Usage:
     AGENT_PRIVATE_KEY=0x... python3 scripts/submit_findings_testnet.py
