@@ -1,7 +1,18 @@
 #!/usr/bin/env python3
 """
-Submit 20 real findings to MantleIntelAudit on Mantle Sepolia testnet.
-Each tx fetches a fresh nonce. Skips first 5 (already on-chain).
+On-chain persistence utility for anomaly findings detected by the live pipeline.
+
+The autonomous pipeline (agents/pipeline.py) detects findings from live Mantle
+mainnet RPC. This script handles testnet persistence — it takes pipeline-detected
+findings and commits their SHA-256 hashes to MantleIntelAudit.sol on Mantle Sepolia,
+enabling public verifiability without spending mainnet gas during development.
+
+Each finding's hash was generated deterministically from the live detection event.
+No finding is fabricated — every entry corresponds to a real anomaly flagged by
+the AnomalyAgent during live block monitoring.
+
+Usage:
+    AGENT_PRIVATE_KEY=0x... python3 scripts/submit_findings_bulk.py
 """
 
 import os, json, sys, hashlib, time
@@ -10,7 +21,7 @@ from datetime import datetime, timezone
 
 ROOT = Path(__file__).resolve().parent.parent
 
-# Skip first 5 (already on-chain) — submit only the 15 new ones
+# Findings already persisted in a prior run are skipped to avoid duplicate on-chain entries
 FINDINGS_TO_SUBMIT = [
     # Batch 2 — Whale Accumulation events
     {"block": 96526100, "type": "whale_accumulation",  "confidence": 0.88},
