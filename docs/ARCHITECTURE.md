@@ -9,7 +9,7 @@
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                    MANTLE INTEL AGENT v5.0                       │
-│              Turing Test Hackathon 2026 · Alpha Track            │
+│           On-Chain Intelligence for the Mantle Ecosystem         │
 └─────────────────────────────────────────────────────────────────┘
            │
            ▼
@@ -118,16 +118,12 @@ Notifier Agent → Telegram + Vercel API response
 contracts/
 ├── MantleIntelAudit.sol          # Primary audit trail
 │   ├── submitFinding(bytes32)    # Agent submits SHA256 hash
-│   ├── findingCount()            # Returns total (20)
+│   ├── findingCount()            # Returns total count
 │   ├── getPublicFindings(o, l)   # Paginated retrieval
 │   └── subscribe/unsubscribe     # Signal registry
 │
 ├── MantleIntelAgentNFT.sol       # ERC-8004 autonomous agent NFT
 │   └── mint(agentId, uri)        # Proved at block 39815592
-│
-├── SignalRegistry.sol            # On-chain signal subscriptions
-├── SmartMoneyTracker.sol         # Wallet label registry
-└── AlertLog.sol                  # Alert ledger
 ```
 
 ---

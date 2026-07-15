@@ -5,8 +5,8 @@ narrative summaries for each anomaly finding.
 Falls back to template-based generation when no API key is set.
 
 v3.0 changes:
-  - Investment-grade templates with VC-facing language (PMF, TAM, alpha signals)
-  - Mirana Ventures-optimized framing: "would a professional investor act on this?"
+  - Investment-grade templates with institutional-facing language (PMF, TAM, alpha signals)
+  - Professional investor framing: "would a portfolio manager act on this?"
   - Lead-time context in every finding ("X hours before anticipated market move")
   - Protocol-specific context for Merchant Moe, mETH, Lendle, Agni
   - Actionable signal tier: WATCH / ALERT / IMMEDIATE ACTION
@@ -187,7 +187,7 @@ class InsightAgent:
 
     async def _qwen_generate(self, finding) -> str:
         user_prompt = f"""Generate an institutional intelligence report for this Mantle on-chain anomaly.
-The reader is a portfolio manager at Mirana Ventures making real capital decisions.
+The reader is a portfolio manager at a professional crypto fund making real capital decisions.
 
 Anomaly Type: {finding.anomaly_type}
 Block Height: {finding.block_height}

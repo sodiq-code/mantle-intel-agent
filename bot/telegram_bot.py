@@ -42,7 +42,7 @@ Every finding verified on-chain via MantleIntelAudit.sol.
 <b>Contract:</b> <code>0x7fAb1E37d992109d3aA747703436ff4e261391b7</code>
 <b>Network:</b> Mantle Sepolia Testnet
 
-<i>Built for the Turing Test Hackathon 2026 — Alpha &amp; Data Track (Mirana Ventures)</i>
+<i>Mantle Intel Agent — On-Chain Intelligence for the Mantle Ecosystem</i>
 """
 
 STATUS_TEMPLATE = """

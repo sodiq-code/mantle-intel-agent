@@ -375,15 +375,12 @@ function ProtocolTab({ data }) {
         <div className="flex items-center gap-2 mb-3">
           <Code size={12} style={{ color: G }}/>
           <span className="text-xs font-bold" style={{ color: G }}>DEPLOYED CONTRACTS — MANTLE SEPOLIA</span>
-          <span className="ml-auto text-xs font-mono text-white bg-white/10 px-2 py-0.5 rounded-full">5 contracts</span>
+          <span className="ml-auto text-xs font-mono text-white bg-white/10 px-2 py-0.5 rounded-full">2 contracts</span>
         </div>
         <div className="space-y-2">
           {[
             { name:"MantleIntelAudit",    addr:"0x7fAb1E37d992109d3aA747703436ff4e261391b7", note:`${auditCount} findings` },
-            { name:"MantleIntelAgentNFT", addr:"0xa1A134Dc66D0A0BD967ede1d0ad427b42B23742f", note:"ERC-8004 identity" },
-            { name:"SignalRegistry",      addr:"0xdf0755192B35220B4C2bD12Ce01aa36E2F7fbBEE", note:"Alpha signal ledger" },
-            { name:"SmartMoneyTracker",   addr:"0xB1ba1eeB90e29E2b00d61E8Aa2f0D6eDe46973Bf", note:"Whale flow log" },
-            { name:"AlertLog",            addr:"0x1Ce1B5F606b9E83e7432057265Dd95678114F82D", note:"Alert dispatch log" },
+            { name:"MantleIntelAgentNFT", addr:"0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C", note:"ERC-8004 identity" },
           ].map(({ name, addr, note }) => (
             <div key={name} className="flex items-center gap-3 text-xs font-mono py-1.5 border-b border-white/5 last:border-0">
               <span className="font-bold" style={{ color: G, minWidth: 160 }}>{name}</span>
@@ -1143,7 +1140,7 @@ export default function App() {
         {/* ── Footer ────────────────────────────────────────────────────── */}
         <div className="border-t pt-4 flex items-center justify-between text-xs font-mono text-gray-700"
           style={{ borderColor:"#111" }}>
-          <span>Mantle Intel Agent v6.0 · Turing Test Hackathon 2026 · Alpha &amp; Data Track · 70 tests green · CI passing</span>
+          <span>Mantle Intel Agent v6.0 · On-Chain Intelligence · Mantle Ecosystem</span>
           <div className="flex items-center gap-4 hidden sm:flex">
             <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-1 hover:text-gray-400 transition-colors">

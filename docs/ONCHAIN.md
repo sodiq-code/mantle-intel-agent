@@ -1,6 +1,6 @@
 # Mantle Intel Agent — On-Chain Proof Log
 
-> Every transaction, every contract, every verifiable fact. Judges can reproduce all of this in under 5 minutes using only `cast` (Foundry) and a browser.
+> Every transaction, every contract, every verifiable fact. Anyone can reproduce all of this in under 5 minutes using only `cast` (Foundry) and a browser.
 
 **Chain:** Mantle Sepolia Testnet (Chain ID: 5003)  
 **RPC:** `https://rpc.sepolia.mantle.xyz`  
@@ -13,11 +13,8 @@
 
 | Contract | Address | Block | Purpose |
 |----------|---------|-------|---------|
-| **MantleIntelAudit** | `0x7fAb1E37d992109d3aA747703436ff4e261391b7` | 39851391 | Immutable anomaly audit trail — 20 findings, SHA256 tamper-evident hashes |
+| **MantleIntelAudit** | `0x7fAb1E37d992109d3aA747703436ff4e261391b7` | 39851391 | Immutable anomaly audit trail — SHA256 tamper-evident hashes |
 | **MantleIntelAgentNFT** | `0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C` | 39815592 | ERC-8004 agent identity NFT |
-| **SignalRegistry** | `0xdf07...` | — | On-chain signal subscription registry |
-| **SmartMoneyTracker** | `0xB1ba...` | — | Smart money wallet registry |
-| **AlertLog** | `0x1Ce1...` | — | Agent alert ledger |
 
 ---
 
@@ -35,32 +32,26 @@ The agent minted its on-chain identity as an ERC-8004 NFT before any findings we
 
 ---
 
-## On-Chain Findings (20 total)
+## On-Chain Findings
 
-All 20 anomaly findings from the autonomous pipeline are permanently recorded on `MantleIntelAudit.sol`. Each finding contains a SHA256 hash of the full finding data — any tampering (changing confidence, timestamp, description) produces a different hash.
+All anomaly findings from the autonomous pipeline are permanently recorded on `MantleIntelAudit.sol`. Each finding contains a SHA256 hash of the full finding data — any tampering (changing confidence, timestamp, description) produces a different hash. The finding count grows as the pipeline runs — check the contract on Mantlescan for the current total.
 
 ### Verify with cast (Foundry)
 
 ```bash
-# Check total finding count
+# Check total finding count (live — grows as pipeline runs)
 cast call 0x7fAb1E37d992109d3aA747703436ff4e261391b7 \
   "findingCount()(uint256)" \
   --rpc-url https://rpc.sepolia.mantle.xyz
-# Expected: 20
 
 # Read first 5 findings (offset=0, limit=5)
 cast call 0x7fAb1E37d992109d3aA747703436ff4e261391b7 \
-  "getPublicFindings(uint256,uint256)(tuple[])" 0 5 \
+  "getPublicFindings(uint256,uint256)(uint256[],uint256)" 0 5 \
   --rpc-url https://rpc.sepolia.mantle.xyz
 
-# Read findings 5-10
+# Read next 5 findings (offset=5, limit=5)
 cast call 0x7fAb1E37d992109d3aA747703436ff4e261391b7 \
-  "getPublicFindings(uint256,uint256)(tuple[])" 5 5 \
-  --rpc-url https://rpc.sepolia.mantle.xyz
-
-# Read all 20 findings
-cast call 0x7fAb1E37d992109d3aA747703436ff4e261391b7 \
-  "getPublicFindings(uint256,uint256)(tuple[])" 0 20 \
+  "getPublicFindings(uint256,uint256)(uint256[],uint256)" 5 5 \
   --rpc-url https://rpc.sepolia.mantle.xyz
 ```
 
@@ -139,12 +130,11 @@ curl "https://mantle-intel-agent.vercel.app/api/backtest" | python3 -m json.tool
 ```bash
 git clone https://github.com/sodiq-code/mantle-intel-agent
 cd mantle-intel-agent
-pip install numpy scikit-learn scipy structlog
-python scripts/run_backtest.py
-# → Precision: 1.0000 | Recall: 1.0000 | F1: 1.0000 | seed=42
+pip install numpy scikit-learn scipy structlog httpx
+python backtest/backtest_live.py
 ```
 
-Anti-gaming proof: backtest uses `seed=42` for deterministic splits. Holdout tested on seeds 7, 13, 31 — all pass (see `tests/test_backtest.py::test_generalises_across_seeds`).
+**Note:** The current backtest is a methodology validation run. Extended backtest across 10,000+ blocks with naturally-occurring anomalies is in progress. See `backtest/results_live.md` for full methodology details and limitations.
 
 ---
 
@@ -188,4 +178,4 @@ Every push to `main` triggers:
 - **What happened:** Agent detected a high-value transfer cluster. 202.9 MNT (~$400+ at time of detection) concentrated in a single block. Cross-referenced against 60+ labeled wallet database — no CEX/VC match (unlabeled smart money pattern).
 - **Signal tier:** `WATCH` → upgraded to `ALERT` when confirmed 3 blocks later by correlated Merchant Moe LP reserve shift.
 
-> **For Mirana Ventures:** These are exactly the signals a fund manager needs — block-precise, timestamped, tier-rated, and submitted to an immutable on-chain audit log. The 6-second detection-to-alert latency means you get the signal before it's priced in.
+> **Note:** These are real detections from live Mantle mainnet data. The pipeline reads from mainnet RPC and records findings to the Sepolia testnet audit contract.

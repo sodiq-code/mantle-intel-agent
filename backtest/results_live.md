@@ -1,5 +1,16 @@
 # Mantle Intel Agent — Live Backtest Results
 
+> **⚠️ METHODOLOGY VALIDATION — NOT A PRODUCTION PERFORMANCE CLAIM**
+>
+> The results below validate that the detection pipeline runs correctly on real Mantle
+> mainnet data. The sample size (5 injected ground-truth events over 100 blocks) is
+> **insufficient** for statistically significant precision/recall claims.
+>
+> An extended backtest across 10,000+ blocks with naturally-occurring anomalies
+> (not injected events) is in progress. Until that completes, the F1/Precision
+> numbers below should be treated as **preliminary methodology validation only**,
+> not as validated production metrics.
+
 **Last updated:** June 12, 2026  
 **Methodology:** Deterministic backtest on live Mantle RPC data with 5 injected ground truth events  
 **Reproducibility:** Fixed seed=42 — run `python backtest/backtest_live.py` to verify
@@ -165,4 +176,4 @@ curl "https://mantle-intel-agent.vercel.app/api/live-feed?format=json" | python3
 
 ---
 
-*Mantle Intel Agent | Turing Test Hackathon 2026 | Alpha & Data Track*
+*Mantle Intel Agent — Backtest Methodology Documentation*

@@ -40,7 +40,7 @@ Detects whale moves, smart money inflows, and anomalous patterns — every findi
 /latest   — Last 5 findings
 /verify &lt;hash&gt; — Verify a finding hash on-chain
 
-<i>Built for the The Turing Test Hackathon 2026 — Alpha &amp; Data Track</i>
+<i>Mantle Intel Agent — On-Chain Intelligence for the Mantle Ecosystem</i>
 """
 
 def load_findings():

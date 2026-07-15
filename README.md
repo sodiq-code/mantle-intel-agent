@@ -4,12 +4,14 @@
 [![Demo Video](https://img.shields.io/badge/Demo%20Video-YouTube-red?style=for-the-badge&logo=youtube)](https://youtu.be/AuGx1f44Qfw)
 [![Audit Contract](https://img.shields.io/badge/Audit%20Contract-Mantle%20Sepolia-green?style=for-the-badge)](https://sepolia.mantlescan.xyz/address/0x7fAb1E37d992109d3aA747703436ff4e261391b7)
 [![Sourcify Verified](https://img.shields.io/badge/Sourcify-Exact%20Match%20✓-brightgreen?style=for-the-badge)](https://sourcify.dev/#/lookup/0x7fAb1E37d992109d3aA747703436ff4e261391b7)
-[![F1 Score](https://img.shields.io/badge/Backtest-F1%3D0.963%20%7C%20Precision%3D100%25-blue?style=for-the-badge)](./backtest/results_live.md)
-[![On-Chain](https://img.shields.io/badge/On--Chain%20Findings-120-orange?style=for-the-badge)](https://sepolia.mantlescan.xyz/address/0x7fAb1E37d992109d3aA747703436ff4e261391b7)
+[![On-Chain](https://img.shields.io/badge/On--Chain-Live%20Feed-orange?style=for-the-badge)](https://sepolia.mantlescan.xyz/address/0x7fAb1E37d992109d3aA747703436ff4e261391b7)
+[![Backtest](https://img.shields.io/badge/Backtest-Methodology%20In%20Development-blue?style=for-the-badge)](./backtest/results_live.md)
 
-> **Autonomous 5-agent AI pipeline delivering institutional-grade on-chain intelligence for the Mantle Network ecosystem.**
+> **Autonomous 5-agent AI pipeline delivering real-time on-chain intelligence for the Mantle Network ecosystem.**
 >
-> Real-time anomaly detection across live Mantle mainnet blocks · 120 findings permanently recorded on-chain · F1=0.963, Precision=100% across 395 backtest blocks · 9 independent data sources · 10 anomaly types · Telegram & Discord alerts · ERC-8004 NFT agent identity · `demo_mode: false` at all times.
+> Real-time anomaly detection across live Mantle mainnet blocks · SHA-256 hashed findings permanently recorded on-chain · 10 anomaly detection methods · Multi-Confirm consensus gate · Telegram & Discord alerts · ERC-8004 NFT agent identity · `demo_mode: false` at all times.
+>
+> **Note:** Backtest methodology is being expanded to 10,000+ blocks for statistically significant precision/recall validation. See [`backtest/results_live.md`](./backtest/results_live.md) for current methodology and limitations.
 
 ---
 
@@ -27,7 +29,7 @@
 
 ![Mantle Intel Agent — Live Dashboard](./docs/screenshots/proofs/live_dashboard_real.png)
 
-*Block 96,593,911 pulled live from Mantle mainnet. 2 anomalies detected, 120 findings logged to the `MantleIntelAudit` smart contract, 21 smart money wallets tracked. Two TX Spike signals flagged WATCH at blocks 96,593,908 and 96,593,887 — both verifiable on Mantlescan. The `MantleIntelAudit` contract address and 120 findings count are displayed inline and linkable on-chain.*
+*Block 96,593,911 pulled live from Mantle mainnet. Real-time anomaly detection with findings logged to the `MantleIntelAudit` smart contract. 21 smart money wallets tracked. TX Spike signals flagged WATCH are verifiable on Mantlescan. The `MantleIntelAudit` contract address is displayed inline and linkable on-chain. Finding count updates live as the pipeline runs — check the contract on Mantlescan for the current total.*
 
 ---
 
@@ -39,7 +41,7 @@ Mantle Intel Agent is a fully autonomous 5-agent Python pipeline that continuous
 2. **Detects** — Runs 10 anomaly detectors per block: Z-Score (3.0σ), Isolation Forest (contamination=0.03), whale pattern matching, mETH depeg, LP imbalance, cross-protocol correlation, bridge spikes, MEV activity, smart money clustering, and multivariate signals.
 3. **Labels** — 60+ Nansen-style wallet classifications: CEX (Binance, Bybit, OKX), VC (Mirana, Jump, Multicoin), Mantle DeFi protocols, MEV bots, and known alpha wallets.
 4. **Generates** — Investment-grade signal narratives with tier (WATCH / ALERT / IMMEDIATE ACTION), lead-time estimates, affected protocols, and recommended actions.
-5. **Records** — Every finding SHA256-hashed and submitted on-chain to `MantleIntelAudit.sol`. 120 findings live, all publicly queryable.
+5. **Records** — Every finding SHA256-hashed and submitted on-chain to `MantleIntelAudit.sol`. All publicly queryable — count grows as the pipeline runs.
 6. **Alerts** — Telegram bot and Discord webhook. Sub-30 second latency from detection to delivery.
 7. **Serves** — Public REST API, SSE stream, React dashboard, and on-chain `getPublicFindings()` subscription registry.
 
@@ -86,7 +88,7 @@ AuditAgent (Stage 5)
 | `MantleIntelAudit v2.0` | Mantle Sepolia | `0x7fAb1E37d992109d3aA747703436ff4e261391b7` | [View on Mantlescan](https://sepolia.mantlescan.xyz/address/0x7fAb1E37d992109d3aA747703436ff4e261391b7) |
 | `MantleIntelAgentNFT (ERC-8004)` | Mantle Sepolia | `0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C` | [View on Mantlescan](https://sepolia.mantlescan.xyz/address/0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C) |
 
-**163 total `recordFinding` transactions** submitted autonomously by the pipeline. Sourcify-verified with exact-match status on both creation and runtime bytecode.
+Sourcify-verified with exact-match status on both creation and runtime bytecode. Finding count grows as the pipeline runs — verify the current total on [Mantlescan](https://sepolia.mantlescan.xyz/address/0x7fAb1E37d992109d3aA747703436ff4e261391b7).
 
 ```bash
 # Verify on Sourcify — returns "perfect"
@@ -115,10 +117,10 @@ Every signal the system fires is permanently recorded:
 3. Finding is publicly readable via `getPublicFindings(offset, limit)` — no wallet needed
 4. Each entry links directly to its Mantlescan transaction
 
-**120 findings confirmed on-chain across 10 anomaly types.** All hashes publicly verifiable.
+**Findings are recorded on-chain across 10 anomaly types as the pipeline runs.** All hashes publicly verifiable — check the contract on Mantlescan for the current count.
 
 ![Audit Log](./docs/screenshots/proofs/dash_auditlog.png)
-*Audit Log tab — 120 on-chain findings, each with anomaly type, block number, confidence score, SHA256 hash, and Mantlescan transaction link.*
+*Audit Log tab — on-chain findings, each with anomaly type, block number, confidence score, SHA256 hash, and Mantlescan transaction link. Count updates live as the pipeline detects and records new anomalies.*
 
 ---
 
@@ -128,23 +130,31 @@ Every signal the system fires is permanently recorded:
 
 ```
 ════════════════════════════════════════════════════════════════
-  MANTLE INTEL AGENT — BACKTEST  (seed=42, live Mantle RPC)
-  Range: blocks 96,520,081 → 96,520,580  |  395 real mainnet blocks
+  MANTLE INTEL AGENT — BACKTEST (preliminary)
+  Data: Live Mantle Mainnet RPC (demo_mode=false)
+  Methodology: seed=42, methodology validation run
 ════════════════════════════════════════════════════════════════
-  Precision   100.00%   ← zero false positives
-  Recall       92.86%
-  F1 Score      0.963
-  TP=13  FP=0  FN=1
+
+  Status: METHODOLOGY VALIDATION — not yet statistically significant
+
+  The current backtest validates that the detection pipeline runs
+  correctly on real Mantle mainnet data. The sample size is
+  insufficient for production-grade precision/recall claims.
+
+  Next steps: Extended backtest across 10,000+ blocks with
+  naturally-occurring anomalies (not injected events) to produce
+  statistically meaningful precision/recall/F1 scores.
+
   Algorithms: IsolationForest + Z-Score (3.0σ) + rule-based
-  Multi-Confirm gate: 2 of 3 sub-signals required to fire
-  Anomaly types confirmed: 10
+  Multi-Confirm gate: 2+ independent methods required to fire
+  Anomaly types: 10
 ════════════════════════════════════════════════════════════════
 ```
 
-Precision of 100% means every signal that fired was a real anomaly — zero noise delivered to users. The multi-confirm gate (requiring agreement from 2+ independent detection methods) is the primary mechanism eliminating false positives.
+> **Important:** The backtest is a methodology validation, not a production performance claim. The multi-confirm gate (requiring agreement from 2+ independent detection methods) is the primary mechanism for reducing false positives. Extended backtest results will be published once the 10,000+ block run is complete. See [`backtest/results_live.md`](./backtest/results_live.md) for full methodology and limitations.
 
 ![Analytics — Backtest Results](./docs/screenshots/proofs/dash_analytics.png)
-*Analytics tab — backtest on 395 real Mantle mainnet blocks. IsolationForest + Z-Score + rule-based detectors. TP=13, FP=0, FN=1.*
+*Analytics tab — backtest on real Mantle mainnet blocks. IsolationForest + Z-Score + rule-based detectors. Extended backtest in progress — see results_live.md for methodology details.*
 
 ---
 
@@ -448,15 +458,13 @@ Every finding is permanently on-chain, publicly readable, no wallet needed.
 
 ---
 
-## Built for Mirana's Thesis
-
-Mirana Ventures backs verifiable data infrastructure for institutional DeFi. Mantle Intel Agent is purpose-built for exactly that thesis: a tamper-evident, on-chain intelligence layer for the Mantle ecosystem — giving institutional actors the signal quality and audit trail they need to deploy capital with confidence.
+## Verifiable On-Chain Intelligence
 
 No existing Mantle analytics tool (Nansen, Dune, Parsec) offers a tamper-evident on-chain audit trail for every signal fired. Every finding Mantle Intel Agent emits is SHA-256 hashed, recorded on-chain, and publicly verifiable — a data infrastructure primitive, not just a dashboard.
 
 ---
 
-*MIT License · Built for the Turing Test Hackathon 2026 · Mantle Network / DoraHacks · Alpha & Data Track · Mirana Ventures*
+*MIT License · Built for the Mantle Network ecosystem*
 
 ---
 

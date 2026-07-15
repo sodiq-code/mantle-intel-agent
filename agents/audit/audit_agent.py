@@ -2,7 +2,8 @@
 Mantle Intel Agent — Audit Agent (Stage 5)
 Writes each finding's SHA256 hash on-chain to MantleIntelAudit.sol.
 This provides full verifiability and auditability — the core differentiator
-for the Mirana Ventures Alpha & Data track (15pts verifiability criterion).
+of the project: every agent decision is permanently recorded and publicly
+verifiable on-chain.
 
 On-chain record = finding_hash + anomaly_type + confidence + block_height
 Anyone can independently verify any agent decision against the contract.
