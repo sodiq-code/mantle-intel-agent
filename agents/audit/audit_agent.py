@@ -112,12 +112,12 @@ class AuditAgent:
         contract_address: Optional[str] = None,
         rpc_url: Optional[str] = None,
         private_key: Optional[str] = None,
-        network: str = "mainnet",
+        network: str = None,
     ):
         self.contract_address = contract_address or os.getenv("AUDIT_CONTRACT_ADDRESS", "")
         self.rpc_url          = rpc_url or os.getenv("MANTLE_RPC_URL", "https://rpc.mantle.xyz")
         self.private_key      = private_key or os.getenv("AGENT_PRIVATE_KEY", "")
-        self.network          = network
+        self.network          = network or os.getenv("NETWORK", "testnet")
         self._w3: Optional[object] = None
         self._contract        = None
         self._demo_mode       = False
@@ -202,7 +202,9 @@ class AuditAgent:
         hash_bytes = bytes.fromhex(finding_hash)
         confidence_int = int(finding.confidence * 100)
 
-        nonce = self._w3.eth.get_transaction_count(self._account.address)
+        # Use "pending" to include pending transactions in the nonce count
+        # This prevents "nonce too low" errors when sending multiple txs quickly
+        nonce = self._w3.eth.get_transaction_count(self._account.address, "pending")
         gas_price = self._w3.eth.gas_price
 
         txn = self._contract.functions.recordFinding(
