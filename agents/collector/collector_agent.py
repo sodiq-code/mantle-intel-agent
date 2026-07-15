@@ -82,7 +82,12 @@ KNOWN_WALLETS = {
     "0x4b8bfe41b9fc6559a8a4b03a3e57b86b4e12d8c3": "Mirana Ventures",
 }
 
-LARGE_TRANSFER_THRESHOLD_USD = 50_000   # $50k+
+# Threshold for flagging "large" transfers
+# On mainnet: $50K is appropriate (real whale activity)
+# On testnet: $1K is more realistic (testnet transactions are smaller)
+# The threshold is configurable via env var for flexibility
+import os as _os
+LARGE_TRANSFER_THRESHOLD_USD = float(_os.getenv("LARGE_TRANSFER_THRESHOLD_USD", "1000"))  # $1K default (testnet-friendly)
 ANOMALY_BLOCK_WINDOW = 100             # blocks to scan per cycle
 
 # ── ABI fragments for protocol reads ────────────────────────────────────────
@@ -444,14 +449,27 @@ class CollectorAgent:
             total_value += raw.value_mnt
             unique_senders.add(raw.from_addr)
 
+            # Calculate USD value (use MNT price or fallback for testnet)
             usd_value = raw.value_mnt * self.mnt_price_usd
-            if usd_value >= LARGE_TRANSFER_THRESHOLD_USD:
+
+            # For contract calls (token transfers, DeFi interactions),
+            # the native MNT value is often 0 but the transaction is still significant
+            # Flag contract calls with any value, or native transfers above threshold
+            should_flag = (
+                (usd_value >= LARGE_TRANSFER_THRESHOLD_USD) or
+                (raw.is_contract_call and raw.value_mnt >= LARGE_TRANSFER_THRESHOLD_USD / self.mnt_price_usd / 10) or
+                (raw.is_contract_call and raw.value_mnt > 0)
+            )
+
+            if should_flag:
+                # For contract calls, estimate USD value from gas spent if native value is 0
+                estimated_usd = usd_value if usd_value > 0 else max(raw.gas_used * raw.gas_price * self.mnt_price_usd / 1e18, 1.0)
                 large_transfers.append({
                     "tx_hash":    raw.hash.hex() if hasattr(raw.hash, "hex") else str(raw.hash),
                     "from":       raw.from_addr,
                     "to":         raw.to_addr,
                     "value_mnt":  round(raw.value_mnt, 4),
-                    "value_usd":  round(usd_value, 2),
+                    "value_usd":  round(max(usd_value, estimated_usd), 2),
                     "label_from": KNOWN_WALLETS.get(raw.from_addr, "unknown"),
                     "label_to":   KNOWN_WALLETS.get(raw.to_addr, "unknown"),
                     "block":      block.number,
