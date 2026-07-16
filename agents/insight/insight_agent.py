@@ -38,7 +38,7 @@ Rules:
 - Lead with the single most actionable investment implication
 - Include specific numbers (USD amounts, block numbers, z-scores, bps)
 - Name the specific Mantle protocol (Merchant Moe, Lendle, Agni Finance, mETH, FusionX)
-- End with: "Signal tier: WATCH / ALERT / IMMEDIATE ACTION" + time-to-act window
+- End with: "Signal tier: WATCH / ALERT / HIGH-PRIORITY INVESTIGATION" + time-to-act window
 - Do NOT use: "fascinating", "interesting", "notable", "it's worth noting"
 - Write for a fund PM who will lose money if they act on false signals
 - Precision over recall — if uncertain, say "preliminary signal, confirm before sizing"
@@ -46,18 +46,18 @@ Rules:
 
 # Templates kept identical to v3 — only the LLM provider chain changed
 INSIGHT_TEMPLATE = {
-    "whale_accumulation": "🐋 WHALE ACCUMULATION — Mantle Block {block_height}\n\n{description}\n\n📍 Investment Signal: ${total_usd:,.0f} entering {protocol} via {transfer_count} institutional-wallet transactions.\n⏱ Lead Time: ~4hrs\n🎯 Signal Tier: ALERT\n📊 Confidence: {confidence_pct}% | Method: Multi-confirm Pattern Match",
-    "whale_distribution": "⚠️ WHALE DISTRIBUTION — Mantle Block {block_height}\n\n{description}\n\n📍 Investment Signal: ${total_usd:,.0f} exiting Mantle DeFi.\n⏱ Lead Time: ~2-6hrs\n🎯 Signal Tier: ALERT — Reduce long exposure\n📊 Confidence: {confidence_pct}% | Method: Pattern Match",
-    "smart_money_inflow": "🧠 SMART MONEY SIGNAL — Mantle Block {block_height}\n\n{description}\n\n📍 Investment Signal: {wallet_count} coordinated unlabeled wallets (avg ${avg_per_wallet:,.0f}/wallet) entering Mantle DeFi.\n⏱ Lead Time: ~8hrs\n🎯 Signal Tier: ALERT\n📊 Confidence: {confidence_pct}% | Method: Wallet Clustering | Wallets: {wallet_count}",
-    "tx_spike": "📈 ACTIVITY SPIKE — Mantle Block {block_height}\n\n{description}\n\n📍 Investment Signal: {tx_count} transactions ({zscore}σ above baseline) on Mantle.\n⏱ Lead Time: 0-2hrs\n🎯 Signal Tier: WATCH — Confirm catalyst before positioning\n📊 Confidence: {confidence_pct}% | Method: Z-Score (σ={zscore}) | Baseline: {mean_tx:.0f} tx/block",
-    "value_spike": "💰 CAPITAL DEPLOYMENT — Mantle Block {block_height}\n\n{description}\n\n📍 Investment Signal: ${value_usd:,.0f} concentrated in a single Mantle block ({zscore}σ outlier).\n⏱ Lead Time: Watch next 5 blocks\n🎯 Signal Tier: ALERT — Large actor moving\n📊 Confidence: {confidence_pct}% | Method: Z-Score (σ={zscore})",
-    "multivariate_anomaly": "🔍 MULTI-DIMENSIONAL OUTLIER — Mantle Block {block_height}\n\n{description}\n\n📍 Investment Signal: Block {block_height} is simultaneously anomalous across tx volume, transfer value, large-tx count, AND wallet diversity — a quadruple-axis outlier (Isolation Forest score: {isolation_score}).\n⏱ Lead Time: Immediate\n🎯 Signal Tier: IMMEDIATE ACTION\n📊 Confidence: {confidence_pct}% | Method: Isolation Forest | Score: {isolation_score}",
-    "meth_depeg": "⚡ mETH DEPEG ALERT — Mantle Ecosystem\n\n{description}\n\n📍 Investment Signal: mETH deviating {depeg_pct:.2f}% from ETH peg. At ${at_risk_usd:,.0f} total supply, sustained depeg risks cascading Lendle liquidations.\n⏱ Lead Time: 30min–2hrs\n🎯 Signal Tier: IMMEDIATE ACTION\n📊 Confidence: {confidence_pct}% | Method: mETH Oracle + Pyth Cross-check | Depeg: {depeg_bps}bps",
-    "liquidity_imbalance": "💧 LIQUIDITY IMBALANCE — Merchant Moe / Mantle DEX\n\n{description}\n\n📍 Investment Signal: Merchant Moe WETH/MNT pool reserve shifted {r0_delta_pct:.1f}% from baseline (pool value ~${pool_usd:,.0f}).\n⏱ Lead Time: 0-1hr\n🎯 Signal Tier: WATCH\n📊 Confidence: {confidence_pct}% | Method: Reserve Analysis | Δ: {r0_delta_pct:.1f}%",
-    "cross_protocol_anomaly": "🌐 CROSS-PROTOCOL COORDINATION — Mantle Block {block_height}\n\n{description}\n\n📍 Investment Signal: Simultaneous deployment of ${total_usd:,.0f} across {protocols_hit} Mantle protocols in a single block.\n⏱ Lead Time: ~2hrs\n🎯 Signal Tier: IMMEDIATE ACTION — Highest-conviction Mantle alpha pattern\n📊 Confidence: {confidence_pct}% | Method: Cross-protocol Analysis | Protocols: {protocols_hit}",
+    "whale_accumulation": "🐋 WHALE ACCUMULATION — Mantle Block {block_height}\n\n{description}\n\n📍 Observation: ${total_usd:,.0f} entering {protocol} via {transfer_count} institutional-wallet transactions.\n⏱ Lead Time: ~4hrs\n🎯 Signal Tier: ALERT\n📊 Confidence: {confidence_pct}% | Method: Multi-confirm Pattern Match",
+    "whale_distribution": "⚠️ WHALE DISTRIBUTION — Mantle Block {block_height}\n\n{description}\n\n📍 Observation: ${total_usd:,.0f} exiting Mantle DeFi.\n⏱ Lead Time: ~2-6hrs\n🎯 Signal Tier: ANOMALY DETECTED — Awaiting confirmation\n📊 Confidence: {confidence_pct}% | Method: Pattern Match",
+    "smart_money_inflow": "🧠 SMART MONEY SIGNAL — Mantle Block {block_height}\n\n{description}\n\n📍 Observation: {wallet_count} coordinated unlabeled wallets (avg ${avg_per_wallet:,.0f}/wallet) entering Mantle DeFi.\n⏱ Lead Time: ~8hrs\n🎯 Signal Tier: ALERT\n📊 Confidence: {confidence_pct}% | Method: Wallet Clustering | Wallets: {wallet_count}",
+    "tx_spike": "📈 ACTIVITY SPIKE — Mantle Block {block_height}\n\n{description}\n\n📍 Observation: {tx_count} transactions ({zscore}σ above baseline) on Mantle.\n⏱ Lead Time: 0-2hrs\n🎯 Signal Tier: ANOMALY DETECTED — Awaiting confirmation\n📊 Confidence: {confidence_pct}% | Method: Z-Score (σ={zscore}) | Baseline: {mean_tx:.0f} tx/block",
+    "value_spike": "💰 CAPITAL DEPLOYMENT — Mantle Block {block_height}\n\n{description}\n\n📍 Observation: ${value_usd:,.0f} concentrated in a single Mantle block ({zscore}σ outlier).\n⏱ Lead Time: Watch next 5 blocks\n🎯 Signal Tier: ANOMALY DETECTED — Awaiting confirmation\n📊 Confidence: {confidence_pct}% | Method: Z-Score (σ={zscore})",
+    "multivariate_anomaly": "🔍 MULTI-DIMENSIONAL OUTLIER — Mantle Block {block_height}\n\n{description}\n\n📍 Observation: Block {block_height} is simultaneously anomalous across tx volume, transfer value, large-tx count, AND wallet diversity — a quadruple-axis outlier (Isolation Forest score: {isolation_score}).\n⏱ Lead Time: Immediate\n🎯 Signal Tier: HIGH-PRIORITY INVESTIGATION\n📊 Confidence: {confidence_pct}% | Method: Isolation Forest | Score: {isolation_score}",
+    "meth_depeg": "⚡ mETH DEPEG ALERT — Mantle Ecosystem\n\n{description}\n\n📍 Observation: mETH deviating {depeg_pct:.2f}% from ETH peg. At ${at_risk_usd:,.0f} total supply, sustained depeg risks cascading Lendle liquidations.\n⏱ Lead Time: 30min–2hrs\n🎯 Signal Tier: HIGH-PRIORITY INVESTIGATION\n📊 Confidence: {confidence_pct}% | Method: mETH Oracle + Pyth Cross-check | Depeg: {depeg_bps}bps",
+    "liquidity_imbalance": "💧 LIQUIDITY IMBALANCE — Merchant Moe / Mantle DEX\n\n{description}\n\n📍 Observation: Merchant Moe WETH/MNT pool reserve shifted {r0_delta_pct:.1f}% from baseline (pool value ~${pool_usd:,.0f}).\n⏱ Lead Time: 0-1hr\n🎯 Signal Tier: WATCH\n📊 Confidence: {confidence_pct}% | Method: Reserve Analysis | Δ: {r0_delta_pct:.1f}%",
+    "cross_protocol_anomaly": "🌐 CROSS-PROTOCOL COORDINATION — Mantle Block {block_height}\n\n{description}\n\n📍 Observation: Simultaneous deployment of ${total_usd:,.0f} across {protocols_hit} Mantle protocols in a single block.\n⏱ Lead Time: ~2hrs\n🎯 Signal Tier: HIGH-PRIORITY INVESTIGATION — Multi-protocol coordination warrants investigation\n📊 Confidence: {confidence_pct}% | Method: Cross-protocol Analysis | Protocols: {protocols_hit}",
 }
 
-DEFAULT_TEMPLATE = "⚡ ANOMALY DETECTED — Mantle Block {block_height}\n\n{description}\n\n📍 Investment Signal: {investment_signal}\n🎯 Signal Tier: WATCH\n📊 Confidence: {confidence_pct}% | Type: {anomaly_type}"
+DEFAULT_TEMPLATE = "⚡ ANOMALY DETECTED — Mantle Block {block_height}\n\n{description}\n\n📍 Observation: {investment_signal}\n🎯 Signal Tier: WATCH\n📊 Confidence: {confidence_pct}% | Type: {anomaly_type}"
 
 
 class InsightAgent:
@@ -194,7 +194,7 @@ Block Height: {finding.block_height}
 Timestamp: {finding.timestamp}
 Confidence: {finding.confidence * 100:.1f}%
 Detection Method: {finding.method}
-Investment Signal: {getattr(finding, 'investment_signal', 'N/A')}
+Observation: {getattr(finding, 'investment_signal', 'N/A')}
 Affected Protocols: {getattr(finding, 'affected_protocols', [])}
 Lead Time (blocks): {getattr(finding, 'lead_time_blocks', 0)}
 
@@ -208,7 +208,7 @@ Write a 3-5 sentence investment intelligence report. Structure:
 1. The single most actionable insight (lead with specific USD amounts and protocol names)
 2. What this pattern historically precedes on Mantle (with probability if known)
 3. Specific action recommendation with time window
-4. End with: "Signal Tier: WATCH / ALERT / IMMEDIATE ACTION"
+4. End with: "Signal Tier: WATCH / ALERT / HIGH-PRIORITY INVESTIGATION"
 
 Name specific Mantle protocols: Merchant Moe, Lendle, Agni Finance, mETH, FusionX, Aurelius."""
 
@@ -380,8 +380,8 @@ Name specific Mantle protocols: Merchant Moe, Lendle, Agni Finance, mETH, Fusion
         medium_priority = {"smart_money_inflow", "value_spike", "whale_distribution", "liquidity_imbalance"}
 
         if finding.anomaly_type in high_priority and finding.confidence >= 0.85:
-            return "IMMEDIATE ACTION"
+            return "HIGH-PRIORITY INVESTIGATION"
         elif finding.anomaly_type in high_priority or finding.anomaly_type in medium_priority:
-            return "ALERT"
+            return "ANOMALY DETECTED - Awaiting confirmation"
         else:
-            return "WATCH"
+            return "ANOMALY DETECTED - Awaiting confirmation"
