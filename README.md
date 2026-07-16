@@ -460,7 +460,7 @@ Every finding is permanently on-chain, publicly readable, no wallet needed.
 
 ## Verifiable On-Chain Intelligence
 
-No existing Mantle analytics tool (Nansen, Dune, Parsec) offers a tamper-evident on-chain audit trail for every signal fired. Every finding Mantle Intel Agent emits is SHA-256 hashed, recorded on-chain, and publicly verifiable — a data infrastructure primitive, not just a dashboard.
+Every finding Mantle Intel Agent emits is SHA-256 hashed, recorded on-chain, and publicly verifiable — a data infrastructure primitive, not just a dashboard.
 
 ---
 
