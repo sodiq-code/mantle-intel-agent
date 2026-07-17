@@ -58,14 +58,17 @@ STATUS_TEMPLATE = """
 Demo mode: {demo_badge}
 """
 
-FINDING_TEMPLATE = """
+INCIDENT_TEMPLATE = """
 {icon} <b>{anomaly_type_label}</b>
-Block <code>{block}</code> · Confidence <b>{confidence_pct}%</b>
 
 {insight}
 
-🔐 Hash: <code>{hash_short}</code>
-{audit_line}
+<b>Status:</b> {state}
+<b>Blocks:</b> <code>{start}</code> to <code>{latest}</code> (Duration: {dur})
+<b>Occurrences:</b> {occ}
+<b>Peak Confidence:</b> <b>{conf}%</b>
+{zscore_line}
+🔐 Latest Hash: <code>{hash_short}</code>
 """
 
 
@@ -119,52 +122,50 @@ class MantleIntelBot:
 
     # ── Alert push ────────────────────────────────────────────────────────────
 
-    async def push_finding(self, finding: dict, insight_text: str):
-        """Push a new finding alert to the configured chat."""
+    async def push_incident(self, incident: dict):
+        """Push a new incident alert to the configured chat."""
         if not self.is_configured() or not self.chat_id:
             self.logger.debug("push_skipped", reason="not configured")
             return
 
         try:
             bot = Bot(token=self.token)
-            msg = self._format_finding_message(finding, insight_text)
+            msg = self._format_incident_message(incident)
             await bot.send_message(
                 chat_id=self.chat_id,
                 text=msg,
                 parse_mode=ParseMode.HTML,
             )
-            self.logger.info("alert_pushed", finding_id=finding.get("id"), chat=self.chat_id)
+            self.logger.info("alert_pushed", incident_id=incident.get("incident_id"), chat=self.chat_id)
         except Exception as e:
             self.logger.error("push_failed", error=str(e))
 
-    def _format_finding_message(self, finding: dict, insight_text: str) -> str:
-        audit   = finding.get("audit", {})
-        atype   = finding.get("type", "anomaly")
-        block   = finding.get("block", 0)
-        conf    = finding.get("confidence_pct", 0)
-        fhash   = finding.get("hash", "")
-        status  = audit.get("status", "unknown")
-        tx      = audit.get("tx_hash", "")
-        explorer = audit.get("explorer", "")
+    def _format_incident_message(self, incident: dict) -> str:
+        atype   = incident.get("type", "anomaly")
+        state   = incident.get("state", "🟡 Incident")
+        start   = incident.get("start_block", 0)
+        latest  = incident.get("latest_block", 0)
+        dur     = incident.get("duration_blocks", 1)
+        occ     = incident.get("occurrences", 1)
+        conf    = incident.get("peak_confidence", 0)
+        fhash   = incident.get("latest_hash", "")
+        insight = incident.get("insight_sample", "")
 
-        if status in ("recorded", "demo"):
-            if explorer and tx:
-                audit_line = f'🔗 <a href="{explorer}">View on Mantle Explorer</a>'
-            else:
-                audit_line = f"📝 On-chain hash recorded (demo mode)"
-        else:
-            audit_line = "⏳ Audit pending"
+        insight_trimmed = insight[:800] + "..." if len(insight) > 800 else insight
+        z_line = f"<b>Peak Z-Score:</b> {incident['peak_zscore']}σ\n" if incident.get("peak_zscore") else ""
 
-        insight_trimmed = insight_text[:800] + "..." if len(insight_text) > 800 else insight_text
-
-        return FINDING_TEMPLATE.format(
-            icon            = anomaly_icon(atype),
-            anomaly_type_label = anomaly_label(atype),
-            block           = f"{block:,}",
-            confidence_pct  = conf,
-            insight         = insight_trimmed,
-            hash_short      = fhash[:20] + "...",
-            audit_line      = audit_line,
+        return INCIDENT_TEMPLATE.format(
+            icon=anomaly_icon(atype),
+            anomaly_type_label=anomaly_label(atype),
+            insight=insight_trimmed,
+            state=state,
+            start=f"{start:,}",
+            latest=f"{latest:,}",
+            dur=dur,
+            occ=occ,
+            conf=conf,
+            zscore_line=z_line,
+            hash_short=f"{fhash[:20]}..." if fhash else "N/A"
         ).strip()
 
     # ── Command handlers ──────────────────────────────────────────────────────

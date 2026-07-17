@@ -241,6 +241,53 @@ export async function true_sha256(str) {
   return "0x" + hashHex;
 }
 
+export function buildIncidents(findings, latestBlock) {
+  const groups = {};
+  
+  for (const f of findings) {
+    const t = f.type;
+    if (!groups[t]) {
+      groups[t] = {
+        id: `INC-${t}-${f.block}`,
+        type: t,
+        start_block: f.block,
+        latest_block: f.block,
+        start_time: f.timestamp,
+        latest_time: f.timestamp,
+        occurrences: 0,
+        peak_confidence: 0,
+        peak_zscore: 0,
+        findings: []
+      };
+    }
+    
+    const g = groups[t];
+    g.latest_block = f.block;
+    g.latest_time = f.timestamp;
+    g.occurrences += 1;
+    if (f.confidence > g.peak_confidence) g.peak_confidence = f.confidence;
+    
+    const z = f.raw_metrics?.val_zscore || f.raw_metrics?.tx_zscore || 0;
+    if (z > g.peak_zscore) g.peak_zscore = z;
+    
+    g.findings.push(f);
+  }
+  
+  const incidents = [];
+  for (const [t, g] of Object.entries(groups)) {
+    g.state = "🟡 Opened";
+    if (g.occurrences >= 5) g.state = "🔴 Critical";
+    else if (g.occurrences >= 3) g.state = "🟠 Escalated";
+    
+    if (latestBlock - g.latest_block >= 60) {
+      g.state = "✅ Resolved";
+    }
+    incidents.push(g);
+  }
+  
+  return incidents.sort((a,b) => b.latest_block - a.latest_block);
+}
+
 export function buildTitle(type, feat, knownWallets, conf) {
   const tier = knownWallets.length > 0 ? `${knownWallets[0]} involved` : `Block ${feat.block_num.toLocaleString()}`;
   const confLabel = conf >= 0.85 ? "🔥 HIGH SIGNAL" : conf >= 0.75 ? "⚡ Signal" : "📡 Alert";
@@ -324,7 +371,7 @@ export async function buildSnapshot(includeProtocolState = true) {
   const startTime = Date.now();
 
   const [mainnetData, testnetData, methData, moeData, lendleData, auditData] = await Promise.allSettled([
-    fetchLatestBlocks(MANTLE_RPC, 50),
+    fetchLatestBlocks(MANTLE_RPC, 100),
     fetchLatestBlocks(MANTLE_SEPOLIA, 20),
     includeProtocolState ? fetchMethRatio() : Promise.resolve(null),
     includeProtocolState ? fetchMoeLiquidity() : Promise.resolve(null),
@@ -341,6 +388,7 @@ export async function buildSnapshot(includeProtocolState = true) {
 
   const mainnetFeatures = mainnet.blocks.map(parseBlock).sort((a,b) => a.block_num - b.block_num);
   const findings        = await detectAnomalies(mainnetFeatures);
+  const activeIncidents = buildIncidents(findings, mainnet.latest);
 
   const txCounts = mainnetFeatures.map(f => f.tx_count);
   const avgTx    = txCounts.length > 0 ? txCounts.reduce((a,b)=>a+b,0)/txCounts.length : 0;
@@ -389,6 +437,7 @@ export async function buildSnapshot(includeProtocolState = true) {
       total_flow_usd:    Math.round(totalUsd),
     },
     latest_findings: findings.slice(0, 20),
+    active_incidents: activeIncidents,
     recent_blocks:   mainnetFeatures.slice(-10).reverse().map(f => ({
       block_num:    f.block_num,
       timestamp:    new Date(f.timestamp * 1000).toISOString(),

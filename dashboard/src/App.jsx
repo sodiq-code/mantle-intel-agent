@@ -5,7 +5,7 @@ import {
   Wifi, WifiOff, Server, DollarSign, Cpu, Globe, GitBranch
 } from "lucide-react";
 
-import { G, PulseDot, StatTile, FindingRow, EXPLORER_BASE } from "./components/Shared.jsx";
+import { G, PulseDot, StatTile, FindingRow, IncidentCard, EXPLORER_BASE } from "./components/Shared.jsx";
 import { SignalsTab } from "./components/SignalsTab.jsx";
 import { ReasoningTab } from "./components/ReasoningTab.jsx";
 import { ProtocolTab } from "./components/ProtocolTab.jsx";
@@ -34,7 +34,7 @@ export default function App() {
     setData(d);
     setLastRefresh(new Date());
     setLoading(false);
-    const incoming = new Set((d.latest_findings || []).map(f => f.id));
+    const incoming = new Set((d.active_incidents || []).map(i => i.id));
     const fresh    = new Set([...incoming].filter(id => !prevIds.current.has(id)));
     if (fresh.size > 0) { setNewIds(fresh); setTimeout(() => setNewIds(new Set()), 4000); }
     prevIds.current = incoming;
@@ -109,17 +109,18 @@ export default function App() {
 
   const stats    = data?.stats   || {};
   const allFnds  = data?.latest_findings || [];
+  const activeInc= data?.active_incidents || [];
   const sm       = data?.smart_money_summary || {};
   const chain    = data?.chain   || {};
   const backtest = data?.backtest;
   const contract = data?.contract_address || CONTRACT_ADDR;
   const auditCount = data?.protocol_state?.audit_contract?.finding_count || allFnds.length || 120;
 
-  const filtered = activeFilter === "all" ? allFnds : allFnds.filter(f => f.type === activeFilter);
-  const sorted   = [...filtered].sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+  const filtered = activeFilter === "all" ? activeInc : activeInc.filter(i => i.type === activeFilter);
+  const sorted   = [...filtered].sort((a,b) => b.latest_block - a.latest_block);
 
   const TABS = [
-    { key:"findings",  label:"Findings",         icon:AlertTriangle, badge:allFnds.length  },
+    { key:"findings",  label:"Incidents",        icon:AlertTriangle, badge:activeInc.length },
     { key:"signals",   label:"Signals",           icon:TrendingUp                           },
     { key:"reasoning", label:"Reasoning",         icon:Cpu,           badge:"NEW"           },
     { key:"roi",       label:"ROI Calc",          icon:DollarSign,    badge:"NEW"           },
@@ -165,8 +166,8 @@ export default function App() {
             )}
             <span>|</span>
             <span className="flex items-center gap-1">
-              <span>FINDINGS</span>
-              <span className="text-white font-bold">{allFnds.length}</span>
+              <span>INCIDENTS</span>
+              <span className="text-white font-bold">{activeInc.length}</span>
             </span>
             <span>|</span>
             <span className="flex items-center gap-1">
@@ -277,13 +278,13 @@ export default function App() {
             {sorted.length === 0 ? (
               <div className="text-center py-20 text-gray-800">
                 <Activity size={32} className="mx-auto mb-3 animate-pulse"/>
-                <p className="text-sm text-gray-600">No findings in current window</p>
-                <p className="text-xs mt-2 text-gray-700 font-mono">Scanning latest 50 blocks · refreshes every 12s</p>
+                <p className="text-sm text-gray-600">No active incidents in current window</p>
+                <p className="text-xs mt-2 text-gray-700 font-mono">Scanning latest 100 blocks · refreshes every 12s</p>
               </div>
             ) : (
-              <div className="space-y-2">
-                {sorted.map((f, i) => (
-                  <FindingRow key={f.id||i} finding={f} isNew={newIds.has(f.id)}/>
+              <div className="space-y-3">
+                {sorted.map((inc, i) => (
+                  <IncidentCard key={inc.id||i} incident={inc} isNew={newIds.has(inc.id)}/>
                 ))}
               </div>
             )}

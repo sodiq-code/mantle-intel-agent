@@ -32,14 +32,17 @@ except ImportError:
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 
-FINDING_TEMPLATE = """
+INCIDENT_TEMPLATE = """
 **{icon} {anomaly_type_label}**
-Block `{block}` · Confidence **{confidence_pct}%**
 
 {insight}
 
-🔐 Hash: `{hash_short}`
-{audit_line}
+**Status:** {state}
+**Blocks:** `{start}` to `{latest}` (Duration: {dur})
+**Occurrences:** {occ}
+**Peak Confidence:** **{conf}%**
+{zscore_line}
+🔐 Latest Hash: `{hash_short}`
 """
 
 COMPARE_TEMPLATE = """
@@ -105,8 +108,8 @@ class MantleIntelDiscordBot:
 
     # ── Alert push ──────────────────────────────────────────────────────────
 
-    async def push_finding(self, finding: dict, insight_text: str):
-        """Push a new finding alert to the configured Discord channel."""
+    async def push_incident(self, incident: dict):
+        """Push an incident update to the configured Discord channel."""
         if not self.is_configured() or not self.channel_id or not self._client:
             self.logger.debug("push_skipped_discord", reason="not configured or client not ready")
             return
@@ -116,19 +119,23 @@ class MantleIntelDiscordBot:
             if not channel:
                 channel = await self._client.fetch_channel(self.channel_id)
 
-            embed = self._make_embed(finding, insight_text)
+            embed = self._make_embed(incident)
             await channel.send(embed=embed)
-            self.logger.info("discord_alert_pushed", finding_id=finding.get("id"), channel=self.channel_id)
+            self.logger.info("discord_alert_pushed", incident_id=incident.get("incident_id"), channel=self.channel_id)
         except Exception as e:
             self.logger.error("discord_push_failed", error=str(e))
 
-    def _make_embed(self, finding: dict, insight_text: str) -> "discord.Embed":
-        """Build a Discord embed for a finding."""
-        atype  = finding.get("type", "anomaly")
-        block  = finding.get("block", 0)
-        conf   = finding.get("confidence_pct", 0)
-        fhash  = finding.get("hash", "")
-        audit  = finding.get("audit", {})
+    def _make_embed(self, incident: dict) -> "discord.Embed":
+        """Build a Discord embed for an incident."""
+        atype   = incident.get("type", "anomaly")
+        state   = incident.get("state", "🟡 Incident")
+        start   = incident.get("start_block", 0)
+        latest  = incident.get("latest_block", 0)
+        dur     = incident.get("duration_blocks", 1)
+        occ     = incident.get("occurrences", 1)
+        conf    = incident.get("peak_confidence", 0)
+        fhash   = incident.get("latest_hash", "")
+        insight = incident.get("insight_sample", "")
 
         color_map = {
             "whale_accumulation":   0x3B82F6,
@@ -139,23 +146,31 @@ class MantleIntelDiscordBot:
             "multivariate_anomaly": 0xEF4444,
         }
         color = color_map.get(atype, 0x6B7280)
+        if "Critical" in state:
+            color = 0xEF4444
+        elif "Resolved" in state:
+            color = 0x22C55E
+
+        z_line = f"**Peak Z-Score:** {incident['peak_zscore']}σ\n" if incident.get("peak_zscore") else ""
+
+        desc = INCIDENT_TEMPLATE.format(
+            icon=anomaly_icon(atype),
+            anomaly_type_label=anomaly_label(atype),
+            insight=insight[:1800],
+            state=state,
+            start=f"{start:,}",
+            latest=f"{latest:,}",
+            dur=dur,
+            occ=occ,
+            conf=conf,
+            zscore_line=z_line,
+            hash_short=f"{fhash[:20]}..." if fhash else "N/A"
+        )
 
         embed = discord.Embed(
-            title=f"{anomaly_icon(atype)} {anomaly_label(atype)}",
-            description=insight_text[:1800],
+            description=desc,
             color=color,
         )
-        embed.add_field(name="Block", value=f"`{block:,}`", inline=True)
-        embed.add_field(name="Confidence", value=f"**{conf}%**", inline=True)
-        embed.add_field(name="Hash", value=f"`{fhash[:20]}...`", inline=False)
-
-        if audit.get("status") == "recorded" and audit.get("explorer"):
-            network = "Mantle" if "mainnet" in audit.get("explorer", "") else "Mantle Testnet"
-            embed.add_field(name="On-Chain", value=f"[View on {network} Explorer]({audit['explorer']})", inline=False)
-        elif audit.get("status") == "demo":
-            embed.set_footer(text="Demo mode — finding not recorded on mainnet")
-
-        embed.add_field(name="Network", value="Mantle Network (L2)", inline=True)
         return embed
 
     # ── Build bot with commands ──────────────────────────────────────────────

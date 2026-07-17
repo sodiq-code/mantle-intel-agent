@@ -49,14 +49,14 @@ class DiscordWebhook:
     def is_configured(self) -> bool:
         return bool(self.webhook_url and self.webhook_url.startswith("https://discord.com/api/webhooks/"))
 
-    def push(self, finding: dict, insight_text: str = "") -> bool:
-        """Send a finding alert to Discord. Returns True on success."""
+    def push(self, incident: dict) -> bool:
+        """Send an incident update to Discord. Returns True on success."""
         if not self.is_configured:
             self.log.debug("webhook_not_configured", msg="Set DISCORD_WEBHOOK_URL to enable Discord alerts")
             return False
 
         try:
-            payload = self._build_payload(finding, insight_text)
+            payload = self._build_payload(incident)
             data = json.dumps(payload).encode("utf-8")
             req = urllib.request.Request(
                 self.webhook_url,
@@ -68,8 +68,7 @@ class DiscordWebhook:
                 success = resp.status in (200, 204)
                 if success:
                     self.log.info("discord_alert_sent",
-                                  finding_id=finding.get("id"),
-                                  block=finding.get("block"))
+                                  incident_id=incident.get("incident_id"))
                 return success
         except urllib.error.HTTPError as e:
             self.log.error("discord_webhook_http_error", status=e.code, reason=e.reason)
@@ -77,39 +76,49 @@ class DiscordWebhook:
             self.log.error("discord_webhook_failed", error=str(e))
         return False
 
-    def _build_payload(self, finding: dict, insight_text: str) -> dict:
-        atype   = finding.get("type", "anomaly")
-        block   = finding.get("block", 0)
-        conf    = finding.get("confidence_pct", finding.get("confidence", 0))
-        fhash   = finding.get("hash", "")
-        audit   = finding.get("audit", {})
-        tx      = audit.get("tx_hash", "")
+    def _build_payload(self, incident: dict) -> dict:
+        atype   = incident.get("type", "anomaly")
+        state   = incident.get("state", "🟡 Incident")
+        start   = incident.get("start_block", 0)
+        latest  = incident.get("latest_block", 0)
+        dur     = incident.get("duration_blocks", 1)
+        occ     = incident.get("occurrences", 1)
+        conf    = incident.get("peak_confidence", 0)
+        fhash   = incident.get("latest_hash", "")
+        
         label   = ANOMALY_LABELS.get(atype, f"⚡ {atype.replace('_', ' ').title()}")
         color   = ANOMALY_COLORS.get(atype, 0x6366F1)
+        
+        # Override color based on state
+        if "Critical" in state:
+            color = 0xEF4444 # Red
+        elif "Resolved" in state:
+            color = 0x22C55E # Green
 
-        insight = insight_text or finding.get("insight", finding.get("summary", ""))
+        insight = incident.get("insight_sample", "")
         if len(insight) > 900:
             insight = insight[:900] + "..."
 
         fields = [
-            {"name": "Block", "value": f"`{block:,}`", "inline": True},
-            {"name": "Confidence", "value": f"**{conf}%**", "inline": True},
-            {"name": "Contract", "value": f"[{CONTRACT[:10]}...]({EXPLORER}/address/{CONTRACT})", "inline": True},
+            {"name": "Status", "value": f"**{state}**", "inline": False},
+            {"name": "Start Block", "value": f"`{start:,}`", "inline": True},
+            {"name": "Latest Block", "value": f"`{latest:,}`", "inline": True},
+            {"name": "Duration", "value": f"{dur} blocks", "inline": True},
+            {"name": "Occurrences", "value": str(occ), "inline": True},
+            {"name": "Peak Confidence", "value": f"**{conf}%**", "inline": True},
         ]
+        
+        if incident.get("peak_zscore"):
+            fields.append({"name": "Peak Z-Score", "value": f"{incident['peak_zscore']}σ", "inline": True})
 
         if fhash:
             fields.append({
-                "name": "SHA-256 Hash",
+                "name": "Latest SHA-256 Hash",
                 "value": f"`{fhash[:32]}...`",
                 "inline": False
             })
 
-        if tx and audit.get("status") == "recorded":
-            fields.append({
-                "name": "On-Chain Proof",
-                "value": f"[View TX on Mantle Explorer]({EXPLORER}/tx/{tx})",
-                "inline": False
-            })
+        fields.append({"name": "Contract", "value": f"[{CONTRACT[:10]}...]({EXPLORER}/address/{CONTRACT})", "inline": False})
 
         return {
             "username": "Mantle Intel Agent",
@@ -131,6 +140,6 @@ class DiscordWebhook:
 _webhook = DiscordWebhook()
 
 
-def push_finding(finding: dict, insight_text: str = "") -> bool:
+def push_incident(incident: dict) -> bool:
     """Module-level helper. Call from pipeline."""
-    return _webhook.push(finding, insight_text)
+    return _webhook.push(incident)

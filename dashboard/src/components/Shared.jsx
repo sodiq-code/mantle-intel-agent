@@ -172,3 +172,60 @@ export function FindingRow({ finding, isNew }) {
     </div>
   );
 }
+
+export function IncidentCard({ incident, isNew }) {
+  const [expanded, setExpanded] = useState(false);
+  const c = cfg(incident.type);
+  const since = useTimeSince(incident.latest_time ? incident.latest_time * 1000 : null);
+  
+  const isResolved = incident.state?.includes("Resolved");
+  const isCritical = incident.state?.includes("Critical");
+  const stateColor = isResolved ? "#22C55E" : (isCritical ? "#EF4444" : "#F59E0B");
+  const dur = (incident.latest_block - incident.start_block) + 1;
+
+  return (
+    <div className={`rounded-xl transition-all duration-300 relative overflow-hidden group ${isNew ? "animate-pulse" : ""} glass-panel`}
+      style={{ borderColor: c.color + "40" }}>
+      <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundColor: c.color }} />
+      
+      <div onClick={() => setExpanded(x => !x)} className="flex items-start gap-4 px-5 py-4 relative z-10 cursor-pointer">
+        <ConfRing value={incident.peak_confidence || 0} size={44}/>
+        
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            <span className="text-sm font-bold font-mono" style={{ color: c.color }}>{c.label} INCIDENT</span>
+            <span className="text-xs px-2 py-0.5 rounded font-bold"
+              style={{ color: stateColor, backgroundColor: stateColor + "15", border: `1px solid ${stateColor}40` }}>
+              {incident.state.toUpperCase()}
+            </span>
+          </div>
+          
+          <div className="text-white font-medium mb-2 text-sm leading-snug">
+            {incident.occurrences} occurrence{incident.occurrences !== 1 ? 's' : ''} detected over {dur} block{dur !== 1 ? 's' : ''}.
+          </div>
+          
+          <div className="flex items-center gap-4 text-xs font-mono text-slate-400">
+            <span>START: {incident.start_block.toLocaleString()}</span>
+            <span>LAST: {incident.latest_block.toLocaleString()}</span>
+            {incident.peak_zscore > 0 && <span style={{color: c.color}}>PEAK Z: {incident.peak_zscore.toFixed(1)}σ</span>}
+          </div>
+        </div>
+
+        <div className="flex-shrink-0 text-right flex flex-col items-end gap-2">
+          <div className="text-xs text-slate-400 font-mono">{since}</div>
+          <ChevronRight size={16} className="text-slate-500 transition-transform duration-300 group-hover:text-white"
+            style={{ transform: expanded ? "rotate(90deg)" : "rotate(0deg)" }}/>
+        </div>
+      </div>
+      
+      {expanded && (
+        <div className="px-5 pb-5 pt-2 border-t relative z-10 space-y-2" style={{ borderColor: c.color + "20", backgroundColor: "rgba(0,0,0,0.3)" }}>
+          <div className="text-xs font-bold text-slate-400 mb-2 font-mono uppercase tracking-wider">Raw Anomalous Blocks</div>
+          {incident.findings.map(f => (
+            <FindingRow key={f.id} finding={f} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

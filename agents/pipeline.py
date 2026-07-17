@@ -24,7 +24,8 @@ from agents.anomaly.anomaly_agent       import AnomalyAgent, AnomalyFinding
 from agents.smart_money.smart_money_agent import SmartMoneyAgent
 from agents.insight.insight_agent       import InsightAgent
 from agents.audit.audit_agent           import AuditAgent
-from bot.discord_webhook                import push_finding as discord_push
+from agents.incident                    import IncidentManager
+from bot.discord_webhook                import push_incident as discord_push
 
 logger = structlog.get_logger(__name__)
 
@@ -42,11 +43,11 @@ class MantleIntelPipeline:
 
     def __init__(
         self,
-        on_finding: Optional[Callable] = None,
+        on_incident: Optional[Callable] = None,
         poll_interval: int = 30,
         blocks_per_cycle: int = 50,
     ):
-        self.on_finding      = on_finding
+        self.on_incident      = on_incident
         self.poll_interval   = poll_interval
         self.blocks_per_cycle = blocks_per_cycle
         self._running        = False
@@ -57,6 +58,7 @@ class MantleIntelPipeline:
             "findings_total":   0,
             "started_at":       None,
         }
+        self.incident_manager = IncidentManager()
 
         # Initialize agents
         self.collector   = CollectorAgent(poll_interval=poll_interval)
@@ -82,11 +84,19 @@ class MantleIntelPipeline:
         # Stage 1: Collect
         blocks = await self.collector.collect_blocks(self.blocks_per_cycle)
         protocol_state = await self.collector.poll_protocol_state()
+        
         if not blocks:
             self.logger.warning("no_blocks_collected")
             return []
+            
+        latest_block = max(b.get("number", 0) for b in blocks) if blocks else 0
 
         self._stats["blocks_processed"] += len(blocks)
+        
+        # Check resolutions
+        resolved = self.incident_manager.check_resolutions(latest_block)
+        for inc in resolved:
+            await self._notify_incident(inc)
 
         # Stage 2: Anomaly detection
         anomalies: list[AnomalyFinding] = self.anomaly.detect(blocks, protocol_state=vars(protocol_state))
@@ -124,25 +134,16 @@ class MantleIntelPipeline:
                     "signals":  [s.to_dict() for s in sm_signals if s.block_height == finding.block_height],
                 }
 
+                # Update dashboard state
                 new_findings.append(dashboard_card)
                 self._findings.append(dashboard_card)
                 self._findings = self._findings[-100:]  # keep last 100
-
-                # Persist
                 self._append_finding(dashboard_card)
 
-                # Notify callback (Telegram, etc.)
-                if self.on_finding:
-                    try:
-                        await self.on_finding(dashboard_card, insight_text)
-                    except Exception as cb_e:
-                        self.logger.warning("callback_failed", error=str(cb_e))
-
-                # Discord webhook alert (no bot token required — set DISCORD_WEBHOOK_URL)
-                try:
-                    discord_push(dashboard_card, insight_text)
-                except Exception as dc_e:
-                    self.logger.warning("discord_webhook_failed", error=str(dc_e))
+                # Process Incident State for Bots
+                incident_update = self.incident_manager.process_finding(dashboard_card, latest_block)
+                if incident_update:
+                    await self._notify_incident(incident_update)
 
             except Exception as e:
                 self.logger.error("finding_processing_failed",
@@ -165,6 +166,19 @@ class MantleIntelPipeline:
                          elapsed_s=round(elapsed, 2))
 
         return new_findings
+
+    async def _notify_incident(self, incident: dict):
+        """Push an incident update to the configured bots."""
+        if self.on_incident:
+            try:
+                await self.on_incident(incident)
+            except Exception as cb_e:
+                self.logger.warning("callback_failed", error=str(cb_e))
+
+        try:
+            discord_push(incident)
+        except Exception as dc_e:
+            self.logger.warning("discord_webhook_failed", error=str(dc_e))
 
     # ── Continuous loop ───────────────────────────────────────────────────────
 
