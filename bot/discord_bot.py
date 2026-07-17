@@ -39,7 +39,7 @@ INCIDENT_TEMPLATE = """
 
 **Incident ID:** `{incident_id}`
 **Status:** {state}
-**Detection Confidence:** **{conf}%** (Anomaly)
+**Detection Confidence:** **{conf}%** (Anomaly Detection)
 **Blocks:** `{start}` to `{latest}` (Duration: {dur} blocks)
 **Timestamp (UTC):** `{timestamp}`
 **Occurrences:** {occ}
@@ -156,8 +156,11 @@ class MantleIntelDiscordBot:
         elif "Resolved" in state:
             color = 0x22C55E
 
-        detectors = incident.get("detectors", [])
-        evidence_str = "\n".join(f"• {d}" for d in detectors) if detectors else "• Baseline Anomaly"
+        detectors_list = incident.get("detectors", [])
+        if detectors_list:
+            evidence_str = "\n".join(f"✓ {d}" for d in detectors_list)
+        else:
+            evidence_str = "✓ Baseline Anomaly"
 
         desc = INCIDENT_TEMPLATE.format(
             icon=anomaly_icon(atype),

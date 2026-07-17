@@ -119,9 +119,9 @@ class DiscordWebhook:
         timestamp = incident.get("timestamp", "N/A")
         detectors = incident.get("detectors", [])
         
-        detectors_str = "\n".join(f"• {d}" for d in detectors) if detectors else "• Baseline Anomaly"
+        detectors_str = "\n".join(f"✓ {d}" for d in detectors) if detectors else "✓ Baseline Anomaly"
         
-        desc = f"{insight}\n\n**Incident ID:** `{incident.get('incident_id', 'N/A')}`\n**Status:** {state}\n**Detection Confidence:** {conf}% (Anomaly)"
+        desc = f"{insight}\n\n**Incident ID:** `{incident.get('incident_id', 'N/A')}`\n**Status:** {state}\n**Detection Confidence:** {conf}% (Anomaly Detection)"
         
         fields = [
             {"name": "Blocks", "value": f"`{start:,}` to `{latest:,}` (Duration: {dur} blocks)", "inline": False},

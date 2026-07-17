@@ -65,7 +65,7 @@ INCIDENT_TEMPLATE = """
 
 <b>Incident ID:</b> <code>{incident_id}</code>
 <b>Status:</b> {state}
-<b>Detection Confidence:</b> <b>{conf}%</b> (Anomaly)
+<b>Detection Confidence:</b> <b>{conf}%</b> (Anomaly Detection)
 <b>Blocks:</b> <code>{start}</code> to <code>{latest}</code> (Duration: {dur} blocks)
 <b>Timestamp (UTC):</b> <code>{timestamp}</code>
 <b>Occurrences:</b> {occ}
@@ -160,9 +160,9 @@ class MantleIntelBot:
         
         detectors_list = incident.get("detectors", [])
         if detectors_list:
-            evidence_str = "\n".join(f"• {d}" for d in detectors_list)
+            evidence_str = "\n".join(f"✓ {d}" for d in detectors_list)
         else:
-            evidence_str = "• Baseline Anomaly"
+            evidence_str = "✓ Baseline Anomaly"
 
         return INCIDENT_TEMPLATE.format(
             icon=anomaly_icon(atype),
