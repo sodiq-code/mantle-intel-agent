@@ -68,10 +68,10 @@ AuditAgent (Stage 5)
 
 ## Deployed Contracts
 
-| Contract | Network | Address | Explorer |
+| Asset | Network | Address | Explorer |
 |---|---|---|---|
+| `Agent Wallet 1` | Mantle Sepolia | `0xB47Ba223B73980E69AEF53B0d202F9785698DAEa` | [View on Mantlescan](https://sepolia.mantlescan.xyz/address/0xB47Ba223B73980E69AEF53B0d202F9785698DAEa) |
 | `MantleIntelAudit v2.0` | Mantle Sepolia | `0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b` | [View on Mantlescan](https://sepolia.mantlescan.xyz/address/0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b) |
-| `MantleIntelAgentNFT` | Mantle Sepolia | `0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C` | [View on Mantlescan](https://sepolia.mantlescan.xyz/address/0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C) |
 
 Sourcify-verified with exact-match status on both creation and runtime bytecode.
 
