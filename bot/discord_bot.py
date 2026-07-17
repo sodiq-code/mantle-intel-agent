@@ -33,15 +33,18 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 
 INCIDENT_TEMPLATE = """
-**{icon} {anomaly_type_label}**
+**{icon} {anomaly_type_label} Incident**
 
 {insight}
 
-**Status:** {state}
-**Blocks:** `{start}` to `{latest}` (Duration: {dur})
+**Severity:** {state}
+**Detection Confidence:** **{conf}%** (Anomaly)
+**Blocks:** `{start}` to `{latest}` (Duration: {dur} blocks)
+**Timestamp (UTC):** `{timestamp}`
 **Occurrences:** {occ}
-**Peak Confidence:** **{conf}%**
-{zscore_line}
+**Evidence:**
+{evidence}
+
 🔐 Latest Hash: `{hash_short}`
 """
 
@@ -151,7 +154,8 @@ class MantleIntelDiscordBot:
         elif "Resolved" in state:
             color = 0x22C55E
 
-        z_line = f"**Peak Z-Score:** {incident['peak_zscore']}σ\n" if incident.get("peak_zscore") else ""
+        detectors = incident.get("detectors", [])
+        evidence_str = "\n".join(f"• {d}" for d in detectors) if detectors else "• Baseline Anomaly"
 
         desc = INCIDENT_TEMPLATE.format(
             icon=anomaly_icon(atype),
@@ -163,7 +167,8 @@ class MantleIntelDiscordBot:
             dur=dur,
             occ=occ,
             conf=conf,
-            zscore_line=z_line,
+            timestamp=incident.get("timestamp", "N/A"),
+            evidence=evidence_str,
             hash_short=f"{fhash[:20]}..." if fhash else "N/A"
         )
 

@@ -64,13 +64,12 @@ INCIDENT_TEMPLATE = """
 {insight}
 
 <b>Severity:</b> {state}
-<b>Detection Confidence:</b> <b>{conf}%</b>
+<b>Detection Confidence:</b> <b>{conf}%</b> (Anomaly)
 <b>Blocks:</b> <code>{start}</code> to <code>{latest}</code> (Duration: {dur} blocks)
 <b>Timestamp (UTC):</b> <code>{timestamp}</code>
 <b>Occurrences:</b> {occ}
-{zscore_line}
-<b>Detectors:</b>
-{detectors}
+<b>Evidence:</b>
+{evidence}
 
 🔐 Latest Hash: <code>{hash_short}</code>
 """
@@ -156,13 +155,12 @@ class MantleIntelBot:
         insight = incident.get("insight_sample", "")
 
         insight_trimmed = insight[:800] + "..." if len(insight) > 800 else insight
-        z_line = f"<b>Peak Z-Score:</b> {incident['peak_zscore']}σ" if incident.get("peak_zscore") else ""
         
         detectors_list = incident.get("detectors", [])
         if detectors_list:
-            detectors_str = "\n".join(f"✓ {d}" for d in detectors_list)
+            evidence_str = "\n".join(f"• {d}" for d in detectors_list)
         else:
-            detectors_str = "✓ Baseline Anomaly"
+            evidence_str = "• Baseline Anomaly"
 
         return INCIDENT_TEMPLATE.format(
             icon=anomaly_icon(atype),
@@ -174,9 +172,8 @@ class MantleIntelBot:
             dur=dur,
             occ=occ,
             conf=conf,
-            zscore_line=z_line,
             timestamp=incident.get("timestamp", "N/A"),
-            detectors=detectors_str,
+            evidence=evidence_str,
             hash_short=f"{fhash[:20]}..." if fhash else "N/A"
         ).strip()
 

@@ -372,7 +372,43 @@ Name specific Mantle protocols: Merchant Moe, Lendle, Agni Finance, mETH, Fusion
             "lead_time_hours": round(getattr(finding, "lead_time_blocks", 0) * 12 / 3600, 1),
             "affected_protocols": getattr(finding, "affected_protocols", []),
             "signal_tier": self._get_signal_tier(finding),
+            "reasons": self._extract_evidence(finding)
         }
+
+    def _extract_evidence(self, finding) -> list[str]:
+        """Convert finding metrics into human-readable evidence points."""
+        ev = []
+        m = finding.raw_metrics or {}
+        
+        # Method / Base evidence
+        if finding.method == "zscore":
+            if "tx_count" in m and "mean_tx" in m:
+                ev.append(f"Transaction count ({m['tx_count']}) exceeded recent baseline ({m['mean_tx']:.0f})")
+            if "value_mnt" in m and "mean_val_mnt" in m:
+                ev.append(f"MNT transfer value ({m['value_mnt']:,.0f}) exceeded baseline ({m['mean_val_mnt']:,.0f})")
+        elif finding.method == "isolation_forest":
+            ev.append("Multivariate outlier detected (tx volume + value + wallet diversity)")
+        elif finding.method == "pattern_match":
+            if finding.anomaly_type == "smart_money_inflow":
+                ev.append(f"{m.get('wallet_count', 2)} unlabeled wallets accumulated positions")
+            else:
+                ev.append(f"{m.get('transfer_count', 2)} large institutional transfers detected")
+        elif finding.method == "meth_oracle":
+            ev.append(f"Oracle price deviation of {m.get('depeg_bps', 0)} bps")
+        elif finding.method == "reserve_analysis":
+            ev.append(f"Liquidity pool reserve shifted by {m.get('r0_delta_pct', 0)}%")
+        elif finding.method == "cross_protocol":
+            ev.append(f"Simultaneous deployment across {m.get('protocols_hit', 3)} protocols")
+            
+        # Z-score context
+        z = m.get("zscore")
+        if z and abs(z) >= 3.0:
+            ev.append(f"Statistically significant spike (z={abs(z):.2f}σ)")
+            
+        if not ev:
+            ev.append("Baseline Anomaly")
+            
+        return ev
 
     def _get_signal_tier(self, finding) -> str:
         """Map anomaly type + confidence to signal tier for dashboard."""
