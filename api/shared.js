@@ -360,11 +360,11 @@ export async function fetchLendleTvl() {
 
 export async function fetchAuditStats() {
   try {
-    const AUDIT = "0x7fAb1E37d992109d3aA747703436ff4e261391b7";
-    const countHex = await rpcCall(MANTLE_SEPOLIA, "eth_call", [{ to: AUDIT, data: "0x04193ffb" }, "latest"]);
-    const count = countHex && countHex !== "0x" ? parseInt(countHex, 16) : 120;
+    const AUDIT = "0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b";
+    const countHex = await rpcCall(MANTLE_SEPOLIA, "eth_call", [{ to: AUDIT, data: "0x0bbee663" }, "latest"]);
+    const count = countHex && countHex !== "0x" ? parseInt(countHex, 16) : 0;
     return { finding_count: count };
-  } catch { return { finding_count: 120 }; }
+  } catch { return { finding_count: 0 }; }
 }
 
 export async function buildSnapshot(includeProtocolState = true) {
@@ -494,11 +494,11 @@ export async function buildSnapshot(includeProtocolState = true) {
         network:          "mantle-sepolia",
       },
       contracts: {
-        audit:              "0x7fAb1E37d992109d3aA747703436ff4e261391b7",
+        audit:              "0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b",
         signal_registry:    "0xdf0755192B35220B4C2bD12Ce01aa36E2F7fbBEE",
         smart_money_tracker:"0xB1ba1eeB90e29E2b00d61E8Aa2f0D6eDe46973Bf",
         alert_log:          "0x1Ce1B5F606b9E83e7432057265Dd95678114F82D",
-        nft:                "0x7fAb1E37d992109d3aA747703436ff4e261391b7",
+        nft:                "0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b",
         total_deployed:     5,
         network:            "mantle-sepolia",
       },
