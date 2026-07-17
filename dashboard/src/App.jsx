@@ -80,12 +80,29 @@ export default function App() {
   }, [applyData, fetchSnap, API_KEY]);
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background:"#000" }}>
-      <div className="text-center space-y-4">
-        <div className="w-12 h-12 rounded-full border-2 border-t-transparent animate-spin mx-auto"
-          style={{ borderColor: G, borderTopColor:"transparent" }}/>
-        <p className="font-mono text-sm" style={{ color: G }}>Connecting to Mantle RPC…</p>
-        <p className="text-xs text-gray-700 font-mono">live data · no simulation · no mock</p>
+    <div className="min-h-screen bg-slate-950 flex flex-col pt-14">
+      <div className="max-w-6xl mx-auto w-full px-4 py-6 space-y-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-28 rounded-xl glass-card animate-pulse relative overflow-hidden">
+              <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+            </div>
+          ))}
+        </div>
+        <div className="h-12 w-full rounded-xl glass-card animate-pulse" />
+        <div className="space-y-3">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="h-16 w-full rounded-xl glass-card animate-pulse" style={{ opacity: 1 - i * 0.15 }} />
+          ))}
+        </div>
+      </div>
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50">
+        <div className="text-center space-y-4 bg-slate-950/80 p-8 rounded-3xl backdrop-blur-md border border-white/10 shadow-2xl">
+          <div className="w-12 h-12 rounded-full border-2 border-t-transparent animate-slow-spin mx-auto glow-text"
+            style={{ borderColor: G, borderTopColor:"transparent" }}/>
+          <p className="font-mono text-sm tracking-widest glow-text" style={{ color: G }}>INITIALIZING SECURE LINK…</p>
+          <p className="text-xs text-slate-500 font-mono">ESTABLISHING ON-CHAIN CONNECTION</p>
+        </div>
       </div>
     </div>
   );
@@ -124,21 +141,21 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen text-white" style={{ background:"#000", fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }}>
+    <div className="min-h-screen text-white bg-slate-950 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-slate-950">
 
-      <div className="sticky top-0 z-30 border-b" style={{ borderColor:"#111", background:"rgba(0,0,0,0.95)", backdropFilter:"blur(12px)" }}>
+      <div className="sticky top-0 z-30 border-b border-white/10 bg-slate-950/80 backdrop-blur-xl shadow-sm">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center gap-4">
 
-          <div className="flex items-center gap-2.5 flex-shrink-0">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center font-black text-black text-sm"
+          <div className="flex items-center gap-2.5 flex-shrink-0 group cursor-pointer">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-black text-sm shadow-[0_0_15px_rgba(0,211,149,0.5)] transition-transform group-hover:scale-105"
               style={{ background: `linear-gradient(135deg,${G},#00a876)` }}>⬡</div>
             <div>
-              <div className="text-sm font-black text-white tracking-tight">MANTLE INTEL</div>
-              <div className="text-xs font-mono" style={{ color: G, marginTop:"-2px" }}>AGENT v6.0</div>
+              <div className="text-sm font-black text-white tracking-tight font-['Outfit']">MANTLE INTEL</div>
+              <div className="text-[10px] font-mono tracking-widest" style={{ color: G, marginTop:"-2px" }}>AGENT v6.0</div>
             </div>
           </div>
 
-          <div className="hidden md:flex items-center gap-4 flex-1 px-6 text-xs font-mono text-gray-600">
+          <div className="hidden md:flex items-center gap-4 flex-1 px-6 text-xs font-mono text-slate-500">
             {chain.mainnet?.latest_block > 0 && (
               <span className="flex items-center gap-1.5">
                 <PulseDot color={G} size={6}/>
@@ -197,22 +214,24 @@ export default function App() {
             sub={`${sm.tier1_alerts||0} tier-1 alerts`} accent="#A855F7"/>
         </div>
 
-        <div className="flex items-center gap-1 overflow-x-auto pb-1">
+        <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-hide">
           {TABS.map(({ key, label, icon: Icon, badge }) => (
             <button key={key} onClick={() => setActiveTab(key)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex-shrink-0"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap flex-shrink-0 relative overflow-hidden group"
               style={{
-                background: activeTab===key ? G+"18" : "transparent",
-                color: activeTab===key ? G : "#4B5563",
-                border: `1px solid ${activeTab===key ? G+"40" : "transparent"}`,
+                background: activeTab===key ? G+"15" : "transparent",
+                color: activeTab===key ? G : "#94A3B8",
               }}>
-              <Icon size={12}/>
+              {activeTab === key && <div className="absolute inset-0 border border-[rgba(0,211,149,0.3)] rounded-xl pointer-events-none" />}
+              <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+              <Icon size={14} className="transition-transform group-hover:scale-110" />
               {label}
               {(badge === "NEW" || badge > 0) && (
-                <span className="text-xs px-1.5 py-0.5 rounded-full font-mono"
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full font-mono ml-1 shadow-sm"
                   style={{ 
-                    background: badge==="NEW" ? "#A855F720" : (activeTab===key ? G+"30":"#1F2937"),
-                    color: badge==="NEW" ? "#A855F7" : (activeTab===key ? G:"#6B7280")
+                    background: badge==="NEW" ? "#A855F725" : (activeTab===key ? G+"30":"#334155"),
+                    color: badge==="NEW" ? "#D8B4FE" : (activeTab===key ? "#A7F3D0":"#CBD5E1"),
+                    border: `1px solid ${badge==="NEW" ? "#A855F750" : (activeTab===key ? G+"50":"transparent")}`
                   }}>
                   {badge}
                 </span>
@@ -240,15 +259,15 @@ export default function App() {
         </div>
 
         {activeTab === "findings" && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+          <div className="space-y-4">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-hide">
               {FILTERS.map(f => (
                 <button key={f.key} onClick={() => setFilter(f.key)}
-                  className="text-xs px-3 py-1.5 rounded-lg whitespace-nowrap transition-all font-bold flex-shrink-0"
+                  className="text-xs px-3.5 py-1.5 rounded-lg whitespace-nowrap transition-all font-bold flex-shrink-0 hover:bg-slate-800"
                   style={{
-                    background: activeFilter===f.key ? G+"18":"#0D0D0D",
-                    color: activeFilter===f.key ? G : "#4B5563",
-                    border: `1px solid ${activeFilter===f.key ? G+"40":"#1F2937"}`,
+                    background: activeFilter===f.key ? G+"20":"rgba(15,23,42,0.6)",
+                    color: activeFilter===f.key ? G : "#94A3B8",
+                    border: `1px solid ${activeFilter===f.key ? G+"50":"rgba(255,255,255,0.05)"}`,
                   }}>
                   {f.label}
                 </button>
@@ -279,16 +298,16 @@ export default function App() {
         {activeTab === "audit"     && <AuditTab     data={data} findings={sorted}/>}
         {activeTab === "api"       && <APITab       data={data} contract={contract}/>}
 
-        <div className="border-t pt-4 flex items-center justify-between text-xs font-mono text-gray-700"
-          style={{ borderColor:"#111" }}>
+        <div className="border-t pt-6 flex items-center justify-between text-xs font-mono text-slate-500"
+          style={{ borderColor:"rgba(255,255,255,0.05)" }}>
           <span>Mantle Intel Agent v6.0 · On-Chain Intelligence · Mantle Ecosystem</span>
-          <div className="flex items-center gap-4 hidden sm:flex">
+          <div className="flex items-center gap-5 hidden sm:flex">
             <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-1 hover:text-gray-400 transition-colors">
+              className="flex items-center gap-1 hover:text-white transition-colors">
               <GitBranch size={10}/> GitHub
             </a>
             <a href={`${EXPLORER_BASE}/address/${CONTRACT_ADDR}`} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-1 hover:text-gray-400 transition-colors">
+              className="flex items-center gap-1 hover:text-white transition-colors">
               <Shield size={10}/> Contract
             </a>
           </div>

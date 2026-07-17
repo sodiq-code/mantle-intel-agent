@@ -90,18 +90,20 @@ export function PulseDot({ color = G, size = 8 }) {
 
 export function StatTile({ label, value, sub, accent = G, icon: Icon, live }) {
   return (
-    <div className="relative overflow-hidden rounded-xl p-4 border border-white/5"
-      style={{ background: "linear-gradient(135deg,#0D0D0D 0%,#111 100%)" }}>
-      <div className="flex items-start justify-between mb-3">
-        <div className="p-2 rounded-lg" style={{ backgroundColor: accent + "18" }}>
-          <Icon size={14} style={{ color: accent }}/>
+    <div className="relative overflow-hidden rounded-xl p-4 glass-card group">
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-slate-950/90 pointer-events-none" />
+      <div className="relative z-10">
+        <div className="flex items-start justify-between mb-3">
+          <div className="p-2 rounded-lg transition-transform group-hover:scale-110" style={{ backgroundColor: accent + "18" }}>
+            <Icon size={14} style={{ color: accent }}/>
+          </div>
+          {live && <PulseDot color={accent}/>}
         </div>
-        {live && <PulseDot color={accent}/>}
+        <div className="text-2xl font-black font-mono text-white leading-none mb-1 group-hover:glow-text transition-all duration-300">{value}</div>
+        <div className="text-xs font-semibold" style={{ color: accent }}>{label}</div>
+        {sub && <div className="text-xs text-slate-400 mt-0.5">{sub}</div>}
       </div>
-      <div className="text-2xl font-black font-mono text-white leading-none mb-1">{value}</div>
-      <div className="text-xs font-semibold" style={{ color: accent }}>{label}</div>
-      {sub && <div className="text-xs text-gray-600 mt-0.5">{sub}</div>}
-      <div className="absolute bottom-0 left-0 right-0 h-px" style={{ backgroundColor: accent + "40" }}/>
+      <div className="absolute bottom-0 left-0 right-0 h-px transition-all duration-300 group-hover:h-0.5" style={{ backgroundColor: accent + "60" }}/>
     </div>
   );
 }
@@ -114,17 +116,17 @@ export function FindingRow({ finding, isNew }) {
 
   return (
     <div onClick={() => setExpanded(x => !x)}
-      className={`rounded-xl border cursor-pointer transition-all duration-200 ${isNew ? "animate-pulse" : ""}`}
+      className={`rounded-xl cursor-pointer transition-all duration-300 relative overflow-hidden group ${isNew ? "animate-pulse" : ""} ${expanded ? "glass-panel" : "glass-card"}`}
       style={{
-        borderColor: expanded ? c.color + "60" : "#1F2937",
-        background: expanded ? c.color + "08" : "#0D0D0D",
+        borderColor: expanded ? c.color + "60" : "rgba(255,255,255,0.05)",
       }}>
-      <div className="flex items-center gap-3 px-4 py-3">
-        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: c.color }}/>
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none" style={{ backgroundColor: c.color }} />
+      <div className="flex items-center gap-3 px-4 py-3 relative z-10">
+        <div className="w-2 h-2 rounded-full flex-shrink-0 group-hover:animate-ping" style={{ backgroundColor: c.color }}/>
         <ConfRing value={finding.confidence || 0}/>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-bold font-mono" style={{ color: c.color }}>{c.label}</span>
+            <span className="text-xs font-bold font-mono group-hover:glow-text transition-all" style={{ color: c.color }}>{c.label}</span>
             <span className="text-xs px-1.5 py-0.5 rounded font-mono border"
               style={{ color: TIER_COLOR[c.tier], borderColor: TIER_COLOR[c.tier] + "40", backgroundColor: TIER_COLOR[c.tier] + "10" }}>
               {c.tier}
@@ -136,32 +138,32 @@ export function FindingRow({ finding, isNew }) {
               </span>
             )}
           </div>
-          <div className="text-sm text-white font-semibold mt-0.5 truncate">
+          <div className="text-sm text-white font-semibold mt-0.5 truncate group-hover:text-slate-200">
             {finding.title || `Block #${(finding.block || 0).toLocaleString()}`}
           </div>
         </div>
         <div className="flex-shrink-0 text-right">
-          <div className="text-xs text-gray-600 font-mono">#{(finding.block||0).toLocaleString()}</div>
-          <div className="text-xs text-gray-700">{since}</div>
+          <div className="text-xs text-slate-500 font-mono group-hover:text-slate-400">#{(finding.block||0).toLocaleString()}</div>
+          <div className="text-xs text-slate-400">{since}</div>
         </div>
-        <ChevronRight size={12} className="text-gray-700 flex-shrink-0 transition-transform"
+        <ChevronRight size={14} className="text-slate-500 flex-shrink-0 transition-transform duration-300 group-hover:text-white"
           style={{ transform: expanded ? "rotate(90deg)" : "rotate(0deg)" }}/>
       </div>
       {expanded && (
-        <div className="px-4 pb-4 space-y-2 border-t" style={{ borderColor: c.color + "20" }}>
+        <div className="px-4 pb-4 space-y-2 border-t relative z-10" style={{ borderColor: c.color + "20", backgroundColor: "rgba(0,0,0,0.2)" }}>
           {finding.insight && (
-            <p className="text-sm text-gray-300 leading-relaxed pt-3">{finding.insight}</p>
+            <p className="text-sm text-slate-300 leading-relaxed pt-3">{finding.insight}</p>
           )}
           {sm.known_wallets?.length > 0 && (
             <div className="flex flex-wrap gap-1 pt-1">
               {sm.known_wallets.map(w => (
-                <span key={w} className="text-xs px-2 py-0.5 rounded-full bg-white/5 text-gray-400 font-mono">{w}</span>
+                <span key={w} className="text-xs px-2 py-0.5 rounded-full bg-slate-800/50 text-slate-300 border border-slate-700/50 font-mono">{w}</span>
               ))}
             </div>
           )}
           {finding.tx_hash && (
             <a href={`${EXPLORER_BASE}/tx/${finding.tx_hash}`} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-1 text-xs font-mono hover:underline" style={{ color: G }}>
+              className="flex items-center gap-1 text-xs font-mono hover:underline mt-2" style={{ color: G }}>
               <ExternalLink size={10}/>{finding.tx_hash.slice(0,20)}…
             </a>
           )}
