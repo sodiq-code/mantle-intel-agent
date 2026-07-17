@@ -3,7 +3,7 @@ import { G, EXPLORER_BASE, cfg } from "./Shared.jsx";
 
 export function AuditTab({ data, findings }) {
   const CONTRACT = "0x7fAb1E37d992109d3aA747703436ff4e261391b7";
-  const auditCount = data?.protocol_state?.audit_contract?.finding_count || findings.length || 120;
+  const auditCount = data?.protocol_state?.audit_contract?.finding_count ?? findings.length ?? 0;
 
   // Use the live findings fetched from the edge function
   const displayFindings = findings.slice(0, 20);

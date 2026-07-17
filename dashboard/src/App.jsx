@@ -114,7 +114,7 @@ export default function App() {
   const chain    = data?.chain   || {};
   const backtest = data?.backtest;
   const contract = data?.contract_address || CONTRACT_ADDR;
-  const auditCount = data?.protocol_state?.audit_contract?.finding_count || allFnds.length || 120;
+  const auditCount = data?.protocol_state?.audit_contract?.finding_count ?? allFnds.length ?? 0;
 
   const filtered = activeFilter === "all" ? activeInc : activeInc.filter(i => i.type === activeFilter);
   const sorted   = [...filtered].sort((a,b) => b.latest_block - a.latest_block);
