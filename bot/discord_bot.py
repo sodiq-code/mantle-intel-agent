@@ -37,13 +37,14 @@ INCIDENT_TEMPLATE = """
 
 {insight}
 
-**Severity:** {state}
+**Incident ID:** `{incident_id}`
+**Status:** {state}
 **Detection Confidence:** **{conf}%** (Anomaly)
 **Blocks:** `{start}` to `{latest}` (Duration: {dur} blocks)
 **Timestamp (UTC):** `{timestamp}`
 **Occurrences:** {occ}
 
-**Severity Rationale:**
+**Evidence:**
 {evidence}
 
 🔐 Latest Hash: `{hash_short}`
@@ -162,6 +163,7 @@ class MantleIntelDiscordBot:
             icon=anomaly_icon(atype),
             anomaly_type_label=anomaly_label(atype),
             insight=insight[:1800],
+            incident_id=incident.get("incident_id", "N/A"),
             state=state,
             start=f"{start:,}",
             latest=f"{latest:,}",

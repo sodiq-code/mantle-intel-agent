@@ -121,7 +121,7 @@ class DiscordWebhook:
         
         detectors_str = "\n".join(f"• {d}" for d in detectors) if detectors else "• Baseline Anomaly"
         
-        desc = f"{insight}\n\n**Severity:** {state}\n**Detection Confidence:** {conf}% (Anomaly)"
+        desc = f"{insight}\n\n**Incident ID:** `{incident.get('incident_id', 'N/A')}`\n**Status:** {state}\n**Detection Confidence:** {conf}% (Anomaly)"
         
         fields = [
             {"name": "Blocks", "value": f"`{start:,}` to `{latest:,}` (Duration: {dur} blocks)", "inline": False},
@@ -129,7 +129,7 @@ class DiscordWebhook:
             {"name": "Timestamp (UTC)", "value": f"`{timestamp}`", "inline": True},
         ]
             
-        fields.append({"name": "Severity Rationale", "value": detectors_str, "inline": False})
+        fields.append({"name": "Evidence", "value": detectors_str, "inline": False})
             
         if fhash:
             fields.append({
