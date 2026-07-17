@@ -43,7 +43,10 @@ class IncidentManager:
                 "last_notified_state": IncidentState.OPENED,
                 "last_notified_occurrences": 1,
                 "findings": [dashboard_card],
-                "insight_sample": dashboard_card.get("insight", "")
+                "insight_sample": dashboard_card.get("insight", ""),
+                "reasons": set(dashboard_card.get("reasons", [])),
+                "start_time": dashboard_card.get("timestamp", "N/A"),
+                "latest_time": dashboard_card.get("timestamp", "N/A"),
             }
             self.active_incidents[anomaly_type] = incident
             return self._format_incident_notification(incident)
@@ -52,6 +55,9 @@ class IncidentManager:
         incident["latest_block"] = current_block
         incident["occurrences"] += 1
         incident["findings"].append(dashboard_card)
+        incident["latest_time"] = dashboard_card.get("timestamp", incident["latest_time"])
+        for r in dashboard_card.get("reasons", []):
+            incident["reasons"].add(r)
         
         conf = dashboard_card.get("confidence_pct", 0)
         if conf > incident["peak_confidence"]:
@@ -127,5 +133,7 @@ class IncidentManager:
             "peak_confidence": incident["peak_confidence"],
             "peak_zscore": incident["peak_zscore"],
             "insight_sample": incident["insight_sample"],
-            "latest_hash": incident["findings"][-1].get("hash") if incident["findings"] else None
+            "latest_hash": incident["findings"][-1].get("hash") if incident["findings"] else None,
+            "timestamp": incident["latest_time"],
+            "detectors": list(incident.get("reasons", []))
         }

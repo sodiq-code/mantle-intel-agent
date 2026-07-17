@@ -59,15 +59,19 @@ Demo mode: {demo_badge}
 """
 
 INCIDENT_TEMPLATE = """
-{icon} <b>{anomaly_type_label}</b>
+{icon} <b>{anomaly_type_label} Incident</b>
 
 {insight}
 
-<b>Status:</b> {state}
-<b>Blocks:</b> <code>{start}</code> to <code>{latest}</code> (Duration: {dur})
+<b>Severity:</b> {state}
+<b>Detection Confidence:</b> <b>{conf}%</b>
+<b>Blocks:</b> <code>{start}</code> to <code>{latest}</code> (Duration: {dur} blocks)
+<b>Timestamp (UTC):</b> <code>{timestamp}</code>
 <b>Occurrences:</b> {occ}
-<b>Peak Confidence:</b> <b>{conf}%</b>
 {zscore_line}
+<b>Detectors:</b>
+{detectors}
+
 🔐 Latest Hash: <code>{hash_short}</code>
 """
 
@@ -152,7 +156,13 @@ class MantleIntelBot:
         insight = incident.get("insight_sample", "")
 
         insight_trimmed = insight[:800] + "..." if len(insight) > 800 else insight
-        z_line = f"<b>Peak Z-Score:</b> {incident['peak_zscore']}σ\n" if incident.get("peak_zscore") else ""
+        z_line = f"<b>Peak Z-Score:</b> {incident['peak_zscore']}σ" if incident.get("peak_zscore") else ""
+        
+        detectors_list = incident.get("detectors", [])
+        if detectors_list:
+            detectors_str = "\n".join(f"✓ {d}" for d in detectors_list)
+        else:
+            detectors_str = "✓ Baseline Anomaly"
 
         return INCIDENT_TEMPLATE.format(
             icon=anomaly_icon(atype),
@@ -165,6 +175,8 @@ class MantleIntelBot:
             occ=occ,
             conf=conf,
             zscore_line=z_line,
+            timestamp=incident.get("timestamp", "N/A"),
+            detectors=detectors_str,
             hash_short=f"{fhash[:20]}..." if fhash else "N/A"
         ).strip()
 

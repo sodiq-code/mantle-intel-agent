@@ -77,40 +77,62 @@ class DiscordWebhook:
         return False
 
     def _build_payload(self, incident: dict) -> dict:
-        atype   = incident.get("type", "anomaly")
-        state   = incident.get("state", "🟡 Incident")
-        start   = incident.get("start_block", 0)
-        latest  = incident.get("latest_block", 0)
-        dur     = incident.get("duration_blocks", 1)
-        occ     = incident.get("occurrences", 1)
-        conf    = incident.get("peak_confidence", 0)
-        fhash   = incident.get("latest_hash", "")
+        """Build a Discord webhook payload for an incident update."""
+        atype = incident.get("type", "anomaly")
         
-        label   = ANOMALY_LABELS.get(atype, f"⚡ {atype.replace('_', ' ').title()}")
-        color   = ANOMALY_COLORS.get(atype, 0x6366F1)
+        label_map = {
+            "whale_accumulation":   "Whale Accumulation",
+            "whale_distribution":   "Whale Distribution",
+            "smart_money_inflow":   "Smart Money Inflow",
+            "tx_spike":             "TX Volume Spike",
+            "value_spike":          "Value Spike",
+            "multivariate_anomaly": "Multivariate Anomaly",
+        }
         
-        # Override color based on state
-        if "Critical" in state:
-            color = 0xEF4444 # Red
-        elif "Resolved" in state:
-            color = 0x22C55E # Green
-
+        icon_map = {
+            "whale_accumulation":  "🐋",
+            "smart_money_inflow":  "🧠",
+            "tx_spike":            "📈",
+            "value_spike":         "💰",
+        }
+        
+        state = incident.get("state", "🟡 Incident")
+        
+        color_map = {
+            "🟡 Incident Opened":    16776960,  # Yellow
+            "🟠 Incident Escalated": 16744192,  # Orange
+            "🔴 Incident Critical":  16711680,  # Red
+            "✅ Incident Resolved":  3066993,   # Green
+        }
+        
+        icon = icon_map.get(atype, "⚡")
+        label = label_map.get(atype, atype.replace("_", " ").title())
+        
+        conf = incident.get("peak_confidence", 0)
+        zscore = incident.get("peak_zscore")
+        start = incident.get("start_block", 0)
+        latest = incident.get("latest_block", 0)
+        dur = incident.get("duration_blocks", 1)
+        occ = incident.get("occurrences", 1)
         insight = incident.get("insight_sample", "")
-        if len(insight) > 900:
-            insight = insight[:900] + "..."
-
-        fields = [
-            {"name": "Status", "value": f"**{state}**", "inline": False},
-            {"name": "Start Block", "value": f"`{start:,}`", "inline": True},
-            {"name": "Latest Block", "value": f"`{latest:,}`", "inline": True},
-            {"name": "Duration", "value": f"{dur} blocks", "inline": True},
-            {"name": "Occurrences", "value": str(occ), "inline": True},
-            {"name": "Peak Confidence", "value": f"**{conf}%**", "inline": True},
-        ]
+        fhash = incident.get("latest_hash", "")
+        timestamp = incident.get("timestamp", "N/A")
+        detectors = incident.get("detectors", [])
         
-        if incident.get("peak_zscore"):
-            fields.append({"name": "Peak Z-Score", "value": f"{incident['peak_zscore']}σ", "inline": True})
-
+        detectors_str = "\n".join(f"✓ {d}" for d in detectors) if detectors else "✓ Baseline Anomaly"
+        
+        desc = f"{insight}\n\n**Severity:** {state}\n**Detection Confidence:** {conf}%"
+        
+        fields = [
+            {"name": "Blocks", "value": f"`{start:,}` to `{latest:,}` (Duration: {dur} blocks)", "inline": False},
+            {"name": "Occurrences", "value": str(occ), "inline": True},
+            {"name": "Timestamp (UTC)", "value": f"`{timestamp}`", "inline": True},
+        ]
+        if zscore:
+            fields.append({"name": "Peak Z-Score", "value": f"{zscore}σ", "inline": True})
+            
+        fields.append({"name": "Detectors", "value": detectors_str, "inline": False})
+            
         if fhash:
             fields.append({
                 "name": "Latest SHA-256 Hash",
