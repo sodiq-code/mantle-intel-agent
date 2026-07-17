@@ -13,6 +13,8 @@ v2.0 changes:
 Results written to backtest/results.md — required for verifiability score.
 """
 from __future__ import annotations
+from agents.anomaly.anomaly_agent import AnomalyAgent, AnomalyFinding, CONFIDENCE_THRESHOLD
+from agents.collector.collector_agent import CollectorAgent, BlockSummary
 
 import asyncio
 import json
@@ -28,9 +30,6 @@ except ImportError:
 
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-
-from agents.collector.collector_agent import CollectorAgent, BlockSummary
-from agents.anomaly.anomaly_agent import AnomalyAgent, AnomalyFinding, CONFIDENCE_THRESHOLD
 
 
 # ── Ground truth for backtest ─────────────────────────────────────────────────
@@ -68,13 +67,14 @@ async def run_backtest(num_blocks: int = 100) -> dict:
     print("=" * 60)
     print("MANTLE INTEL AGENT — BACKTEST ANALYSIS v2.0")
     print(f"Data: {num_blocks} simulated Mantle blocks")
-    print(f"Confidence Threshold: {CONFIDENCE_THRESHOLD} (v2: raised from 0.60)")
+    print(
+        f"Confidence Threshold: {CONFIDENCE_THRESHOLD} (v2: raised from 0.60)")
     print(f"Ground Truth Events: {len(GROUND_TRUTH_ANOMALIES)}")
     print(f"Timestamp: {datetime.now(tz=timezone.utc).isoformat()}")
     print("=" * 60 + "\n")
 
     collector = CollectorAgent()
-    detector  = AnomalyAgent()
+    detector = AnomalyAgent()
 
     # Collect blocks (demo mode generates reproducible anomaly-injected data)
     t0 = time.time()
@@ -95,14 +95,15 @@ async def run_backtest(num_blocks: int = 100) -> dict:
     detection_time = time.time() - t1
 
     print(f"✓ Detection completed in {detection_time:.2f}s")
-    print(f"  Findings (above threshold {CONFIDENCE_THRESHOLD}): {len(findings)}\n")
+    print(
+        f"  Findings (above threshold {CONFIDENCE_THRESHOLD}): {len(findings)}\n")
 
     # ── Evaluate against ground truth ─────────────────────────────────────────
 
     detected_blocks = {f.block_height: f for f in findings}
     base_block = blocks[0].block_num if blocks else 68_000_000
 
-    true_positives  = []
+    true_positives = []
     false_negatives = []
     false_positives = []
 
@@ -118,7 +119,8 @@ async def run_backtest(num_blocks: int = 100) -> dict:
                     f.anomaly_type == expected_type or
                     expected_type in f.anomaly_type or
                     f.anomaly_type in expected_type or
-                    f.anomaly_type in ("multivariate_anomaly", "value_spike", "tx_spike", "whale_accumulation", "smart_money_inflow")
+                    f.anomaly_type in ("multivariate_anomaly", "value_spike",
+                                       "tx_spike", "whale_accumulation", "smart_money_inflow")
                 )
                 if type_match and f.confidence >= min_conf:
                     true_positives.append({
@@ -160,11 +162,14 @@ async def run_backtest(num_blocks: int = 100) -> dict:
     fn = len(false_negatives)
 
     precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
-    recall    = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-    f1        = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
+    recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+    f1 = 2 * precision * recall / \
+        (precision + recall) if (precision + recall) > 0 else 0.0
 
-    avg_confidence_tp = sum(r["confidence"] for r in true_positives) / len(true_positives) if true_positives else 0
-    avg_latency_tp    = sum(r["latency_blocks"] for r in true_positives) / len(true_positives) if true_positives else 0
+    avg_confidence_tp = sum(r["confidence"] for r in true_positives) / \
+        len(true_positives) if true_positives else 0
+    avg_latency_tp = sum(r["latency_blocks"] for r in true_positives) / \
+        len(true_positives) if true_positives else 0
 
     metrics = {
         "true_positives":               tp,
@@ -195,15 +200,16 @@ async def run_backtest(num_blocks: int = 100) -> dict:
     print(f"  Detection Lag:   {avg_latency_tp:.1f} blocks avg")
     print("─" * 60)
 
-    _write_results_md(metrics, true_positives, false_positives, false_negatives, findings, blocks)
+    _write_results_md(metrics, true_positives, false_positives,
+                      false_negatives, findings, blocks)
     print(f"\n✅ Full results written to: backtest/results.md")
     return metrics
 
 
 def _write_results_md(metrics, tp_list, fp_list, fn_list, findings, blocks):
     precision_pct = metrics['precision'] * 100
-    recall_pct    = metrics['recall'] * 100
-    f1_val        = metrics['f1_score']
+    recall_pct = metrics['recall'] * 100
+    f1_val = metrics['f1_score']
 
     # Grade
     if precision_pct >= 75 and recall_pct >= 75:
@@ -267,13 +273,16 @@ def _write_results_md(metrics, tp_list, fp_list, fn_list, findings, blocks):
                 f"| {r['confidence']*100:.1f}% | {r['latency_blocks']} |"
             )
     else:
-        lines.append("_No true positives in this simulated run — adjust injection parameters._")
+        lines.append(
+            "_No true positives in this simulated run — adjust injection parameters._")
 
     lines += ["", "## False Positives", ""]
     if fp_list:
-        lines += ["| Block | Type | Confidence |", "|-------|------|------------|"]
+        lines += ["| Block | Type | Confidence |",
+                  "|-------|------|------------|"]
         for r in fp_list[:10]:
-            lines.append(f"| {r['block']:,} | {r['type']} | {r['confidence']*100:.1f}% |")
+            lines.append(
+                f"| {r['block']:,} | {r['type']} | {r['confidence']*100:.1f}% |")
         if len(fp_list) > 10:
             lines.append(f"| ... | +{len(fp_list)-10} more | |")
     else:

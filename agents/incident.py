@@ -1,6 +1,7 @@
 import time
 from typing import Dict, List, Any
 
+
 class IncidentState:
     OPENED = "🟡 Incident Opened"
     ESCALATED = "🟠 Incident Escalated"
@@ -13,6 +14,7 @@ class IncidentManager:
     State tracker to aggregate anomaly findings into ongoing incidents
     to prevent alert storms on bots.
     """
+
     def __init__(self, resolution_threshold_blocks: int = 60):
         self.resolution_threshold_blocks = resolution_threshold_blocks
         self.active_incidents: Dict[str, dict] = {}
@@ -24,10 +26,10 @@ class IncidentManager:
         should be sent, otherwise returns None (if it's just a minor state update).
         """
         anomaly_type = dashboard_card.get("type", "unknown")
-        
+
         # Check if we have an active incident of this type
         incident = self.active_incidents.get(anomaly_type)
-        
+
         if not incident:
             # Create new incident
             self.incident_counter += 1
@@ -55,14 +57,15 @@ class IncidentManager:
         incident["latest_block"] = current_block
         incident["occurrences"] += 1
         incident["findings"].append(dashboard_card)
-        incident["latest_time"] = dashboard_card.get("timestamp", incident["latest_time"])
+        incident["latest_time"] = dashboard_card.get(
+            "timestamp", incident["latest_time"])
         for r in dashboard_card.get("reasons", []):
             incident["reasons"].add(r)
-        
+
         conf = dashboard_card.get("confidence_pct", 0)
         if conf > incident["peak_confidence"]:
             incident["peak_confidence"] = conf
-            
+
         zscore = self._extract_zscore(dashboard_card)
         if zscore and (not incident["peak_zscore"] or zscore > incident["peak_zscore"]):
             incident["peak_zscore"] = zscore
@@ -73,7 +76,7 @@ class IncidentManager:
             new_state = IncidentState.CRITICAL
         elif incident["occurrences"] >= 3:
             new_state = IncidentState.ESCALATED
-            
+
         incident["state"] = new_state
 
         # Determine if we should notify
@@ -98,16 +101,17 @@ class IncidentManager:
         """
         resolved_notifications = []
         to_remove = []
-        
+
         for atype, incident in self.active_incidents.items():
             if (current_block - incident["latest_block"]) >= self.resolution_threshold_blocks:
                 incident["state"] = IncidentState.RESOLVED
-                resolved_notifications.append(self._format_incident_notification(incident))
+                resolved_notifications.append(
+                    self._format_incident_notification(incident))
                 to_remove.append(atype)
-                
+
         for atype in to_remove:
             del self.active_incidents[atype]
-            
+
         return resolved_notifications
 
     def _extract_zscore(self, dashboard_card: dict) -> float | None:
@@ -121,7 +125,7 @@ class IncidentManager:
         Returns an object designed to be consumed by the Bot layer.
         """
         duration = (incident["latest_block"] - incident["start_block"]) + 1
-        
+
         return {
             "incident_id": incident["id"],
             "type": incident["type"],

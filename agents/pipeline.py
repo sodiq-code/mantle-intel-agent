@@ -19,18 +19,18 @@ from datetime import datetime, timezone
 from typing import Optional, Callable
 import structlog
 
-from agents.collector.collector_agent   import CollectorAgent
-from agents.anomaly.anomaly_agent       import AnomalyAgent, AnomalyFinding
+from agents.collector.collector_agent import CollectorAgent
+from agents.anomaly.anomaly_agent import AnomalyAgent, AnomalyFinding
 from agents.smart_money.smart_money_agent import SmartMoneyAgent
-from agents.insight.insight_agent       import InsightAgent
-from agents.audit.audit_agent           import AuditAgent
-from agents.incident                    import IncidentManager
-from bot.discord_webhook                import push_incident as discord_push
+from agents.insight.insight_agent import InsightAgent
+from agents.audit.audit_agent import AuditAgent
+from agents.incident import IncidentManager
+from bot.discord_webhook import push_incident as discord_push
 
 logger = structlog.get_logger(__name__)
 
 os.makedirs("data", exist_ok=True)
-FINDINGS_PATH  = "data/findings.jsonl"
+FINDINGS_PATH = "data/findings.jsonl"
 AUDIT_LOG_PATH = "data/audit_log.jsonl"
 DASHBOARD_PATH = "data/dashboard.json"
 
@@ -47,10 +47,10 @@ class MantleIntelPipeline:
         poll_interval: int = 30,
         blocks_per_cycle: int = 50,
     ):
-        self.on_incident      = on_incident
-        self.poll_interval   = poll_interval
+        self.on_incident = on_incident
+        self.poll_interval = poll_interval
         self.blocks_per_cycle = blocks_per_cycle
-        self._running        = False
+        self._running = False
         self._findings: list[dict] = []
         self._stats = {
             "cycles_run":      0,
@@ -61,11 +61,11 @@ class MantleIntelPipeline:
         self.incident_manager = IncidentManager()
 
         # Initialize agents
-        self.collector   = CollectorAgent(poll_interval=poll_interval)
-        self.anomaly     = AnomalyAgent()
+        self.collector = CollectorAgent(poll_interval=poll_interval)
+        self.anomaly = AnomalyAgent()
         self.smart_money = SmartMoneyAgent()
-        self.insight     = InsightAgent()
-        self.audit       = AuditAgent()
+        self.insight = InsightAgent()
+        self.audit = AuditAgent()
 
         self.logger = logger.bind(component="pipeline")
         self.logger.info("pipeline_initialized",
@@ -84,22 +84,23 @@ class MantleIntelPipeline:
         # Stage 1: Collect
         blocks = await self.collector.collect_blocks(self.blocks_per_cycle)
         protocol_state = await self.collector.poll_protocol_state()
-        
+
         if not blocks:
             self.logger.warning("no_blocks_collected")
             return []
-            
+
         latest_block = max(b.get("number", 0) for b in blocks) if blocks else 0
 
         self._stats["blocks_processed"] += len(blocks)
-        
+
         # Check resolutions
         resolved = self.incident_manager.check_resolutions(latest_block)
         for inc in resolved:
             await self._notify_incident(inc)
 
         # Stage 2: Anomaly detection
-        anomalies: list[AnomalyFinding] = self.anomaly.detect(blocks, protocol_state=vars(protocol_state))
+        anomalies: list[AnomalyFinding] = self.anomaly.detect(
+            blocks, protocol_state=vars(protocol_state))
 
         if not anomalies:
             self.logger.info("no_anomalies_detected", blocks=len(blocks))
@@ -121,7 +122,8 @@ class MantleIntelPipeline:
                 audit_record = await self.audit.record_finding(finding)
 
                 # Build full finding record
-                dashboard_card = self.insight.format_dashboard_card(finding, insight_text)
+                dashboard_card = self.insight.format_dashboard_card(
+                    finding, insight_text)
                 dashboard_card["audit"] = {
                     "status":     audit_record.audit_status,
                     "tx_hash":    audit_record.on_chain_tx,
@@ -141,7 +143,8 @@ class MantleIntelPipeline:
                 self._append_finding(dashboard_card)
 
                 # Process Incident State for Bots
-                incident_update = self.incident_manager.process_finding(dashboard_card, latest_block)
+                incident_update = self.incident_manager.process_finding(
+                    dashboard_card, latest_block)
                 if incident_update:
                     await self._notify_incident(incident_update)
 
@@ -156,7 +159,7 @@ class MantleIntelPipeline:
         # Update dashboard
         self._update_dashboard()
 
-        self._stats["cycles_run"]    += 1
+        self._stats["cycles_run"] += 1
         self._stats["findings_total"] += len(new_findings)
 
         elapsed = time.time() - cycle_start

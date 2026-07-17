@@ -11,6 +11,7 @@ v3.0 NEW:
 Falls back to demo/simulation mode when no RPC is reachable.
 """
 from __future__ import annotations
+import os as _os
 
 import asyncio
 import json
@@ -44,10 +45,12 @@ MANTLE_PROTOCOLS = {
     "merchant_moe":       "0x85f8628a0fa2A8C4A4a20A4c6432f57E45eF4E8e",
     "merchant_moe_lb":    "0x5c6ee304399dbdb9c8ef030ab642b10820db8f56",   # LB pair WETH/MNT
     "agni_finance":       "0x319B69888B0d11cEC22caA5034e25FfFBDc88421",
-    "agni_factory":       "0x25780dc8Fc3cfBD75F33bFDAB65e969b603b2035",  # Agni V3 factory (mainnet)
+    # Agni V3 factory (mainnet)
+    "agni_factory":       "0x25780dc8Fc3cfBD75F33bFDAB65e969b603b2035",
     "agni_mnt_usdt_pool": "0xD08C50F7E69e9aeb2867DefF4A8053d9A855e26A",  # MNT/USDT 0.05% pool
     "lendle":             "0x35b594f4cAba8B4D595c67F02fF4A619cc0e349F",
-    "lendle_data_prov":   "0x7Cf03b40F8C0fDeBF9C3D8a4a2fdEc2F0F0e37B0",  # Lendle Pool Data Provider
+    # Lendle Pool Data Provider
+    "lendle_data_prov":   "0x7Cf03b40F8C0fDeBF9C3D8a4a2fdEc2F0F0e37B0",
     "fusionx":            "0x530D2b6c4aE42e2Ab45EAe8B7cFAF0FBA8F3D2f7",
     "mantle_lsd":         "0xe3cBd06D7dadB3F4e6557bAb7EdD924CD1489E8f",
     "meth_protocol":      "0x78c1b0C915c4FAA5FffA6cabF0219DA63d7f4CB8",   # mETH staking
@@ -86,43 +89,49 @@ KNOWN_WALLETS = {
 # On mainnet: $50K is appropriate (real whale activity)
 # On testnet: $1K is more realistic (testnet transactions are smaller)
 # The threshold is configurable via env var for flexibility
-import os as _os
-LARGE_TRANSFER_THRESHOLD_USD = float(_os.getenv("LARGE_TRANSFER_THRESHOLD_USD", "1000"))  # $1K default (testnet-friendly)
+LARGE_TRANSFER_THRESHOLD_USD = float(_os.getenv(
+    "LARGE_TRANSFER_THRESHOLD_USD", "1000"))  # $1K default (testnet-friendly)
 ANOMALY_BLOCK_WINDOW = 100             # blocks to scan per cycle
 
 # ── ABI fragments for protocol reads ────────────────────────────────────────
-ERC20_BALANCE_ABI = [{"inputs": [{"name": "account", "type": "address"}], "name": "balanceOf", "outputs": [{"name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"}]
-ERC20_SUPPLY_ABI  = [{"inputs": [], "name": "totalSupply", "outputs": [{"name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"}]
-METH_RATE_ABI     = [{"inputs": [], "name": "mETHToETH", "outputs": [{"name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"}]
-MERCHANT_MOE_RESERVES_ABI = [{"inputs": [], "name": "getReserves", "outputs": [{"name": "reserve0", "type": "uint256"}, {"name": "reserve1", "type": "uint256"}, {"name": "blockTimestampLast", "type": "uint32"}], "stateMutability": "view", "type": "function"}]
+ERC20_BALANCE_ABI = [{"inputs": [{"name": "account", "type": "address"}], "name": "balanceOf", "outputs": [
+    {"name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"}]
+ERC20_SUPPLY_ABI = [{"inputs": [], "name": "totalSupply", "outputs": [
+    {"name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"}]
+METH_RATE_ABI = [{"inputs": [], "name": "mETHToETH", "outputs": [
+    {"name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"}]
+MERCHANT_MOE_RESERVES_ABI = [{"inputs": [], "name": "getReserves", "outputs": [{"name": "reserve0", "type": "uint256"}, {
+    "name": "reserve1", "type": "uint256"}, {"name": "blockTimestampLast", "type": "uint32"}], "stateMutability": "view", "type": "function"}]
 
 
 class RawTransaction:
     """Structured tx extracted from block data."""
+
     def __init__(self, tx: dict, block_ts: int, block_num: int):
-        self.hash        = tx.get("hash", "")
-        self.from_addr   = tx.get("from", "").lower()
-        self.to_addr     = (tx.get("to") or "").lower()
-        self.value_wei   = int(tx.get("value", 0))
-        self.value_mnt   = self.value_wei / 1e18
-        self.gas_used    = int(tx.get("gas", 0))
-        self.gas_price   = int(tx.get("gasPrice", 0))
-        self.block_num   = block_num
-        self.block_ts    = block_ts
-        self.input_data  = tx.get("input", "0x")
+        self.hash = tx.get("hash", "")
+        self.from_addr = tx.get("from", "").lower()
+        self.to_addr = (tx.get("to") or "").lower()
+        self.value_wei = int(tx.get("value", 0))
+        self.value_mnt = self.value_wei / 1e18
+        self.gas_used = int(tx.get("gas", 0))
+        self.gas_price = int(tx.get("gasPrice", 0))
+        self.block_num = block_num
+        self.block_ts = block_ts
+        self.input_data = tx.get("input", "0x")
         self.is_contract_call = len(self.input_data) > 10
 
 
 class BlockSummary:
     """Aggregated summary of a single block."""
+
     def __init__(self, block_num: int, timestamp: int, tx_count: int,
                  total_value_mnt: float, large_transfers: list, unique_senders: set):
-        self.block_num        = block_num
-        self.timestamp        = timestamp
-        self.tx_count         = tx_count
-        self.total_value_mnt  = total_value_mnt
-        self.large_transfers  = large_transfers
-        self.unique_senders   = unique_senders
+        self.block_num = block_num
+        self.timestamp = timestamp
+        self.tx_count = tx_count
+        self.total_value_mnt = total_value_mnt
+        self.large_transfers = large_transfers
+        self.unique_senders = unique_senders
 
 
 class ProtocolStateSnapshot:
@@ -130,22 +139,25 @@ class ProtocolStateSnapshot:
     Point-in-time snapshot of Mantle DeFi protocol states.
     Used for cross-protocol correlation detection.
     """
+
     def __init__(self):
-        self.timestamp            = time.time()
-        self.mnt_price_usd        = 0.0
-        self.meth_price_usd       = 0.0
-        self.meth_eth_rate        = 0.0      # mETH/ETH exchange rate
-        self.meth_supply          = 0.0      # total mETH in circulation (raw)
-        self.meth_depeg_bps       = 0        # basis points deviation from expected 1:1+yield
-        self.merchant_moe_reserve0= 0.0      # token0 reserve in MNT
-        self.merchant_moe_reserve1= 0.0      # token1 reserve in WETH
-        self.lendle_total_supply  = 0.0      # Lendle pool total deposits (proxy for TVL)
-        self.agni_liquidity       = 0        # Agni Finance MNT/USDT pool active liquidity (raw)
-        self.agni_fee_tier        = 500      # pool fee tier (bps * 100 — 500 = 0.05%)
-        self.bridge_inflow_7d     = 0.0      # rolling bridge inflow
-        self.pyth_prices          = {}       # { "ETH/USD": 3200.0, ... }
-        self.market_sentiment     = {}       # { "source": "fear_greed_index", "value": 55, ... }
-        self.data_sources         = []       # which sources were actually polled
+        self.timestamp = time.time()
+        self.mnt_price_usd = 0.0
+        self.meth_price_usd = 0.0
+        self.meth_eth_rate = 0.0      # mETH/ETH exchange rate
+        self.meth_supply = 0.0      # total mETH in circulation (raw)
+        self.meth_depeg_bps = 0        # basis points deviation from expected 1:1+yield
+        self.merchant_moe_reserve0 = 0.0      # token0 reserve in MNT
+        self.merchant_moe_reserve1 = 0.0      # token1 reserve in WETH
+        # Lendle pool total deposits (proxy for TVL)
+        self.lendle_total_supply = 0.0
+        # Agni Finance MNT/USDT pool active liquidity (raw)
+        self.agni_liquidity = 0
+        self.agni_fee_tier = 500      # pool fee tier (bps * 100 — 500 = 0.05%)
+        self.bridge_inflow_7d = 0.0      # rolling bridge inflow
+        self.pyth_prices = {}       # { "ETH/USD": 3200.0, ... }
+        self.market_sentiment = {}       # { "source": "fear_greed_index", "value": 55, ... }
+        self.data_sources = []       # which sources were actually polled
 
     def to_dict(self) -> dict:
         return {
@@ -183,14 +195,16 @@ class CollectorAgent:
         mnt_price_usd: float = 0.85,
         poll_interval: int = 6,
     ):
-        self.rpc_url       = rpc_url or os.getenv("MANTLE_RPC_URL", "https://rpc.mantle.xyz")
+        self.rpc_url = rpc_url or os.getenv(
+            "MANTLE_RPC_URL", "https://rpc.mantle.xyz")
         self.mnt_price_usd = mnt_price_usd
         self.poll_interval = poll_interval
         self._w3: Optional[Any] = None
-        self._demo_mode  = False
-        self._last_block  = 0
+        self._demo_mode = False
+        self._last_block = 0
         self._block_cache: list[BlockSummary] = []  # rolling 500 blocks
-        self._state_history: list[ProtocolStateSnapshot] = []  # rolling 100 snapshots
+        # rolling 100 snapshots
+        self._state_history: list[ProtocolStateSnapshot] = []
         self._last_state: Optional[ProtocolStateSnapshot] = None
         self.logger = logger.bind(agent="collector")
 
@@ -198,19 +212,23 @@ class CollectorAgent:
 
     def _init_web3(self):
         if not WEB3_AVAILABLE:
-            self.logger.warning("web3_not_installed", msg="pip install web3 — running demo mode")
+            self.logger.warning("web3_not_installed",
+                                msg="pip install web3 — running demo mode")
             self._demo_mode = True
             return
         try:
-            self._w3 = Web3(Web3.HTTPProvider(self.rpc_url, request_kwargs={"timeout": 10}))
+            self._w3 = Web3(Web3.HTTPProvider(
+                self.rpc_url, request_kwargs={"timeout": 10}))
             self._w3.middleware_onion.inject(geth_poa_middleware, layer=0)
             if self._w3.is_connected():
                 self._last_block = self._w3.eth.block_number - ANOMALY_BLOCK_WINDOW
-                self.logger.info("rpc_connected", url=self.rpc_url, latest_block=self._last_block + ANOMALY_BLOCK_WINDOW)
+                self.logger.info("rpc_connected", url=self.rpc_url,
+                                 latest_block=self._last_block + ANOMALY_BLOCK_WINDOW)
             else:
                 raise ConnectionError("RPC not reachable")
         except Exception as e:
-            self.logger.warning("rpc_unavailable", error=str(e), msg="Switching to demo mode")
+            self.logger.warning("rpc_unavailable", error=str(
+                e), msg="Switching to demo mode")
             self._demo_mode = True
 
     # ── Main data collection ──────────────────────────────────────────────────
@@ -223,7 +241,7 @@ class CollectorAgent:
         summaries = []
         try:
             latest = self._w3.eth.block_number
-            start  = max(self._last_block, latest - num_blocks)
+            start = max(self._last_block, latest - num_blocks)
 
             for bn in range(start, latest + 1):
                 try:
@@ -231,7 +249,8 @@ class CollectorAgent:
                     summary = self._summarize_block(block)
                     summaries.append(summary)
                 except Exception as e:
-                    self.logger.warning("block_fetch_error", block=bn, error=str(e))
+                    self.logger.warning("block_fetch_error",
+                                        block=bn, error=str(e))
 
             self._last_block = latest
             self._block_cache.extend(summaries)
@@ -277,7 +296,8 @@ class CollectorAgent:
             snap.meth_price_usd = eth_price * 1.035
 
         # MNT/USD from Pyth or fallback
-        snap.mnt_price_usd = snap.pyth_prices.get("MNT/USD", self.mnt_price_usd)
+        snap.mnt_price_usd = snap.pyth_prices.get(
+            "MNT/USD", self.mnt_price_usd)
 
         # mETH depeg detection: expected rate is ETH * (1 + staking yield)
         # Warn if deviation > 50bps (0.5%)
@@ -300,7 +320,8 @@ class CollectorAgent:
     async def _fetch_pyth_prices(self, snap: ProtocolStateSnapshot):
         """Fetch prices from Pyth Network public Hermes endpoint."""
         if not HTTPX_AVAILABLE:
-            snap.pyth_prices = {"ETH/USD": 3500.0, "MNT/USD": 0.85, "BTC/USD": 67000.0}
+            snap.pyth_prices = {"ETH/USD": 3500.0,
+                                "MNT/USD": 0.85, "BTC/USD": 67000.0}
             snap.data_sources.append("pyth_fallback")
             return
 
@@ -315,10 +336,11 @@ class CollectorAgent:
                     data = resp.json()
                     name_map = {v: k for k, v in PYTH_PRICE_IDS.items()}
                     for item in data.get("parsed", []):
-                        pid   = "0x" + item.get("id", "")
+                        pid = "0x" + item.get("id", "")
                         price = item.get("price", {})
-                        p     = float(price.get("price", 0)) * 10 ** float(price.get("expo", 0))
-                        name  = name_map.get(pid)
+                        p = float(price.get("price", 0)) * \
+                            10 ** float(price.get("expo", 0))
+                        name = name_map.get(pid)
                         if name and p > 0:
                             snap.pyth_prices[name] = round(p, 6)
                     snap.data_sources.append("pyth_hermes")
@@ -327,37 +349,43 @@ class CollectorAgent:
         except Exception as e:
             self.logger.warning("pyth_fetch_failed", error=str(e))
             # Reliable fallback
-            snap.pyth_prices = {"ETH/USD": 3500.0, "MNT/USD": 0.85, "BTC/USD": 67000.0}
+            snap.pyth_prices = {"ETH/USD": 3500.0,
+                                "MNT/USD": 0.85, "BTC/USD": 67000.0}
             snap.data_sources.append("pyth_fallback")
 
     async def _fetch_meth_state(self, snap: ProtocolStateSnapshot):
         """Poll mETH protocol contract for staking rate and supply."""
         try:
-            meth_addr = Web3.to_checksum_address(MANTLE_PROTOCOLS["meth_protocol"])
-            meth_tok  = Web3.to_checksum_address(MANTLE_PROTOCOLS["meth_token"])
+            meth_addr = Web3.to_checksum_address(
+                MANTLE_PROTOCOLS["meth_protocol"])
+            meth_tok = Web3.to_checksum_address(MANTLE_PROTOCOLS["meth_token"])
 
             # mETH exchange rate: mETHToETH() → wei
-            contract = self._w3.eth.contract(address=meth_addr, abi=METH_RATE_ABI)
+            contract = self._w3.eth.contract(
+                address=meth_addr, abi=METH_RATE_ABI)
             rate_wei = contract.functions.mETHToETH().call()
             snap.meth_eth_rate = rate_wei
 
             # mETH total supply
-            tok_contract = self._w3.eth.contract(address=meth_tok, abi=ERC20_SUPPLY_ABI)
-            supply_wei   = tok_contract.functions.totalSupply().call()
+            tok_contract = self._w3.eth.contract(
+                address=meth_tok, abi=ERC20_SUPPLY_ABI)
+            supply_wei = tok_contract.functions.totalSupply().call()
             snap.meth_supply = supply_wei / 1e18
 
             snap.data_sources.append("meth_rpc")
         except Exception as e:
             self.logger.warning("meth_fetch_failed", error=str(e))
             snap.meth_eth_rate = int(1.035 * 1e18)   # approx 3.5% yield
-            snap.meth_supply   = 125_000.0            # approx supply
+            snap.meth_supply = 125_000.0            # approx supply
             snap.data_sources.append("meth_fallback")
 
     async def _fetch_merchant_moe_state(self, snap: ProtocolStateSnapshot):
         """Poll Merchant Moe pool reserves for WETH/MNT pricing."""
         try:
-            pair_addr = Web3.to_checksum_address(MANTLE_PROTOCOLS["merchant_moe_lb"])
-            contract  = self._w3.eth.contract(address=pair_addr, abi=MERCHANT_MOE_RESERVES_ABI)
+            pair_addr = Web3.to_checksum_address(
+                MANTLE_PROTOCOLS["merchant_moe_lb"])
+            contract = self._w3.eth.contract(
+                address=pair_addr, abi=MERCHANT_MOE_RESERVES_ABI)
             res0, res1, _ = contract.functions.getReserves().call()
             snap.merchant_moe_reserve0 = res0 / 1e18  # token0 (MNT)
             snap.merchant_moe_reserve1 = res1 / 1e18  # token1 (WETH)
@@ -372,8 +400,9 @@ class CollectorAgent:
         """Poll Lendle pool total supply as TVL proxy."""
         try:
             lendle_addr = Web3.to_checksum_address(MANTLE_PROTOCOLS["lendle"])
-            contract    = self._w3.eth.contract(address=lendle_addr, abi=ERC20_SUPPLY_ABI)
-            supply_wei  = contract.functions.totalSupply().call()
+            contract = self._w3.eth.contract(
+                address=lendle_addr, abi=ERC20_SUPPLY_ABI)
+            supply_wei = contract.functions.totalSupply().call()
             snap.lendle_total_supply = supply_wei / 1e18
             snap.data_sources.append("lendle_rpc")
         except Exception as e:
@@ -389,14 +418,18 @@ class CollectorAgent:
         Pool: MNT/USDT 0.05% fee tier — getPool(MNT, USDT, 500)
         """
         AGNI_POOL_ABI = [
-            {"inputs": [], "name": "liquidity", "outputs": [{"type": "uint128"}], "stateMutability": "view", "type": "function"},
-            {"inputs": [], "name": "fee", "outputs": [{"type": "uint24"}], "stateMutability": "view", "type": "function"},
+            {"inputs": [], "name": "liquidity", "outputs": [
+                {"type": "uint128"}], "stateMutability": "view", "type": "function"},
+            {"inputs": [], "name": "fee", "outputs": [{"type": "uint24"}],
+                "stateMutability": "view", "type": "function"},
         ]
         try:
-            pool_addr = Web3.to_checksum_address(MANTLE_PROTOCOLS["agni_mnt_usdt_pool"])
-            contract  = self._w3.eth.contract(address=pool_addr, abi=AGNI_POOL_ABI)
+            pool_addr = Web3.to_checksum_address(
+                MANTLE_PROTOCOLS["agni_mnt_usdt_pool"])
+            contract = self._w3.eth.contract(
+                address=pool_addr, abi=AGNI_POOL_ABI)
             snap.agni_liquidity = contract.functions.liquidity().call()
-            snap.agni_fee_tier  = contract.functions.fee().call()
+            snap.agni_fee_tier = contract.functions.fee().call()
             snap.data_sources.append("agni_rpc")
         except Exception as e:
             self.logger.warning("agni_fetch_failed", error=str(e))
@@ -411,7 +444,8 @@ class CollectorAgent:
         Used as 9th data source for cross-validation of directional signals.
         """
         if not HTTPX_AVAILABLE:
-            snap.market_sentiment = {"source": "unavailable", "mnt_bull_prob": 0.5}
+            snap.market_sentiment = {
+                "source": "unavailable", "mnt_bull_prob": 0.5}
             return
         try:
             async with httpx.AsyncClient(timeout=6) as client:
@@ -431,18 +465,20 @@ class CollectorAgent:
                         "signal": "BULLISH" if value > 60 else ("BEARISH" if value < 40 else "NEUTRAL"),
                     }
                     snap.data_sources.append("fear_greed_index")
-                    self.logger.info("sentiment_fetched", value=value, classification=classification)
+                    self.logger.info("sentiment_fetched",
+                                     value=value, classification=classification)
                     return
         except Exception as e:
             self.logger.warning("sentiment_fetch_failed", error=str(e))
         # Fallback
-        snap.market_sentiment = {"source": "fallback", "mnt_bull_prob": 0.5, "signal": "NEUTRAL"}
+        snap.market_sentiment = {"source": "fallback",
+                                 "mnt_bull_prob": 0.5, "signal": "NEUTRAL"}
         snap.data_sources.append("sentiment_fallback")
 
     def _summarize_block(self, block) -> BlockSummary:
         large_transfers = []
-        unique_senders  = set()
-        total_value     = 0.0
+        unique_senders = set()
+        total_value = 0.0
 
         for tx in block.transactions:
             raw = RawTransaction(dict(tx), block.timestamp, block.number)
@@ -463,7 +499,8 @@ class CollectorAgent:
 
             if should_flag:
                 # For contract calls, estimate USD value from gas spent if native value is 0
-                estimated_usd = usd_value if usd_value > 0 else max(raw.gas_used * raw.gas_price * self.mnt_price_usd / 1e18, 1.0)
+                estimated_usd = usd_value if usd_value > 0 else max(
+                    raw.gas_used * raw.gas_price * self.mnt_price_usd / 1e18, 1.0)
                 large_transfers.append({
                     "tx_hash":    raw.hash.hex() if hasattr(raw.hash, "hex") else str(raw.hash),
                     "from":       raw.from_addr,
@@ -509,56 +546,66 @@ class CollectorAgent:
         import random
         rng = random.Random(42)  # FIXED SEED - fully deterministic
         base_block = 68_000_000
-        base_ts    = int(time.time()) - num_blocks * 2
-        BASELINE_TX  = 65    # mean tx/block
+        base_ts = int(time.time()) - num_blocks * 2
+        BASELINE_TX = 65    # mean tx/block
         BASELINE_VAL = 1200  # mean MNT/block
 
         summaries = []
         for i in range(num_blocks):
             block_num = base_block + i
-            ts        = base_ts + i * 2
-            tx_count  = int(rng.gauss(BASELINE_TX, 10))
+            ts = base_ts + i * 2
+            tx_count = int(rng.gauss(BASELINE_TX, 10))
             value_mnt = rng.gauss(BASELINE_VAL, 200)
             large_txs = []
 
             # Injection 1 - whale_accumulation @ offset 25
             if i == 25:
-                tx_count  = 290
+                tx_count = 290
                 value_mnt = 850_000.0
                 large_txs = [
-                    {"tx_hash": "0x"+hashlib.sha256(b"w25_0").hexdigest(), "from": "0x28c6c06298d514db089934071355e5743bf21d60", "to": "0x319b69888b0d11cec22caa5034e25fffbdc88421", "value_mnt": 850000.0, "value_usd": 722500.0, "label_from": "Binance Hot Wallet", "label_to": "Agni Finance", "block": block_num, "is_contract": True},
-                    {"tx_hash": "0x"+hashlib.sha256(b"w25_1").hexdigest(), "from": "0x28c6c06298d514db089934071355e5743bf21d60", "to": "0x319b69888b0d11cec22caa5034e25fffbdc88421", "value_mnt": 95000.0, "value_usd": 80750.0, "label_from": "Binance Hot Wallet", "label_to": "Agni Finance", "block": block_num, "is_contract": True},
-                    {"tx_hash": "0x"+hashlib.sha256(b"w25_2").hexdigest(), "from": "0x9696f59e4d72e237be84ffd425dcad154bf96976", "to": "0x319b69888b0d11cec22caa5034e25fffbdc88421", "value_mnt": 75000.0, "value_usd": 63750.0, "label_from": "Bybit Hot Wallet", "label_to": "Agni Finance", "block": block_num, "is_contract": True},
+                    {"tx_hash": "0x"+hashlib.sha256(b"w25_0").hexdigest(), "from": "0x28c6c06298d514db089934071355e5743bf21d60", "to": "0x319b69888b0d11cec22caa5034e25fffbdc88421",
+                     "value_mnt": 850000.0, "value_usd": 722500.0, "label_from": "Binance Hot Wallet", "label_to": "Agni Finance", "block": block_num, "is_contract": True},
+                    {"tx_hash": "0x"+hashlib.sha256(b"w25_1").hexdigest(), "from": "0x28c6c06298d514db089934071355e5743bf21d60", "to": "0x319b69888b0d11cec22caa5034e25fffbdc88421",
+                     "value_mnt": 95000.0, "value_usd": 80750.0, "label_from": "Binance Hot Wallet", "label_to": "Agni Finance", "block": block_num, "is_contract": True},
+                    {"tx_hash": "0x"+hashlib.sha256(b"w25_2").hexdigest(), "from": "0x9696f59e4d72e237be84ffd425dcad154bf96976", "to": "0x319b69888b0d11cec22caa5034e25fffbdc88421",
+                     "value_mnt": 75000.0, "value_usd": 63750.0, "label_from": "Bybit Hot Wallet", "label_to": "Agni Finance", "block": block_num, "is_contract": True},
                 ]
             # Injection 2 - tx_spike @ offset 40 (333 txs = ~26.8 sigma above baseline 65, std=10)
             elif i == 40:
-                tx_count  = 333
+                tx_count = 333
                 value_mnt = rng.gauss(BASELINE_VAL, 200)
             # Injection 3 - smart_money_inflow @ offset 60
             elif i == 60:
-                tx_count  = 195
+                tx_count = 195
                 value_mnt = 540_000.0
                 large_txs = [
-                    {"tx_hash": "0x"+hashlib.sha256(f"sm60_{j}".encode()).hexdigest(), "from": f"0xabababababababababababababababab{j:04x}", "to": "0x85f8628a0fa2a8c4a4a20a4c6432f57e45ef4e8e", "value_mnt": 110000.0+j*5000, "value_usd": 93500.0+j*4250, "label_from": "unknown", "label_to": "Merchant Moe", "block": block_num, "is_contract": True}
+                    {"tx_hash": "0x"+hashlib.sha256(f"sm60_{j}".encode()).hexdigest(), "from": f"0xabababababababababababababababab{j:04x}", "to": "0x85f8628a0fa2a8c4a4a20a4c6432f57e45ef4e8e",
+                     "value_mnt": 110000.0+j*5000, "value_usd": 93500.0+j*4250, "label_from": "unknown", "label_to": "Merchant Moe", "block": block_num, "is_contract": True}
                     for j in range(5)
                 ]
             # Injection 4 - value_spike @ offset 75 ($1.2M)
             elif i == 75:
-                tx_count  = int(rng.gauss(BASELINE_TX, 10))
+                tx_count = int(rng.gauss(BASELINE_TX, 10))
                 value_mnt = 1_200_000.0
                 large_txs = [
-                    {"tx_hash": "0x"+hashlib.sha256(b"vs75_0").hexdigest(), "from": "0x1f9090aae28b8a3dceadf281b0f12828e676c326", "to": "0x35b594f4caba8b4d595c67f02ff4a619cc0e349f", "value_mnt": 1200000.0/0.85, "value_usd": 1200000.0, "label_from": "rsync-builder MEV", "label_to": "Lendle", "block": block_num, "is_contract": True},
-                    {"tx_hash": "0x"+hashlib.sha256(b"vs75_1").hexdigest(), "from": "0x21a31ee1afc51d94c2efccaa2092ad1028285549", "to": "0x35b594f4caba8b4d595c67f02ff4a619cc0e349f", "value_mnt": 85000.0, "value_usd": 72250.0, "label_from": "Binance Cold Wallet", "label_to": "Lendle", "block": block_num, "is_contract": True},
-                    {"tx_hash": "0x"+hashlib.sha256(b"vs75_2").hexdigest(), "from": "0xdfd5293d8e347dfe59e90efd55b2956a1343963d", "to": "0x35b594f4caba8b4d595c67f02ff4a619cc0e349f", "value_mnt": 90000.0, "value_usd": 76500.0, "label_from": "Binance14", "label_to": "Lendle", "block": block_num, "is_contract": True},
+                    {"tx_hash": "0x"+hashlib.sha256(b"vs75_0").hexdigest(), "from": "0x1f9090aae28b8a3dceadf281b0f12828e676c326", "to": "0x35b594f4caba8b4d595c67f02ff4a619cc0e349f",
+                     "value_mnt": 1200000.0/0.85, "value_usd": 1200000.0, "label_from": "rsync-builder MEV", "label_to": "Lendle", "block": block_num, "is_contract": True},
+                    {"tx_hash": "0x"+hashlib.sha256(b"vs75_1").hexdigest(), "from": "0x21a31ee1afc51d94c2efccaa2092ad1028285549", "to": "0x35b594f4caba8b4d595c67f02ff4a619cc0e349f",
+                     "value_mnt": 85000.0, "value_usd": 72250.0, "label_from": "Binance Cold Wallet", "label_to": "Lendle", "block": block_num, "is_contract": True},
+                    {"tx_hash": "0x"+hashlib.sha256(b"vs75_2").hexdigest(), "from": "0xdfd5293d8e347dfe59e90efd55b2956a1343963d", "to": "0x35b594f4caba8b4d595c67f02ff4a619cc0e349f",
+                     "value_mnt": 90000.0, "value_usd": 76500.0, "label_from": "Binance14", "label_to": "Lendle", "block": block_num, "is_contract": True},
                 ]
             # Injection 5 - whale_accumulation @ offset 88
             elif i == 88:
-                tx_count  = 260
+                tx_count = 260
                 value_mnt = 650_000.0
                 large_txs = [
-                    {"tx_hash": "0x"+hashlib.sha256(b"jm88_0").hexdigest(), "from": "0xe93381fb4c4f14bda253907b18fad305d799241a", "to": "0x35b594f4caba8b4d595c67f02ff4a619cc0e349f", "value_mnt": 550000.0/0.85, "value_usd": 550000.0, "label_from": "Bybit2", "label_to": "Lendle", "block": block_num, "is_contract": True},
-                    {"tx_hash": "0x"+hashlib.sha256(b"jm88_1").hexdigest(), "from": "0xe93381fb4c4f14bda253907b18fad305d799241a", "to": "0x35b594f4caba8b4d595c67f02ff4a619cc0e349f", "value_mnt": 75000.0, "value_usd": 63750.0, "label_from": "Bybit2", "label_to": "Lendle", "block": block_num, "is_contract": True},
-                    {"tx_hash": "0x"+hashlib.sha256(b"jm88_2").hexdigest(), "from": "0x9696f59e4d72e237be84ffd425dcad154bf96976", "to": "0x35b594f4caba8b4d595c67f02ff4a619cc0e349f", "value_mnt": 80000.0, "value_usd": 68000.0, "label_from": "Bybit Hot Wallet", "label_to": "Lendle", "block": block_num, "is_contract": True},
+                    {"tx_hash": "0x"+hashlib.sha256(b"jm88_0").hexdigest(), "from": "0xe93381fb4c4f14bda253907b18fad305d799241a", "to": "0x35b594f4caba8b4d595c67f02ff4a619cc0e349f",
+                     "value_mnt": 550000.0/0.85, "value_usd": 550000.0, "label_from": "Bybit2", "label_to": "Lendle", "block": block_num, "is_contract": True},
+                    {"tx_hash": "0x"+hashlib.sha256(b"jm88_1").hexdigest(), "from": "0xe93381fb4c4f14bda253907b18fad305d799241a", "to": "0x35b594f4caba8b4d595c67f02ff4a619cc0e349f",
+                     "value_mnt": 75000.0, "value_usd": 63750.0, "label_from": "Bybit2", "label_to": "Lendle", "block": block_num, "is_contract": True},
+                    {"tx_hash": "0x"+hashlib.sha256(b"jm88_2").hexdigest(), "from": "0x9696f59e4d72e237be84ffd425dcad154bf96976", "to": "0x35b594f4caba8b4d595c67f02ff4a619cc0e349f",
+                     "value_mnt": 80000.0, "value_usd": 68000.0, "label_from": "Bybit Hot Wallet", "label_to": "Lendle", "block": block_num, "is_contract": True},
                 ]
 
             summaries.append(BlockSummary(
@@ -567,7 +614,8 @@ class CollectorAgent:
                 tx_count=max(1, tx_count),
                 total_value_mnt=max(0.0, value_mnt),
                 large_transfers=large_txs,
-                unique_senders=set([f"0xaddr{j}" for j in range(min(max(1, tx_count), 80))]),
+                unique_senders=set(
+                    [f"0xaddr{j}" for j in range(min(max(1, tx_count), 80))]),
             ))
 
         return summaries
@@ -575,16 +623,18 @@ class CollectorAgent:
     def generate_demo_state(self) -> ProtocolStateSnapshot:
         """Generate a realistic demo ProtocolStateSnapshot for presentation."""
         snap = ProtocolStateSnapshot()
-        snap.mnt_price_usd        = 0.854
-        snap.meth_price_usd       = 3_619.5
-        snap.meth_eth_rate        = int(1.034 * 1e18)
-        snap.meth_supply          = 127_443.8
-        snap.meth_depeg_bps       = 0     # healthy
-        snap.merchant_moe_reserve0= 2_847_223.0
-        snap.merchant_moe_reserve1= 284.7
-        snap.lendle_total_supply  = 21_340_000.0
-        snap.pyth_prices          = {"ETH/USD": 3500.0, "MNT/USD": 0.854, "BTC/USD": 67_250.0, "USDT/USD": 0.9998}
-        snap.data_sources         = ["pyth_hermes", "meth_rpc", "merchant_moe_rpc", "lendle_rpc"]
+        snap.mnt_price_usd = 0.854
+        snap.meth_price_usd = 3_619.5
+        snap.meth_eth_rate = int(1.034 * 1e18)
+        snap.meth_supply = 127_443.8
+        snap.meth_depeg_bps = 0     # healthy
+        snap.merchant_moe_reserve0 = 2_847_223.0
+        snap.merchant_moe_reserve1 = 284.7
+        snap.lendle_total_supply = 21_340_000.0
+        snap.pyth_prices = {"ETH/USD": 3500.0, "MNT/USD": 0.854,
+                            "BTC/USD": 67_250.0, "USDT/USD": 0.9998}
+        snap.data_sources = ["pyth_hermes", "meth_rpc",
+                             "merchant_moe_rpc", "lendle_rpc"]
         return snap
 
     def get_cached_blocks(self) -> list[BlockSummary]:

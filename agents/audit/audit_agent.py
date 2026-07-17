@@ -114,21 +114,24 @@ class AuditAgent:
         private_key: Optional[str] = None,
         network: str = None,
     ):
-        self.contract_address = contract_address or os.getenv("AUDIT_CONTRACT_ADDRESS", "")
-        self.rpc_url          = rpc_url or os.getenv("MANTLE_RPC_URL", "https://rpc.mantle.xyz")
-        self.private_key      = private_key or os.getenv("AGENT_PRIVATE_KEY", "")
-        self.network          = network or os.getenv("NETWORK", "testnet")
+        self.contract_address = contract_address or os.getenv(
+            "AUDIT_CONTRACT_ADDRESS", "")
+        self.rpc_url = rpc_url or os.getenv(
+            "MANTLE_RPC_URL", "https://rpc.mantle.xyz")
+        self.private_key = private_key or os.getenv("AGENT_PRIVATE_KEY", "")
+        self.network = network or os.getenv("NETWORK", "testnet")
         self._w3: Optional[object] = None
-        self._contract        = None
-        self._demo_mode       = False
+        self._contract = None
+        self._demo_mode = False
         self._audit_log: list[AuditRecord] = []
-        self.logger           = logger.bind(agent="audit")
+        self.logger = logger.bind(agent="audit")
 
         self._init_web3()
 
     def _init_web3(self):
         if not WEB3_AVAILABLE:
-            self.logger.warning("web3_not_installed", msg="Running in demo mode — no on-chain writes")
+            self.logger.warning("web3_not_installed",
+                                msg="Running in demo mode — no on-chain writes")
             self._demo_mode = True
             return
 
@@ -139,7 +142,8 @@ class AuditAgent:
             return
 
         try:
-            self._w3 = Web3(Web3.HTTPProvider(self.rpc_url, request_kwargs={"timeout": 30}))
+            self._w3 = Web3(Web3.HTTPProvider(
+                self.rpc_url, request_kwargs={"timeout": 30}))
             self._w3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
             if not self._w3.is_connected():
@@ -155,7 +159,8 @@ class AuditAgent:
                              wallet=self._account.address,
                              network=self.network)
         except Exception as e:
-            self.logger.warning("web3_init_failed", error=str(e), msg="Falling back to demo mode")
+            self.logger.warning("web3_init_failed", error=str(
+                e), msg="Falling back to demo mode")
             self._demo_mode = True
 
     # ── Main audit function ───────────────────────────────────────────────────
@@ -163,16 +168,16 @@ class AuditAgent:
     async def record_finding(self, finding) -> AuditRecord:
         """Record a single finding on-chain. Returns AuditRecord."""
         record = AuditRecord(
-            finding_id   = finding.finding_id,
-            finding_hash = finding.sha256_hash(),
-            anomaly_type = finding.anomaly_type,
-            confidence   = finding.confidence,
-            block_height = finding.block_height,
+            finding_id=finding.finding_id,
+            finding_hash=finding.sha256_hash(),
+            anomaly_type=finding.anomaly_type,
+            confidence=finding.confidence,
+            block_height=finding.block_height,
         )
 
         if self._demo_mode:
             record.audit_status = "demo"
-            record.on_chain_tx  = f"0x{'demo' + finding.sha256_hash()[:60]}"
+            record.on_chain_tx = f"0x{'demo' + finding.sha256_hash()[:60]}"
             self.logger.info("audit_demo_mode",
                              finding_id=finding.finding_id,
                              hash=record.finding_hash[:16] + "...",
@@ -180,8 +185,8 @@ class AuditAgent:
         else:
             try:
                 tx_hash, on_chain_id = await self._submit_to_chain(finding, record.finding_hash)
-                record.on_chain_tx  = tx_hash
-                record.on_chain_id  = on_chain_id
+                record.on_chain_tx = tx_hash
+                record.on_chain_id = on_chain_id
                 record.audit_status = "recorded"
                 self.logger.info("finding_recorded_on_chain",
                                  finding_id=finding.finding_id,
@@ -189,7 +194,7 @@ class AuditAgent:
                                  on_chain_id=on_chain_id)
             except Exception as e:
                 record.audit_status = "failed"
-                record.error        = str(e)
+                record.error = str(e)
                 self.logger.error("audit_record_failed",
                                   finding_id=finding.finding_id,
                                   error=str(e))
@@ -204,7 +209,8 @@ class AuditAgent:
 
         # Use "pending" to include pending transactions in the nonce count
         # This prevents "nonce too low" errors when sending multiple txs quickly
-        nonce = self._w3.eth.get_transaction_count(self._account.address, "pending")
+        nonce = self._w3.eth.get_transaction_count(
+            self._account.address, "pending")
         gas_price = self._w3.eth.gas_price
 
         txn = self._contract.functions.recordFinding(
@@ -227,7 +233,8 @@ class AuditAgent:
 
         signed = self._w3.eth.account.sign_transaction(txn, self.private_key)
         tx_hash = self._w3.eth.send_raw_transaction(signed.rawTransaction)
-        receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
+        receipt = self._w3.eth.wait_for_transaction_receipt(
+            tx_hash, timeout=60)
 
         if receipt.status != 1:
             raise RuntimeError(f"Transaction reverted: {tx_hash.hex()}")

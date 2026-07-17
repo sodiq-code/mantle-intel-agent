@@ -83,12 +83,12 @@ class InsightAgent:
         if self.providers:
             self._active_provider = self.providers[0]
             self.logger.info("llm_mode_enabled",
-                           provider=self._active_provider["name"],
-                           model=self._active_provider["model"],
-                           fallback_chain=[p["name"] for p in self.providers])
+                             provider=self._active_provider["name"],
+                             model=self._active_provider["model"],
+                             fallback_chain=[p["name"] for p in self.providers])
         else:
             self.logger.info("template_mode",
-                           reason="No LLM providers configured — using enhanced templates only")
+                             reason="No LLM providers configured — using enhanced templates only")
 
     def _init_providers(self) -> list:
         """Initialize available LLM providers in priority order."""
@@ -135,7 +135,8 @@ class InsightAgent:
             })
 
         # Tier 4: Legacy DashScope (kept for backward compat, NOT recommended)
-        dashscope_key = os.getenv("DASHSCOPE_API_KEY") or os.getenv("QWEN_API_KEY")
+        dashscope_key = os.getenv(
+            "DASHSCOPE_API_KEY") or os.getenv("QWEN_API_KEY")
         if dashscope_key:
             providers.append({
                 "name": "dashscope",
@@ -162,14 +163,14 @@ class InsightAgent:
                 if text:
                     if provider["name"] != self._active_provider["name"]:
                         self.logger.info("llm_provider_switched",
-                                       from_provider=self._active_provider["name"],
-                                       to_provider=provider["name"])
+                                         from_provider=self._active_provider["name"],
+                                         to_provider=provider["name"])
                         self._active_provider = provider
                     return text
             except Exception as e:
                 self.logger.warning("llm_provider_failed",
-                                  provider=provider["name"],
-                                  error=str(e)[:100])
+                                    provider=provider["name"],
+                                    error=str(e)[:100])
                 continue
         return self._template_generate(finding)
 
@@ -303,7 +304,8 @@ Name specific Mantle protocols: Merchant Moe, Lendle, Agni Finance, mETH, Fusion
 
         value_usd = m.get("total_usd", 0)
         if value_usd == 0 and finding.large_transfers:
-            value_usd = sum(t.get("value_usd", 0) for t in finding.large_transfers)
+            value_usd = sum(t.get("value_usd", 0)
+                            for t in finding.large_transfers)
 
         protocol = "Mantle DeFi"
         if finding.large_transfers:
@@ -312,7 +314,8 @@ Name specific Mantle protocols: Merchant Moe, Lendle, Agni Finance, mETH, Fusion
                 protocol = label_to
 
         wallet_count = m.get("wallet_count", 0)
-        avg_per_wallet = m.get("avg_per_wallet", value_usd / max(wallet_count, 1))
+        avg_per_wallet = m.get(
+            "avg_per_wallet", value_usd / max(wallet_count, 1))
 
         try:
             return template.format(
@@ -323,8 +326,10 @@ Name specific Mantle protocols: Merchant Moe, Lendle, Agni Finance, mETH, Fusion
                 total_usd=value_usd,
                 value_usd=value_usd,
                 protocol=protocol,
-                protocols_hit=m.get("protocols_hit", len(getattr(finding, "affected_protocols", []))),
-                transfer_count=m.get("transfer_count", len(finding.large_transfers)),
+                protocols_hit=m.get("protocols_hit", len(
+                    getattr(finding, "affected_protocols", []))),
+                transfer_count=m.get(
+                    "transfer_count", len(finding.large_transfers)),
                 wallet_count=wallet_count,
                 avg_per_wallet=avg_per_wallet,
                 zscore=m.get("zscore", "N/A"),
@@ -336,7 +341,8 @@ Name specific Mantle protocols: Merchant Moe, Lendle, Agni Finance, mETH, Fusion
                 at_risk_usd=m.get("at_risk_usd", 0),
                 r0_delta_pct=m.get("r0_delta_pct", 0.0),
                 pool_usd=m.get("pool_usd", 0),
-                investment_signal=getattr(finding, "investment_signal", "Monitor for follow-on activity."),
+                investment_signal=getattr(
+                    finding, "investment_signal", "Monitor for follow-on activity."),
             )
         except KeyError as e:
             return DEFAULT_TEMPLATE.format(
@@ -379,41 +385,50 @@ Name specific Mantle protocols: Merchant Moe, Lendle, Agni Finance, mETH, Fusion
         """Convert finding metrics into human-readable evidence points."""
         ev = []
         m = finding.raw_metrics or {}
-        
+
         # Method / Base evidence
         if finding.method == "zscore":
             if "tx_count" in m and "mean_tx" in m:
-                ev.append(f"Transaction count ({m['tx_count']}) exceeded recent baseline ({m['mean_tx']:.0f})")
+                ev.append(
+                    f"Transaction count ({m['tx_count']}) exceeded recent baseline ({m['mean_tx']:.0f})")
             if "value_mnt" in m and "mean_val_mnt" in m:
-                ev.append(f"MNT transfer value ({m['value_mnt']:,.0f}) exceeded baseline ({m['mean_val_mnt']:,.0f})")
+                ev.append(
+                    f"MNT transfer value ({m['value_mnt']:,.0f}) exceeded baseline ({m['mean_val_mnt']:,.0f})")
         elif finding.method == "isolation_forest":
-            ev.append("Multivariate outlier detected (tx volume + value + wallet diversity)")
+            ev.append(
+                "Multivariate outlier detected (tx volume + value + wallet diversity)")
         elif finding.method == "pattern_match":
             if finding.anomaly_type == "smart_money_inflow":
-                ev.append(f"{m.get('wallet_count', 2)} unlabeled wallets accumulated positions")
+                ev.append(
+                    f"{m.get('wallet_count', 2)} unlabeled wallets accumulated positions")
             else:
-                ev.append(f"{m.get('transfer_count', 2)} large institutional transfers detected")
+                ev.append(
+                    f"{m.get('transfer_count', 2)} large institutional transfers detected")
         elif finding.method == "meth_oracle":
             ev.append(f"Oracle price deviation of {m.get('depeg_bps', 0)} bps")
         elif finding.method == "reserve_analysis":
-            ev.append(f"Liquidity pool reserve shifted by {m.get('r0_delta_pct', 0)}%")
+            ev.append(
+                f"Liquidity pool reserve shifted by {m.get('r0_delta_pct', 0)}%")
         elif finding.method == "cross_protocol":
-            ev.append(f"Simultaneous deployment across {m.get('protocols_hit', 3)} protocols")
-            
+            ev.append(
+                f"Simultaneous deployment across {m.get('protocols_hit', 3)} protocols")
+
         # Z-score context
         z = m.get("zscore")
         if z and abs(z) >= 3.0:
             ev.append(f"Statistically significant spike (z={abs(z):.2f}σ)")
-            
+
         if not ev:
             ev.append("Baseline Anomaly")
-            
+
         return ev
 
     def _get_signal_tier(self, finding) -> str:
         """Map anomaly type + confidence to signal tier for dashboard."""
-        high_priority = {"meth_depeg", "cross_protocol_anomaly", "multivariate_anomaly", "whale_accumulation"}
-        medium_priority = {"smart_money_inflow", "value_spike", "whale_distribution", "liquidity_imbalance"}
+        high_priority = {"meth_depeg", "cross_protocol_anomaly",
+                         "multivariate_anomaly", "whale_accumulation"}
+        medium_priority = {"smart_money_inflow", "value_spike",
+                           "whale_distribution", "liquidity_imbalance"}
 
         if finding.anomaly_type in high_priority and finding.confidence >= 0.85:
             return "HIGH-PRIORITY INVESTIGATION"

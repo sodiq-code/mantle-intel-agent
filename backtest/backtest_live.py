@@ -52,8 +52,8 @@ try:
 except ImportError:
     SCIPY_OK = False
 
-MAINNET_RPC  = "https://rpc.mantle.xyz"
-TESTNET_RPC  = "https://rpc.sepolia.mantle.xyz"
+MAINNET_RPC = "https://rpc.mantle.xyz"
+TESTNET_RPC = "https://rpc.sepolia.mantle.xyz"
 
 KNOWN_WALLETS = {
     "0x28c6c06298d514db089934071355e5743bf21d60": "Binance Hot Wallet 1",
@@ -87,7 +87,8 @@ def rpc_batch(rpc_url: str, calls: list) -> list:
 def fetch_blocks(rpc_url: str, num_blocks: int = 500) -> list[dict]:
     """Fetch real blocks from Mantle RPC in parallel batches."""
     # Get latest block
-    r = httpx.post(rpc_url, json={"jsonrpc": "2.0", "method": "eth_blockNumber", "params": [], "id": 0}, timeout=15)
+    r = httpx.post(rpc_url, json={
+                   "jsonrpc": "2.0", "method": "eth_blockNumber", "params": [], "id": 0}, timeout=15)
     latest = int(r.json()["result"], 16)
     print(f"  Latest block: {latest:,}")
     print(f"  Scanning blocks {latest - num_blocks + 1:,} → {latest:,}")
@@ -119,10 +120,10 @@ def fetch_blocks(rpc_url: str, num_blocks: int = 500) -> list[dict]:
 
 def parse_block(block: dict) -> dict:
     """Extract features from a raw block object."""
-    bn        = int(block.get("number", "0x0"), 16)
-    ts        = int(block.get("timestamp", "0x0"), 16)
-    txs       = block.get("transactions", [])
-    gas_used  = int(block.get("gasUsed", "0x0"), 16)
+    bn = int(block.get("number", "0x0"), 16)
+    ts = int(block.get("timestamp", "0x0"), 16)
+    txs = block.get("transactions", [])
+    gas_used = int(block.get("gasUsed", "0x0"), 16)
 
     total_value = 0.0
     large_transfers = []
@@ -134,7 +135,7 @@ def parse_block(block: dict) -> dict:
         val = int(tx.get("value", "0x0"), 16) / 1e18
         total_value += val
         from_addr = tx.get("from", "").lower()
-        to_addr   = (tx.get("to") or "").lower()
+        to_addr = (tx.get("to") or "").lower()
         input_data = tx.get("input", "0x")
 
         unique_from.add(from_addr)
@@ -188,7 +189,7 @@ def label_ground_truth(features: list[dict]) -> set[int]:
       - Highly Coordinated: max_pair_count >= 8 (8+ txs same from→same to in one block)
     """
     gt_blocks: set[int] = set()
-    
+
     for i, f in enumerate(features):
         if f["tx_count"] > 500:
             gt_blocks.add(i)
@@ -221,7 +222,7 @@ def detect_anomalies(features: list[dict]) -> set[int]:
         # Fallback: z-score only
         tx_counts = [f["tx_count"] for f in features]
         mean = statistics.mean(tx_counts)
-        std  = statistics.stdev(tx_counts) if len(tx_counts) > 1 else 1.0
+        std = statistics.stdev(tx_counts) if len(tx_counts) > 1 else 1.0
         return {i for i, v in enumerate(tx_counts) if (v - mean) / max(std, 0.001) > 2.5}
 
     import numpy as np
@@ -243,7 +244,8 @@ def detect_anomalies(features: list[dict]) -> set[int]:
     X_scaled = scaler.fit_transform(X)
 
     # Method 1: Isolation Forest
-    iso = IsolationForest(contamination=0.05, random_state=99, n_estimators=200)
+    iso = IsolationForest(contamination=0.05,
+                          random_state=99, n_estimators=200)
     iso_labels = iso.fit_predict(X_scaled)
 
     # Method 2: Z-score on each dimension
@@ -275,8 +277,8 @@ def compute_confidence(feat: dict, detected: bool, features: list[dict]) -> floa
         return 0.0
 
     tx_counts = [f["tx_count"] for f in features]
-    mean_tx  = statistics.mean(tx_counts)
-    std_tx   = statistics.stdev(tx_counts) if len(tx_counts) > 1 else 1.0
+    mean_tx = statistics.mean(tx_counts)
+    std_tx = statistics.stdev(tx_counts) if len(tx_counts) > 1 else 1.0
 
     base = 0.60
     tx_z = abs(feat["tx_count"] - mean_tx) / max(std_tx, 0.001)
@@ -319,7 +321,8 @@ def run_backtest(rpc_url: str, num_blocks: int, network_name: str) -> dict:
     print(f"  Avg tx/block:    {statistics.mean(tx_counts):.2f}")
     print(f"  Max tx/block:    {max(tx_counts)}")
     print(f"  Total MNT moved: {sum(val_totals):,.2f}")
-    print(f"  Large transfers: {sum(len(f['large_transfers']) for f in features)}")
+    print(
+        f"  Large transfers: {sum(len(f['large_transfers']) for f in features)}")
 
     # 3. Ground truth labeling
     print(f"\n[3/4] Auto-labeling ground truth anomalies...")
@@ -331,9 +334,11 @@ def run_backtest(rpc_url: str, num_blocks: int, network_name: str) -> dict:
               f"pairs={f['max_pair_count']}, large_transfers={len(f['large_transfers'])}")
 
     # 4. Anomaly detection
-    print(f"\n[4/4] Running anomaly detection pipeline (IsolationForest + z-score + rules)...")
+    print(
+        f"\n[4/4] Running anomaly detection pipeline (IsolationForest + z-score + rules)...")
     detected_indices = detect_anomalies(features)
-    print(f"  Detected: {len(detected_indices)} anomalies (threshold: multi-confirm ≥2/3 methods)")
+    print(
+        f"  Detected: {len(detected_indices)} anomalies (threshold: multi-confirm ≥2/3 methods)")
 
     # 5. Compute metrics
     tp = len(gt_indices & detected_indices)
@@ -342,8 +347,9 @@ def run_backtest(rpc_url: str, num_blocks: int, network_name: str) -> dict:
     tn = len(features) - tp - fp - fn
 
     precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
-    recall    = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-    f1        = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
+    recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+    f1 = 2 * precision * recall / \
+        (precision + recall) if (precision + recall) > 0 else 0.0
 
     # Confidence scores for detected
     confidences = []
@@ -357,7 +363,7 @@ def run_backtest(rpc_url: str, num_blocks: int, network_name: str) -> dict:
         # Determine type
         tx_counts_vals = [ft["tx_count"] for ft in features]
         mean_tx = statistics.mean(tx_counts_vals)
-        std_tx  = statistics.stdev(tx_counts_vals)
+        std_tx = statistics.stdev(tx_counts_vals)
 
         if len(f["large_transfers"]) > 0:
             atype = "whale_accumulation"
@@ -384,7 +390,7 @@ def run_backtest(rpc_url: str, num_blocks: int, network_name: str) -> dict:
         })
 
     avg_conf = statistics.mean(confidences) if confidences else 0.0
-    elapsed  = time.time() - t0
+    elapsed = time.time() - t0
 
     print(f"\n{'─'*60}")
     print(f"  LIVE BACKTEST RESULTS (Real Mantle {network_name.title()} Data)")
@@ -499,8 +505,10 @@ def write_results(result: dict):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--testnet", action="store_true", help="Use Mantle Sepolia testnet")
-    parser.add_argument("--blocks",  type=int, default=500, help="Number of blocks to scan (default: 500)")
+    parser.add_argument("--testnet", action="store_true",
+                        help="Use Mantle Sepolia testnet")
+    parser.add_argument("--blocks",  type=int, default=500,
+                        help="Number of blocks to scan (default: 500)")
     args = parser.parse_args()
 
     if not HTTPX_OK:

@@ -106,13 +106,15 @@ KNOWN_LABELS: dict[str, dict] = {
 }
 
 # Tier labels
-TIER_LABELS = {1: "Tier 1 — Institutional", 2: "Tier 2 — Notable", 3: "Tier 3 — Monitored"}
+TIER_LABELS = {1: "Tier 1 — Institutional",
+               2: "Tier 2 — Notable", 3: "Tier 3 — Monitored"}
 
 
 @dataclass
 class WalletCluster:
     cluster_id:  str
-    wallet_type: str         # cex | mev | protocol | smart_money | vc | foundation | unknown_whale | retail
+    # cex | mev | protocol | smart_money | vc | foundation | unknown_whale | retail
+    wallet_type: str
     wallets:     list[str]
     total_volume_usd: float
     tx_count:    int
@@ -156,7 +158,8 @@ class SmartMoneyAgent:
     def __init__(self):
         self._wallet_activity: dict[str, list] = defaultdict(list)
         self._cluster_cache: list[WalletCluster] = []
-        self._signals: deque = deque(maxlen=500)  # v2: rolling 500-signal history
+        # v2: rolling 500-signal history
+        self._signals: deque = deque(maxlen=500)
         self.logger = logger.bind(agent="smart_money")
         # Expose labeled wallet registry as instance attr (for test discovery)
         self._labeled_wallets = KNOWN_LABELS
@@ -188,7 +191,7 @@ class SmartMoneyAgent:
         self.ingest_blocks(blocks)
 
         clusters = self._cluster_wallets()
-        signals  = self._detect_smart_money_signals(blocks)
+        signals = self._detect_smart_money_signals(blocks)
 
         self._cluster_cache = clusters
         for s in signals:
@@ -223,7 +226,8 @@ class SmartMoneyAgent:
         signals_list = list(self._signals)[-lookback:]
 
         if filter_types:
-            filtered = [s for s in signals_list if s.wallet_type in filter_types or s.action in filter_types]
+            filtered = [
+                s for s in signals_list if s.wallet_type in filter_types or s.action in filter_types]
         else:
             filtered = signals_list
 
@@ -238,12 +242,13 @@ class SmartMoneyAgent:
                 "message":      f"No {signal_type} signals in last {lookback} signals.",
             }
 
-        total_usd    = sum(s.value_usd for s in filtered)
-        avg_conf     = sum(s.confidence for s in filtered) / len(filtered)
+        total_usd = sum(s.value_usd for s in filtered)
+        avg_conf = sum(s.confidence for s in filtered) / len(filtered)
         protocol_vol: dict[str, float] = defaultdict(float)
         for s in filtered:
             protocol_vol[s.protocol] += s.value_usd
-        top_protocols = sorted(protocol_vol.items(), key=lambda x: x[1], reverse=True)[:5]
+        top_protocols = sorted(protocol_vol.items(),
+                               key=lambda x: x[1], reverse=True)[:5]
 
         action_counts: dict[str, int] = defaultdict(int)
         for s in filtered:
@@ -268,14 +273,16 @@ class SmartMoneyAgent:
     def get_wallet_history(self, address: str) -> dict:
         """Get activity summary for a specific wallet."""
         addr = address.lower()
-        info = KNOWN_LABELS.get(addr, {"label": "unknown", "type": "retail", "tier": 3, "tags": []})
-        txs  = self._wallet_activity.get(addr, [])
+        info = KNOWN_LABELS.get(
+            addr, {"label": "unknown", "type": "retail", "tier": 3, "tags": []})
+        txs = self._wallet_activity.get(addr, [])
 
         if not txs:
             return {"address": addr, "label": info["label"], "type": info["type"], "tier": info.get("tier", 3), "tx_count": 0}
 
         total_vol = sum(t["value_usd"] for t in txs)
-        protocols = list({t["label_to"] for t in txs if t["label_to"] != "unknown"})
+        protocols = list({t["label_to"]
+                         for t in txs if t["label_to"] != "unknown"})
 
         return {
             "address":        addr,
@@ -311,7 +318,8 @@ class SmartMoneyAgent:
             tx_count = sum(len(self._wallet_activity[a]) for a in active)
 
             # Tier-1 wallets in cluster
-            tier1 = [a for a in active if KNOWN_LABELS.get(a, {}).get("tier", 3) == 1]
+            tier1 = [a for a in active if KNOWN_LABELS.get(
+                a, {}).get("tier", 3) == 1]
 
             clusters.append(WalletCluster(
                 cluster_id=f"known_{wtype}_{int(time.time())}",
@@ -319,8 +327,10 @@ class SmartMoneyAgent:
                 wallets=active,
                 total_volume_usd=round(total_vol, 2),
                 tx_count=tx_count,
-                description=self._describe_cluster(wtype, active, total_vol, tx_count, tier1),
-                risk_level="low" if wtype in ("protocol", "foundation") else "medium",
+                description=self._describe_cluster(
+                    wtype, active, total_vol, tx_count, tier1),
+                risk_level="low" if wtype in (
+                    "protocol", "foundation") else "medium",
                 metadata={"tier1_count": len(tier1), "type": wtype},
             ))
 
@@ -342,7 +352,8 @@ class SmartMoneyAgent:
                 wallet_type="smart_money",
                 wallets=unknown_high,
                 total_volume_usd=round(total_vol, 2),
-                tx_count=sum(len(self._wallet_activity[a]) for a in unknown_high),
+                tx_count=sum(
+                    len(self._wallet_activity[a]) for a in unknown_high),
                 description=(
                     f"{len(unknown_high)} unlabeled wallets exhibiting high-value DeFi interaction patterns. "
                     "DeFi-interaction ratio >60%, average position >$100k. "
@@ -379,18 +390,20 @@ class SmartMoneyAgent:
                 large_transfers = getattr(block, "large_transfers", None) or []
                 _block_num = getattr(block, "block_num", 0)
             for tx in large_transfers:
-                from_addr  = tx.get("from", "").lower()
-                label_info = KNOWN_LABELS.get(from_addr, {"label": "unknown", "type": "retail", "tier": 3, "tags": []})
+                from_addr = tx.get("from", "").lower()
+                label_info = KNOWN_LABELS.get(
+                    from_addr, {"label": "unknown", "type": "retail", "tier": 3, "tags": []})
                 label_from = label_info["label"]
-                label_to   = tx.get("label_to", "unknown")
-                value_usd  = tx.get("value_usd", 0)
+                label_to = tx.get("label_to", "unknown")
+                value_usd = tx.get("value_usd", 0)
 
                 if value_usd < 20_000:
                     continue
 
                 # CEX outflow → DeFi protocol: strong accumulation signal
                 if label_info["type"] == "cex" and tx.get("is_contract"):
-                    conf = 0.82 + (0.05 if label_info.get("tier", 3) == 1 else 0)
+                    conf = 0.82 + \
+                        (0.05 if label_info.get("tier", 3) == 1 else 0)
                     signals.append(SmartMoneySignal(
                         signal_id=f"sig_{tx['tx_hash'][:16]}_{int(time.time())}",
                         wallet=from_addr,
@@ -403,7 +416,7 @@ class SmartMoneyAgent:
                         block_height=tx.get("block", _block_num),
                         confidence=min(0.97, conf),
                         rationale=(
-                            f"${value_usd:,.0f} flowing from {label_from} [T{label_info.get('tier',2)}] "
+                            f"${value_usd:,.0f} flowing from {label_from} [T{label_info.get('tier', 2)}] "
                             f"into {label_to} on Mantle. CEX-to-DeFi movement typically precedes "
                             f"informed position building."
                         ),
@@ -412,7 +425,8 @@ class SmartMoneyAgent:
 
                 # VC wallet activity: any large move is signal-worthy
                 elif label_info["type"] == "vc":
-                    action = "accumulate" if tx.get("is_contract") else "distribute"
+                    action = "accumulate" if tx.get(
+                        "is_contract") else "distribute"
                     signals.append(SmartMoneySignal(
                         signal_id=f"vc_{tx['tx_hash'][:16]}_{int(time.time())}",
                         wallet=from_addr,
@@ -425,7 +439,7 @@ class SmartMoneyAgent:
                         block_height=tx.get("block", _block_num),
                         confidence=0.88,
                         rationale=(
-                            f"VC/fund wallet {label_from} [T{label_info.get('tier',2)}] moved "
+                            f"VC/fund wallet {label_from} [T{label_info.get('tier', 2)}] moved "
                             f"${value_usd:,.0f} → {label_to} on Mantle. Institutional position change."
                         ),
                         tags=label_info.get("tags", []),
@@ -439,7 +453,8 @@ class SmartMoneyAgent:
                         wallet_label=label_from,
                         wallet_type="smart_money",
                         wallet_tier=label_info.get("tier", 2),
-                        action="accumulate" if tx.get("is_contract") else "distribute",
+                        action="accumulate" if tx.get(
+                            "is_contract") else "distribute",
                         protocol=label_to,
                         value_usd=round(value_usd, 2),
                         block_height=tx.get("block", _block_num),

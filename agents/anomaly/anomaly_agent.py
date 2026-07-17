@@ -53,21 +53,22 @@ except ImportError:
     SCIPY_AVAILABLE = False
 
 # ── Tunable thresholds ───────────────────────────────────────────────────────
-CONFIDENCE_THRESHOLD   = 0.75   # v2: raised from 0.60 → 0.75 (precision fix)
-ZSCORE_THRESHOLD       = 3.0    # v2: raised from 2.5 → 3.0 (reduce noise)
-CONTAMINATION          = 0.03   # v2: tuned from 0.05 → 0.03 (fewer FPs)
-MIN_HISTORY_BLOCKS     = 15     # minimum history before firing z-score
-IF_MIN_HISTORY         = 25     # minimum history before Isolation Forest fires
-METH_DEPEG_THRESHOLD   = 50     # basis points — alert if mETH deviates >0.5%
-METH_CRITICAL_THRESHOLD= 150    # basis points — critical alert if >1.5%
-MOE_IMBALANCE_RATIO    = 0.30   # 30% reserve imbalance triggers LP alert
+CONFIDENCE_THRESHOLD = 0.75   # v2: raised from 0.60 → 0.75 (precision fix)
+ZSCORE_THRESHOLD = 3.0    # v2: raised from 2.5 → 3.0 (reduce noise)
+CONTAMINATION = 0.03   # v2: tuned from 0.05 → 0.03 (fewer FPs)
+MIN_HISTORY_BLOCKS = 15     # minimum history before firing z-score
+IF_MIN_HISTORY = 25     # minimum history before Isolation Forest fires
+METH_DEPEG_THRESHOLD = 50     # basis points — alert if mETH deviates >0.5%
+METH_CRITICAL_THRESHOLD = 150    # basis points — critical alert if >1.5%
+MOE_IMBALANCE_RATIO = 0.30   # 30% reserve imbalance triggers LP alert
 BRIDGE_SPIKE_THRESHOLD = 3.0    # z-score on bridge volume
 
 
 @dataclass
 class AnomalyFinding:
     finding_id:      str
-    anomaly_type:    str         # whale_accumulation | tx_spike | smart_money_inflow | meth_depeg | bridge_spike | cross_protocol
+    # whale_accumulation | tx_spike | smart_money_inflow | meth_depeg | bridge_spike | cross_protocol
+    anomaly_type:    str
     block_height:    int
     timestamp:       str
     confidence:      float       # 0.0–1.0
@@ -123,24 +124,27 @@ class AnomalyAgent:
         import types
         if isinstance(block, dict):
             ns = types.SimpleNamespace()
-            ns.block_num       = block.get("number", block.get("block_num", 0))
-            ns.tx_count        = block.get("tx_count", 0)
-            ns.total_value_mnt = block.get("total_value_eth", block.get("total_value_mnt", 0))
+            ns.block_num = block.get("number", block.get("block_num", 0))
+            ns.tx_count = block.get("tx_count", 0)
+            ns.total_value_mnt = block.get(
+                "total_value_eth", block.get("total_value_mnt", 0))
             ns.large_transfers = block.get("large_transfers") or []
-            ns.unique_senders  = block.get("unique_senders", [])
+            ns.unique_senders = block.get("unique_senders", [])
             # unique_senders may be a count (int) or a list — normalize to list
             if isinstance(ns.unique_senders, int):
                 ns.unique_senders = list(range(ns.unique_senders))
-            ns.timestamp       = block.get("timestamp", 0)
+            ns.timestamp = block.get("timestamp", 0)
             return ns
         return block
 
     def _block_to_features(self, block) -> dict:
         """Extract feature vector. Block must already be normalized via _normalize_block."""
         large_transfers = getattr(block, "large_transfers", None) or []
-        large_val = sum(t.get("value_mnt", 0) if isinstance(t, dict) else 0 for t in large_transfers)
+        large_val = sum(t.get("value_mnt", 0) if isinstance(
+            t, dict) else 0 for t in large_transfers)
         unique_senders = getattr(block, "unique_senders", [])
-        unique_count = unique_senders if isinstance(unique_senders, int) else len(unique_senders)
+        unique_count = unique_senders if isinstance(
+            unique_senders, int) else len(unique_senders)
         return {
             "block_num":       getattr(block, "block_num", 0),
             "tx_count":        getattr(block, "tx_count", 0),
@@ -153,7 +157,8 @@ class AnomalyAgent:
     def ingest_blocks(self, blocks: list) -> None:
         """Add new block data to history buffer."""
         for b in blocks:
-            self._history.append(self._block_to_features(self._normalize_block(b)))
+            self._history.append(
+                self._block_to_features(self._normalize_block(b)))
         # keep last 500 blocks
         self._history = self._history[-500:]
 
@@ -185,9 +190,12 @@ class AnomalyAgent:
         # v3.0: New detectors
         if protocol_state:
             block_num = blocks[-1].block_num if blocks else 0
-            candidates.extend(self._meth_depeg_detection(protocol_state, block_num=block_num))
-            candidates.extend(self._merchant_moe_imbalance_detection(protocol_state, block_num=block_num))
-            candidates.extend(self._agni_liquidity_detection(protocol_state, block_num=block_num))
+            candidates.extend(self._meth_depeg_detection(
+                protocol_state, block_num=block_num))
+            candidates.extend(self._merchant_moe_imbalance_detection(
+                protocol_state, block_num=block_num))
+            candidates.extend(self._agni_liquidity_detection(
+                protocol_state, block_num=block_num))
         candidates.extend(self._cross_protocol_correlation_detection(blocks))
 
         # Build block→signals map (for multi-confirm logic)
@@ -231,18 +239,21 @@ class AnomalyAgent:
         if not NUMPY_AVAILABLE:
             return self._simple_spike_detection(blocks)
 
-        history_slice = self._history[:-len(blocks)] if len(self._history) > len(blocks) else self._history
+        history_slice = self._history[:-len(blocks)] if len(
+            self._history) > len(blocks) else self._history
         if len(history_slice) < 5:
             return findings
 
-        history_values_tx  = [h["tx_count"] for h in history_slice]
+        history_values_tx = [h["tx_count"] for h in history_slice]
         history_values_val = [h["total_value_mnt"] for h in history_slice]
 
-        mean_tx,  std_tx  = float(np.mean(history_values_tx)),  float(np.std(history_values_tx))  + 1e-9
-        mean_val, std_val = float(np.mean(history_values_val)), float(np.std(history_values_val)) + 1e-9
+        mean_tx,  std_tx = float(np.mean(history_values_tx)),  float(
+            np.std(history_values_tx)) + 1e-9
+        mean_val, std_val = float(np.mean(history_values_val)), float(
+            np.std(history_values_val)) + 1e-9
 
         for block in blocks:
-            z_tx  = (block.tx_count - mean_tx) / std_tx
+            z_tx = (block.tx_count - mean_tx) / std_tx
             z_val = (block.total_value_mnt - mean_val) / std_val
 
             if abs(z_tx) > ZSCORE_THRESHOLD:
@@ -251,7 +262,8 @@ class AnomalyAgent:
                     finding_id=f"zscore_tx_{block.block_num}_{int(time.time())}",
                     anomaly_type="tx_spike",
                     block_height=block.block_num,
-                    timestamp=datetime.fromtimestamp(block.timestamp, tz=timezone.utc).isoformat(),
+                    timestamp=datetime.fromtimestamp(
+                        block.timestamp, tz=timezone.utc).isoformat(),
                     confidence=round(conf, 4),
                     description=(
                         f"Transaction volume spike on Mantle block {block.block_num}. "
@@ -275,7 +287,8 @@ class AnomalyAgent:
                     finding_id=f"zscore_val_{block.block_num}_{int(time.time())}",
                     anomaly_type="value_spike",
                     block_height=block.block_num,
-                    timestamp=datetime.fromtimestamp(block.timestamp, tz=timezone.utc).isoformat(),
+                    timestamp=datetime.fromtimestamp(
+                        block.timestamp, tz=timezone.utc).isoformat(),
                     confidence=round(conf, 4),
                     description=(
                         f"Abnormal MNT value transfer on Mantle block {block.block_num}. "
@@ -302,11 +315,12 @@ class AnomalyAgent:
             return findings
 
         recent = self._history[:-len(blocks)][-20:]
-        avg_tx  = sum(h["tx_count"] for h in recent) / len(recent)
-        avg_val = sum(h["total_value_mnt"] for h in recent) / len(recent) + 1e-9
+        avg_tx = sum(h["tx_count"] for h in recent) / len(recent)
+        avg_val = sum(h["total_value_mnt"]
+                      for h in recent) / len(recent) + 1e-9
 
         for block in blocks:
-            ratio_tx  = block.tx_count / (avg_tx + 1)
+            ratio_tx = block.tx_count / (avg_tx + 1)
             ratio_val = block.total_value_mnt / avg_val
 
             if ratio_tx > 3.0:
@@ -316,10 +330,12 @@ class AnomalyAgent:
                         finding_id=f"spike_tx_{block.block_num}_{int(time.time())}",
                         anomaly_type="tx_spike",
                         block_height=block.block_num,
-                        timestamp=datetime.fromtimestamp(block.timestamp, tz=timezone.utc).isoformat(),
+                        timestamp=datetime.fromtimestamp(
+                            block.timestamp, tz=timezone.utc).isoformat(),
                         confidence=conf,
                         description=f"TX count {block.tx_count} is {ratio_tx:.1f}x above 20-block average ({avg_tx:.0f}). Unusual on-chain activity on Mantle.",
-                        raw_metrics={"tx_count": block.tx_count, "avg_tx": round(avg_tx, 1), "ratio": round(ratio_tx, 2)},
+                        raw_metrics={"tx_count": block.tx_count, "avg_tx": round(
+                            avg_tx, 1), "ratio": round(ratio_tx, 2)},
                         investment_signal=f"Activity surge ({ratio_tx:.1f}x baseline) — potential catalyst event.",
                         method="ratio",
                     ))
@@ -331,10 +347,12 @@ class AnomalyAgent:
                         finding_id=f"spike_val_{block.block_num}_{int(time.time())}",
                         anomaly_type="value_spike",
                         block_height=block.block_num,
-                        timestamp=datetime.fromtimestamp(block.timestamp, tz=timezone.utc).isoformat(),
+                        timestamp=datetime.fromtimestamp(
+                            block.timestamp, tz=timezone.utc).isoformat(),
                         confidence=conf,
                         description=f"Transfer value {block.total_value_mnt:,.0f} MNT is {ratio_val:.1f}x above 20-block average. Large position movement on Mantle.",
-                        raw_metrics={"value_mnt": block.total_value_mnt, "avg_val_mnt": round(avg_val, 1), "ratio": round(ratio_val, 2)},
+                        raw_metrics={"value_mnt": block.total_value_mnt, "avg_val_mnt": round(
+                            avg_val, 1), "ratio": round(ratio_val, 2)},
                         investment_signal=f"Large position movement ({ratio_val:.1f}x baseline) — entry or exit in progress.",
                         method="ratio",
                     ))
@@ -350,7 +368,8 @@ class AnomalyAgent:
             return findings
 
         try:
-            feature_keys = ["tx_count", "total_value_mnt", "large_tx_count", "unique_senders"]
+            feature_keys = ["tx_count", "total_value_mnt",
+                            "large_tx_count", "unique_senders"]
             X = np.array([[h[k] for k in feature_keys] for h in self._history])
 
             scaler = StandardScaler()
@@ -380,7 +399,8 @@ class AnomalyAgent:
                         finding_id=f"iforest_{block.block_num}_{int(time.time())}",
                         anomaly_type="multivariate_anomaly",
                         block_height=block.block_num,
-                        timestamp=datetime.fromtimestamp(block.timestamp, tz=timezone.utc).isoformat(),
+                        timestamp=datetime.fromtimestamp(
+                            block.timestamp, tz=timezone.utc).isoformat(),
                         confidence=round(confidence, 4),
                         description=(
                             f"Isolation Forest flagged Mantle block {block.block_num} as a multivariate outlier "
@@ -412,26 +432,31 @@ class AnomalyAgent:
             if not block.large_transfers:
                 continue
 
-            labeled_txs = [t for t in block.large_transfers if t.get("label_from") != "unknown" or t.get("label_to") != "unknown"]
+            labeled_txs = [t for t in block.large_transfers if t.get(
+                "label_from") != "unknown" or t.get("label_to") != "unknown"]
             # Accept value_usd, value_mnt, or value_eth as value signal
             total_usd = sum(
-                t.get("value_usd", (t.get("value_mnt", 0) * 0.85) + (t.get("value_eth", 0) * 3000))
+                t.get("value_usd", (t.get("value_mnt", 0) * 0.85) +
+                      (t.get("value_eth", 0) * 3000))
                 for t in block.large_transfers
             )
 
             if len(block.large_transfers) >= 2 and total_usd >= 100_000:
-                confidence = min(0.98, 0.68 + len(block.large_transfers) * 0.02 + total_usd / 10_000_000)
+                confidence = min(
+                    0.98, 0.68 + len(block.large_transfers) * 0.02 + total_usd / 10_000_000)
 
                 protocol_targets = [
                     t for t in block.large_transfers
                     if t.get("is_contract") and t.get("label_to") != "unknown"
                 ]
-                anomaly_type = "whale_accumulation" if len(protocol_targets) >= len(block.large_transfers) // 2 else "whale_distribution"
+                anomaly_type = "whale_accumulation" if len(protocol_targets) >= len(
+                    block.large_transfers) // 2 else "whale_distribution"
 
                 # Identify top destination protocol
                 dest_protocol = "DeFi protocols"
                 if protocol_targets:
-                    dest_protocol = protocol_targets[0].get("label_to", "DeFi protocols")
+                    dest_protocol = protocol_targets[0].get(
+                        "label_to", "DeFi protocols")
 
                 # Estimate lead time: historically ~4-6hrs before price impact
                 lead_blocks = 1200  # ~4hrs at 12s/block
@@ -440,7 +465,8 @@ class AnomalyAgent:
                     finding_id=f"whale_{block.block_num}_{int(time.time())}",
                     anomaly_type=anomaly_type,
                     block_height=block.block_num,
-                    timestamp=datetime.fromtimestamp(block.timestamp, tz=timezone.utc).isoformat(),
+                    timestamp=datetime.fromtimestamp(
+                        block.timestamp, tz=timezone.utc).isoformat(),
                     confidence=round(confidence, 4),
                     description=(
                         f"{'Whale accumulation' if anomaly_type == 'whale_accumulation' else 'Whale distribution'} "
@@ -473,14 +499,18 @@ class AnomalyAgent:
                 if t.get("label_from") == "unknown" and t.get("label_to") != "unknown" and t.get("value_usd", 0) >= 75_000
             ]
             if len(unknown_to_protocol) >= 2:
-                sm_total = sum(t.get("value_usd", 0) for t in unknown_to_protocol)
-                protocols = list({t.get("label_to") for t in unknown_to_protocol})
+                sm_total = sum(t.get("value_usd", 0)
+                               for t in unknown_to_protocol)
+                protocols = list({t.get("label_to")
+                                 for t in unknown_to_protocol})
                 findings.append(AnomalyFinding(
                     finding_id=f"smartmoney_{block.block_num}_{int(time.time())}",
                     anomaly_type="smart_money_inflow",
                     block_height=block.block_num,
-                    timestamp=datetime.fromtimestamp(block.timestamp, tz=timezone.utc).isoformat(),
-                    confidence=round(min(0.96, 0.72 + len(unknown_to_protocol) * 0.04), 4),
+                    timestamp=datetime.fromtimestamp(
+                        block.timestamp, tz=timezone.utc).isoformat(),
+                    confidence=round(
+                        min(0.96, 0.72 + len(unknown_to_protocol) * 0.04), 4),
                     description=(
                         f"Smart money inflow pattern on Mantle block {block.block_num}. "
                         f"{len(unknown_to_protocol)} unlabeled wallets collectively moved ${sm_total:,.0f} USD "
@@ -543,7 +573,8 @@ class AnomalyAgent:
             return findings
 
         eth_price = state.get("pyth_prices", {}).get("ETH/USD", 3500.0)
-        implied_meth_usd = (meth_rate / 1e18) * eth_price if meth_rate > 0 else 0
+        implied_meth_usd = (meth_rate / 1e18) * \
+            eth_price if meth_rate > 0 else 0
         depeg_pct = depeg_bps / 100.0
         at_risk_usd = meth_supply * implied_meth_usd
 
@@ -576,7 +607,8 @@ class AnomalyAgent:
             method="meth_oracle",
         ))
 
-        self.logger.warning("meth_depeg_detected", bps=depeg_bps, severity=severity, at_risk_usd=at_risk_usd)
+        self.logger.warning("meth_depeg_detected", bps=depeg_bps,
+                            severity=severity, at_risk_usd=at_risk_usd)
         return findings
 
     def _merchant_moe_imbalance_detection(self, protocol_state: dict, block_num: int = 0) -> list[AnomalyFinding]:
@@ -586,15 +618,18 @@ class AnomalyAgent:
         """
         findings = []
         # Accept both key conventions
-        r0 = protocol_state.get("merchant_moe_reserve0", protocol_state.get("moe_reserve_a", 0))
-        r1 = protocol_state.get("merchant_moe_reserve1", protocol_state.get("moe_reserve_b", 0))
+        r0 = protocol_state.get("merchant_moe_reserve0",
+                                protocol_state.get("moe_reserve_a", 0))
+        r1 = protocol_state.get("merchant_moe_reserve1",
+                                protocol_state.get("moe_reserve_b", 0))
         if r0 <= 0 or r1 <= 0:
             return findings
 
         # Direct ratio check (doesn't need history)
         total = r0 + r1
         ratio = min(r0, r1) / total  # 0.5 = balanced; lower = more imbalanced
-        imbalance = abs(0.5 - ratio)  # 0 = perfect balance, 0.5 = fully one-sided
+        # 0 = perfect balance, 0.5 = fully one-sided
+        imbalance = abs(0.5 - ratio)
 
         # Initialise delta vars (used below regardless of path taken)
         avg_r0, avg_r1, r0_delta, r1_delta = r0, r1, 0.0, 0.0
@@ -608,8 +643,10 @@ class AnomalyAgent:
             if len(self._protocol_state_history) < 3:
                 return findings
             hist = self._protocol_state_history[:-1]
-            avg_r0 = sum(s.get("merchant_moe_reserve0", s.get("moe_reserve_a", r0)) for s in hist) / len(hist)
-            avg_r1 = sum(s.get("merchant_moe_reserve1", s.get("moe_reserve_b", r1)) for s in hist) / len(hist)
+            avg_r0 = sum(s.get("merchant_moe_reserve0", s.get(
+                "moe_reserve_a", r0)) for s in hist) / len(hist)
+            avg_r1 = sum(s.get("merchant_moe_reserve1", s.get(
+                "moe_reserve_b", r1)) for s in hist) / len(hist)
             if avg_r0 <= 0 or avg_r1 <= 0:
                 return findings
             r0_delta = abs(r0 - avg_r0) / avg_r0
@@ -619,9 +656,11 @@ class AnomalyAgent:
 
         severity_r = max(r0_delta, r1_delta)
         confidence = min(0.93, 0.72 + severity_r)
-        mnt_price  = protocol_state.get("mnt_price_usd", protocol_state.get("pyth_mnt_usd", 0.85))
-        pool_usd   = (r0 * mnt_price) + (r1 * protocol_state.get("pyth_prices", {}).get("ETH/USD", 3500.0))
-        direction  = "removing" if r0 < avg_r0 else "adding"
+        mnt_price = protocol_state.get(
+            "mnt_price_usd", protocol_state.get("pyth_mnt_usd", 0.85))
+        pool_usd = (r0 * mnt_price) + (r1 *
+                                       protocol_state.get("pyth_prices", {}).get("ETH/USD", 3500.0))
+        direction = "removing" if r0 < avg_r0 else "adding"
 
         ts = datetime.fromtimestamp(time.time(), tz=timezone.utc).isoformat()
 
@@ -667,11 +706,13 @@ class AnomalyAgent:
         if not liquidity or liquidity == 0:
             return findings
 
-        hist = self._protocol_state_history[-30:] if len(self._protocol_state_history) >= 5 else []
+        hist = self._protocol_state_history[-30:] if len(
+            self._protocol_state_history) >= 5 else []
         if not hist:
             return findings
 
-        hist_liq = [h.get("agni_liquidity", 0) for h in hist if h.get("agni_liquidity", 0) > 0]
+        hist_liq = [h.get("agni_liquidity", 0)
+                    for h in hist if h.get("agni_liquidity", 0) > 0]
         if not hist_liq:
             return findings
 
@@ -725,7 +766,8 @@ class AnomalyAgent:
             for t in block.large_transfers:
                 prot = t.get("label_to", "unknown")
                 if prot != "unknown":
-                    protocols_hit[prot] = protocols_hit.get(prot, 0) + t.get("value_usd", 0)
+                    protocols_hit[prot] = protocols_hit.get(
+                        prot, 0) + t.get("value_usd", 0)
 
             if len(protocols_hit) < 3:
                 continue
@@ -734,14 +776,16 @@ class AnomalyAgent:
             total_usd = sum(protocols_hit.values())
             confidence = min(0.97, 0.78 + len(protocols_hit) * 0.03)
 
-            protocol_list = sorted(protocols_hit.items(), key=lambda x: x[1], reverse=True)
+            protocol_list = sorted(protocols_hit.items(),
+                                   key=lambda x: x[1], reverse=True)
             top_protocols = [p for p, _ in protocol_list[:5]]
 
             findings.append(AnomalyFinding(
                 finding_id=f"xprotocol_{block.block_num}_{int(time.time())}",
                 anomaly_type="cross_protocol_anomaly",
                 block_height=block.block_num,
-                timestamp=datetime.fromtimestamp(block.timestamp, tz=timezone.utc).isoformat(),
+                timestamp=datetime.fromtimestamp(
+                    block.timestamp, tz=timezone.utc).isoformat(),
                 confidence=round(confidence, 4),
                 description=(
                     f"Simultaneous large-value activity across {len(protocols_hit)} Mantle DeFi protocols "
