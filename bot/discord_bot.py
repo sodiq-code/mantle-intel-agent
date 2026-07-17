@@ -42,7 +42,8 @@ INCIDENT_TEMPLATE = """
 **Blocks:** `{start}` to `{latest}` (Duration: {dur} blocks)
 **Timestamp (UTC):** `{timestamp}`
 **Occurrences:** {occ}
-**Evidence:**
+
+**Severity Rationale:**
 {evidence}
 
 🔐 Latest Hash: `{hash_short}`

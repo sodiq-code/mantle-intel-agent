@@ -68,7 +68,8 @@ INCIDENT_TEMPLATE = """
 <b>Blocks:</b> <code>{start}</code> to <code>{latest}</code> (Duration: {dur} blocks)
 <b>Timestamp (UTC):</b> <code>{timestamp}</code>
 <b>Occurrences:</b> {occ}
-<b>Evidence:</b>
+
+<b>Severity Rationale:</b>
 {evidence}
 
 🔐 Latest Hash: <code>{hash_short}</code>

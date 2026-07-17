@@ -129,7 +129,7 @@ class DiscordWebhook:
             {"name": "Timestamp (UTC)", "value": f"`{timestamp}`", "inline": True},
         ]
             
-        fields.append({"name": "Evidence", "value": detectors_str, "inline": False})
+        fields.append({"name": "Severity Rationale", "value": detectors_str, "inline": False})
             
         if fhash:
             fields.append({
