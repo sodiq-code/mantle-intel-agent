@@ -184,9 +184,10 @@ class AnomalyAgent:
 
         # v3.0: New detectors
         if protocol_state:
-            candidates.extend(self._meth_depeg_detection(protocol_state))
-            candidates.extend(self._merchant_moe_imbalance_detection(protocol_state))
-            candidates.extend(self._agni_liquidity_detection(protocol_state))
+            block_num = blocks[-1].block_num if blocks else 0
+            candidates.extend(self._meth_depeg_detection(protocol_state, block_num=block_num))
+            candidates.extend(self._merchant_moe_imbalance_detection(protocol_state, block_num=block_num))
+            candidates.extend(self._agni_liquidity_detection(protocol_state, block_num=block_num))
         candidates.extend(self._cross_protocol_correlation_detection(blocks))
 
         # Build block→signals map (for multi-confirm logic)
@@ -414,7 +415,7 @@ class AnomalyAgent:
             labeled_txs = [t for t in block.large_transfers if t.get("label_from") != "unknown" or t.get("label_to") != "unknown"]
             # Accept value_usd, value_mnt, or value_eth as value signal
             total_usd = sum(
-                t.get("value_usd", t.get("value_mnt", 0) * 0.85 or t.get("value_eth", 0) * 3000)
+                t.get("value_usd", (t.get("value_mnt", 0) * 0.85) + (t.get("value_eth", 0) * 3000))
                 for t in block.large_transfers
             )
 
@@ -506,7 +507,7 @@ class AnomalyAgent:
 
     # ── v3.0 NEW DETECTORS ───────────────────────────────────────────────────
 
-    def _meth_depeg_detection(self, state: dict) -> list[AnomalyFinding]:
+    def _meth_depeg_detection(self, state: dict, block_num: int = 0) -> list[AnomalyFinding]:
         """
         v3.0: Detect mETH price deviations from expected ETH staking rate.
         mETH should trade at ETH * (1 + ~3.5% APY premium).
@@ -528,7 +529,8 @@ class AnomalyAgent:
         if depeg_bps <= 0:
             return findings
 
-        block_num = int(time.time())  # use time as proxy when no block context
+        if block_num == 0:
+            block_num = int(time.time())  # fallback
         ts = datetime.fromtimestamp(time.time(), tz=timezone.utc).isoformat()
 
         if depeg_bps >= METH_CRITICAL_THRESHOLD:
@@ -577,15 +579,15 @@ class AnomalyAgent:
         self.logger.warning("meth_depeg_detected", bps=depeg_bps, severity=severity, at_risk_usd=at_risk_usd)
         return findings
 
-    def _merchant_moe_imbalance_detection(self, state: dict) -> list[AnomalyFinding]:
+    def _merchant_moe_imbalance_detection(self, protocol_state: dict, block_num: int = 0) -> list[AnomalyFinding]:
         """
         v3.0: Detect Merchant Moe pool reserve imbalance.
         Severe LP ratio shift indicates large swap or liquidity removal.
         """
         findings = []
         # Accept both key conventions
-        r0 = state.get("merchant_moe_reserve0", state.get("moe_reserve_a", 0))
-        r1 = state.get("merchant_moe_reserve1", state.get("moe_reserve_b", 0))
+        r0 = protocol_state.get("merchant_moe_reserve0", protocol_state.get("moe_reserve_a", 0))
+        r1 = protocol_state.get("merchant_moe_reserve1", protocol_state.get("moe_reserve_b", 0))
         if r0 <= 0 or r1 <= 0:
             return findings
 
@@ -617,11 +619,10 @@ class AnomalyAgent:
 
         severity_r = max(r0_delta, r1_delta)
         confidence = min(0.93, 0.72 + severity_r)
-        mnt_price  = state.get("mnt_price_usd", state.get("pyth_mnt_usd", 0.85))
-        pool_usd   = (r0 * mnt_price) + (r1 * state.get("pyth_prices", {}).get("ETH/USD", 3500.0))
+        mnt_price  = protocol_state.get("mnt_price_usd", protocol_state.get("pyth_mnt_usd", 0.85))
+        pool_usd   = (r0 * mnt_price) + (r1 * protocol_state.get("pyth_prices", {}).get("ETH/USD", 3500.0))
         direction  = "removing" if r0 < avg_r0 else "adding"
 
-        block_num = int(time.time())
         ts = datetime.fromtimestamp(time.time(), tz=timezone.utc).isoformat()
 
         findings.append(AnomalyFinding(
@@ -655,7 +656,7 @@ class AnomalyAgent:
 
         return findings
 
-    def _agni_liquidity_detection(self, protocol_state: dict) -> list[AnomalyFinding]:
+    def _agni_liquidity_detection(self, protocol_state: dict, block_num: int = 0) -> list[AnomalyFinding]:
         """
         v5.0: Detect significant liquidity drops in Agni Finance MNT/USDT V3 pool.
         Pool: 0xD08C50F7E69e9aeb2867DefF4A8053d9A855e26A (mainnet, fee=500)
@@ -666,7 +667,7 @@ class AnomalyAgent:
         if not liquidity or liquidity == 0:
             return findings
 
-        hist = self._protocol_history[-30:] if len(self._protocol_history) >= 5 else []
+        hist = self._protocol_state_history[-30:] if len(self._protocol_state_history) >= 5 else []
         if not hist:
             return findings
 
@@ -679,18 +680,19 @@ class AnomalyAgent:
             return findings
 
         delta = (liquidity - avg_liq) / avg_liq  # negative = liquidity removed
+        imbalance = abs(delta)
 
-        if abs(delta) < 0.20:  # <20% change — ignore
+        if imbalance < 0.20:  # <20% change — ignore
             return findings
 
         direction = "removing" if delta < 0 else "adding"
-        severity  = "high" if abs(delta) > 0.35 else "medium"
 
         findings.append(AnomalyFinding(
-            anomaly_type="agni_liquidity_shift",
-            severity=severity,
-            confidence=min(0.55 + abs(delta), 0.92),
-            block_height=protocol_state.get("block_number", 0),
+            finding_id=f"agni_liq_{block_num}_{int(time.time())}",
+            timestamp=datetime.now(tz=timezone.utc).isoformat(),
+            anomaly_type="lp_imbalance",
+            confidence=min(0.72 + imbalance * 0.5, 0.93),
+            block_height=block_num,
             description=(
                 f"Agni Finance MNT/USDT pool liquidity {direction}: "
                 f"{delta*100:.1f}% shift from 30-snapshot average. "

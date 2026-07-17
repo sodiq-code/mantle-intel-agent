@@ -18,7 +18,9 @@ pragma solidity ^0.8.20;
  *   - getStats() — public stats endpoint
  *   - Any address can subscribe to intel feed (permissionless read)
  */
-contract MantleIntelAudit {
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract MantleIntelAudit is Ownable {
 
     // ── Events ──────────────────────────────────────────────────────────────
 
@@ -74,23 +76,17 @@ contract MantleIntelAudit {
     mapping(string => uint256[]) private _findingsByType;  // type → finding IDs
 
     uint256 public findingCount;
-    address public owner;
-
     uint256[] private _allFindingIds;  // ordered array for pagination
 
     // ── Constructor ──────────────────────────────────────────────────────────
 
-    constructor() {
-        owner = msg.sender;
+    constructor() Ownable(msg.sender) {
         authorizedAgents[msg.sender] = true;
     }
 
     // ── Modifiers ────────────────────────────────────────────────────────────
 
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Not owner");
-        _;
-    }
+
 
     modifier onlyAuthorized() {
         require(authorizedAgents[msg.sender], "Not authorized agent");

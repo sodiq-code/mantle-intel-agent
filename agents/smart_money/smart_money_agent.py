@@ -29,11 +29,7 @@ try:
 except ImportError:
     NUMPY_AVAILABLE = False
 
-try:
-    from sklearn.cluster import DBSCAN, KMeans
-    SKLEARN_AVAILABLE = True
-except ImportError:
-    SKLEARN_AVAILABLE = False
+SKLEARN_AVAILABLE = False
 
 
 # ── Nansen-style labeled wallet registry (no API key needed) ─────────────────

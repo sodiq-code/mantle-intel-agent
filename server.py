@@ -16,7 +16,7 @@ try:
 except ImportError:
     pass
 
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import FastAPI, BackgroundTasks, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
@@ -28,12 +28,37 @@ from agents.pipeline import MantleIntelPipeline
 
 app = FastAPI(title="Mantle Intel Agent API", version="1.0.0")
 
+# Strict CORS for institutional standard
+frontend_url = os.getenv("FRONTEND_URL")
+allowed_origins_env = os.getenv("ALLOWED_ORIGINS", frontend_url if frontend_url else "http://localhost:5173,http://localhost:8000")
+origins = [o.strip() for o in allowed_origins_env.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["X-API-KEY", "Content-Type", "Authorization"],
 )
+
+# Institutional Standard API Key Middleware
+API_KEY = os.getenv("API_KEY")
+
+@app.middleware("http")
+async def api_key_middleware(request: Request, call_next):
+    # Allow static assets and root (React app) without API key
+    if request.url.path.startswith("/api/"):
+        if not API_KEY:
+            # If no API key is configured, warn but allow (for local testing without strict mode)
+            pass
+        else:
+            provided_key = request.headers.get("X-API-KEY")
+            if provided_key != API_KEY:
+                return JSONResponse(
+                    status_code=403, 
+                    content={"error": "Forbidden: Invalid or missing X-API-KEY"}
+                )
+    return await call_next(request)
 
 # Global pipeline instance
 _pipeline: MantleIntelPipeline | None = None
@@ -148,9 +173,13 @@ if STATIC_DIR.exists():
 
     @app.get("/{path:path}")
     async def spa(path: str):
-        f = STATIC_DIR / path
-        if f.exists() and f.is_file():
-            return FileResponse(str(f))
+        try:
+            f = (STATIC_DIR / path).resolve()
+            static_dir_resolved = STATIC_DIR.resolve()
+            if f.is_relative_to(static_dir_resolved) and f.exists() and f.is_file():
+                return FileResponse(str(f))
+        except Exception:
+            pass
         return FileResponse(str(STATIC_DIR / "index.html"))
 else:
     @app.get("/")

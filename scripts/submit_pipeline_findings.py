@@ -34,7 +34,7 @@ from datetime import datetime, timezone
 ROOT = Path(__file__).resolve().parent.parent
 FINDINGS_FILE = ROOT / "data" / "findings.jsonl"
 
-DEFAULT_CONTRACT = "0x7fAb1E37d992109d3aA747703436ff4e261391b7"
+DEFAULT_CONTRACT = "0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b"
 DEFAULT_RPC = "https://rpc.sepolia.mantle.xyz"
 CHAIN_ID = 5003
 
@@ -141,17 +141,33 @@ Examples:
     contract_addr = args.contract or os.getenv("AUDIT_CONTRACT_ADDRESS", DEFAULT_CONTRACT)
     rpc_url = args.rpc or os.getenv("MANTLE_RPC_URL", DEFAULT_RPC)
 
-    # Load private key from environment ONLY — never hardcoded
+    # Load private key from encrypted keystore ONLY
     if not args.dry_run:
-        pk = os.environ.get("AGENT_PRIVATE_KEY") or os.environ.get("DEPLOYER_PRIVATE_KEY")
-        if not pk:
-            print("ERROR: AGENT_PRIVATE_KEY environment variable not set")
+        keystore_path = os.environ.get("KEYSTORE_PATH", "keystore.json")
+        keystore_password = os.environ.get("KEYSTORE_PASSWORD")
+        
+        if not keystore_password:
+            print("ERROR: KEYSTORE_PASSWORD environment variable not set")
             print()
             print("Set it before running:")
-            print("  export AGENT_PRIVATE_KEY=0x...")
+            print("  export KEYSTORE_PASSWORD=your_password")
             print()
             print("Or for a single run:")
-            print("  AGENT_PRIVATE_KEY=0x... python3 scripts/submit_pipeline_findings.py")
+            print("  KEYSTORE_PASSWORD=your_password python3 scripts/submit_pipeline_findings.py")
+            sys.exit(1)
+            
+        if not os.path.exists(keystore_path):
+            print(f"ERROR: Keystore file not found at {keystore_path}")
+            print("Generate one first with: python3 scripts/generate_keystore.py")
+            sys.exit(1)
+            
+        try:
+            from eth_account import Account
+            with open(keystore_path) as f:
+                encrypted_key = f.read()
+            pk = Account.decrypt(encrypted_key, keystore_password)
+        except Exception as e:
+            print(f"ERROR decrypting keystore: {e}")
             sys.exit(1)
     else:
         pk = None

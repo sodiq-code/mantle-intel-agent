@@ -177,30 +177,34 @@ def label_ground_truth(features: list[dict]) -> set[int]:
     """
     Auto-label ground truth anomalies from real blocks using domain rules.
     These are REAL structural anomalies, not fabricated.
+    Crucially, these rules are independent of the statistical z-score methods used by the detector
+    to prevent circular ground-truth labeling.
 
-    Labels:
-      - Value spike: total_value_mnt > mean + 4σ
-      - TX spike:    tx_count > mean + 3σ
-      - Gas spike:   gas_used > mean + 3σ
-      - Coordinated: max_pair_count >= 5 (5+ txs same from→same to in one block)
+    Labels (fixed structural thresholds):
+      - Extreme Value: total_value_mnt > 500,000 MNT
+      - Extreme TX count: tx_count > 500
+      - Extreme Gas: gas_used > 25,000,000
+      - Known Whale Activity: Any transfer involving a KNOWN_WALLET over 10,000 MNT
+      - Highly Coordinated: max_pair_count >= 8 (8+ txs same from→same to in one block)
     """
-    tx_counts  = [f["tx_count"]        for f in features]
-    val_series = [f["total_value_mnt"] for f in features]
-    gas_series = [f["gas_used"]        for f in features]
-
-    def zscore_threshold(series, threshold):
-        if len(series) < 10:
-            return set()
-        mean = statistics.mean(series)
-        std  = statistics.stdev(series) if statistics.stdev(series) > 0 else 1.0
-        return {i for i, v in enumerate(series) if (v - mean) / std > threshold}
-
     gt_blocks: set[int] = set()
-    gt_blocks |= zscore_threshold(tx_counts,  3.0)   # TX spikes
-    gt_blocks |= zscore_threshold(val_series, 4.0)   # Value spikes (high sigma for real data)
-    gt_blocks |= zscore_threshold(gas_series, 3.0)   # Gas spikes
-    # Coordinated activity
-    gt_blocks |= {i for i, f in enumerate(features) if f["max_pair_count"] >= 5}
+    
+    for i, f in enumerate(features):
+        if f["tx_count"] > 500:
+            gt_blocks.add(i)
+        elif f["total_value_mnt"] > 500_000:
+            gt_blocks.add(i)
+        elif f["gas_used"] > 25_000_000:
+            gt_blocks.add(i)
+        elif f["max_pair_count"] >= 8:
+            gt_blocks.add(i)
+        else:
+            # Check for known whale activity
+            for tx in f["large_transfers"]:
+                if tx["label_from"] != "unknown" or tx["label_to"] != "unknown":
+                    if tx["value_mnt"] >= 10_000:
+                        gt_blocks.add(i)
+                        break
 
     return gt_blocks
 
@@ -419,7 +423,7 @@ def run_backtest(rpc_url: str, num_blocks: int, network_name: str) -> dict:
         "elapsed_s":     round(elapsed, 2),
         "run_at":        datetime.now(tz=timezone.utc).isoformat(),
         "methodology":   "IsolationForest (contamination=0.05) + z-score (|z|>2.8) + rule-based + multi-confirm (≥2/3 methods)",
-        "gt_methodology": "Auto-labeled: tx_spike(>3σ) + value_spike(>4σ) + gas_spike(>3σ) + coordinated(≥5 same pair)",
+        "gt_methodology": "Fixed thresholds: val>500k MNT, tx>500, gas>25M, known_whale>10k, pairs>=8",
         "findings":      findings_list[:20],  # top 20
     }
 

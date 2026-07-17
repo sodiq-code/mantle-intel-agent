@@ -81,6 +81,7 @@ class MantleIntelPipeline:
 
         # Stage 1: Collect
         blocks = await self.collector.collect_blocks(self.blocks_per_cycle)
+        protocol_state = await self.collector.poll_protocol_state()
         if not blocks:
             self.logger.warning("no_blocks_collected")
             return []
@@ -88,7 +89,7 @@ class MantleIntelPipeline:
         self._stats["blocks_processed"] += len(blocks)
 
         # Stage 2: Anomaly detection
-        anomalies: list[AnomalyFinding] = self.anomaly.detect(blocks)
+        anomalies: list[AnomalyFinding] = self.anomaly.detect(blocks, protocol_state=vars(protocol_state))
 
         if not anomalies:
             self.logger.info("no_anomalies_detected", blocks=len(blocks))

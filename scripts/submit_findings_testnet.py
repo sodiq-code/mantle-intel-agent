@@ -35,7 +35,7 @@ FINDINGS_TO_SUBMIT = [
     {"block": 96526386, "type": "tx_spike",    "confidence": 0.76, "tx_count": 6},
 ]
 
-CONTRACT_ADDR = "0x7fAb1E37d992109d3aA747703436ff4e261391b7"
+CONTRACT_ADDR = "0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b"
 RPC_URL       = "https://rpc.sepolia.mantle.xyz"
 CHAIN_ID      = 5003
 
@@ -97,12 +97,27 @@ def finding_hash(f: dict) -> bytes:
 
 def main():
     from web3 import Web3
+    from eth_account import Account
     
-
-    private_key = os.environ.get("AGENT_PRIVATE_KEY") or os.environ.get("PRIVATE_KEY")
-    if not private_key:
-        print("ERROR: AGENT_PRIVATE_KEY not set — cannot submit on-chain findings")
-        print("Set it and re-run: AGENT_PRIVATE_KEY=0x... python3 scripts/submit_findings_testnet.py")
+    keystore_path = os.environ.get("KEYSTORE_PATH", "keystore.json")
+    keystore_password = os.environ.get("KEYSTORE_PASSWORD")
+    
+    if not keystore_password:
+        print("ERROR: KEYSTORE_PASSWORD not set — cannot decrypt keystore")
+        print("Set it and re-run: KEYSTORE_PASSWORD=your_password python3 scripts/submit_findings_testnet.py")
+        sys.exit(1)
+        
+    if not os.path.exists(keystore_path):
+        print(f"ERROR: Keystore file not found at {keystore_path}")
+        print("Generate one first with: python3 scripts/generate_keystore.py")
+        sys.exit(1)
+        
+    try:
+        with open(keystore_path) as f:
+            encrypted_key = f.read()
+        private_key = Account.decrypt(encrypted_key, keystore_password)
+    except Exception as e:
+        print(f"ERROR decrypting keystore: {e}")
         sys.exit(1)
 
     w3 = Web3(Web3.HTTPProvider(RPC_URL, request_kwargs={"timeout": 30}))
@@ -140,7 +155,7 @@ def main():
                 fhash, atype, confidence, block_h
             ).build_transaction({
                 "chainId": CHAIN_ID,
-                "gas": 200_000,
+                "gas": 500_000,
                 "gasPrice": w3.eth.gas_price,
                 "nonce": nonce,
                 "from": account.address,
@@ -149,7 +164,7 @@ def main():
             tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
             receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
 
-            status = "✅ SUCCESS" if receipt.status == 1 else "❌ FAILED"
+            status = "SUCCESS" if receipt.status == 1 else "FAILED"
             print(f"   {status} tx={tx_hash.hex()} gasUsed={receipt.gasUsed}")
             results.append({
                 "block":    block_h,
@@ -163,7 +178,7 @@ def main():
             time.sleep(1)
 
         except Exception as e:
-            print(f"   ❌ ERROR: {e}")
+            print(f"   ERROR: {e}")
             results.append({"block": block_h, "type": atype, "error": str(e)})
 
     after_count = contract.functions.findingCount().call()
@@ -182,7 +197,7 @@ def main():
         "count_after": after_count,
         "transactions": results,
     }, indent=2))
-    print(f"\nResults saved → {out}")
+    print(f"\nResults saved -> {out}")
 
 
 if __name__ == "__main__":
