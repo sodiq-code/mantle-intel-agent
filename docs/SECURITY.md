@@ -67,6 +67,6 @@ The contract's core functions — `submitFinding()`, `getPublicFindings()`, `get
 
 ---
 
-**Contract deployed at:** `0x7fAb1E37d992109d3aA747703436ff4e261391b7` (Mantle Sepolia)  
-**Verified on Sourcify:** https://sourcify.dev/#/lookup/0x7fAb1E37d992109d3aA747703436ff4e261391b7  
+**Contract deployed at:** `0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b` (Mantle Sepolia)  
+**Verified on Sourcify:** https://sourcify.dev/#/lookup/0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b  
 **GitHub:** https://github.com/sodiq-code/mantle-intel-agent

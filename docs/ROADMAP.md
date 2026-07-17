@@ -99,7 +99,7 @@ Tier 2 — Professional ($99/mo)
   - Telegram/Discord bot for personal wallet tracking
   - 5 custom wallet labels
 
-Tier 3 — Institutional ($999/mo)
+Tier 3 — Professional ($999/mo)
   - Real-time + predictive signals (lead-time estimates)
   - Unlimited findings + full history
   - Custom protocol coverage requests
@@ -119,7 +119,7 @@ Tier 4 — Enterprise (Custom pricing)
 |------|-------------|-------------|
 | Free | 500 wallets, 50 protocols | $0 (funnel) |
 | Pro | 100 traders, 20 small funds | $9,900 |
-| Institutional | 15 hedge funds, 5 VCs | $14,985 |
+| Professional | 15 hedge funds, 5 VCs | $14,985 |
 | Enterprise | 3 protocols, 2 CEXs | ~$30,000 |
 | **Total MRR (Q1 2027 target)** | | **~$55,000** |
 

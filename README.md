@@ -2,9 +2,9 @@
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-mantle--intel--agent.vercel.app-00ff88?style=for-the-badge)](https://mantle-intel-agent.vercel.app)
 [![Demo Video](https://img.shields.io/badge/Demo%20Video-YouTube-red?style=for-the-badge&logo=youtube)](https://youtu.be/AuGx1f44Qfw)
-[![Audit Contract](https://img.shields.io/badge/Audit%20Contract-Mantle%20Sepolia-green?style=for-the-badge)](https://sepolia.mantlescan.xyz/address/0x7fAb1E37d992109d3aA747703436ff4e261391b7)
-[![Sourcify Verified](https://img.shields.io/badge/Sourcify-Exact%20Match%20✓-brightgreen?style=for-the-badge)](https://sourcify.dev/#/lookup/0x7fAb1E37d992109d3aA747703436ff4e261391b7)
-[![On-Chain](https://img.shields.io/badge/On--Chain-Live%20Feed-orange?style=for-the-badge)](https://sepolia.mantlescan.xyz/address/0x7fAb1E37d992109d3aA747703436ff4e261391b7)
+[![Audit Contract](https://img.shields.io/badge/Audit%20Contract-Mantle%20Sepolia-green?style=for-the-badge)](https://sepolia.mantlescan.xyz/address/0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b)
+[![Sourcify Verified](https://img.shields.io/badge/Sourcify-Exact%20Match%20✓-brightgreen?style=for-the-badge)](https://sourcify.dev/#/lookup/0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b)
+[![On-Chain](https://img.shields.io/badge/On--Chain-Live%20Feed-orange?style=for-the-badge)](https://sepolia.mantlescan.xyz/address/0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b)
 [![Backtest](https://img.shields.io/badge/Backtest-Methodology%20In%20Development-blue?style=for-the-badge)](./backtest/results_live.md)
 
 > **Autonomous 5-agent AI pipeline delivering real-time on-chain intelligence for the Mantle Network ecosystem.**
@@ -85,18 +85,18 @@ AuditAgent (Stage 5)
 
 | Contract | Network | Address | Explorer |
 |---|---|---|---|
-| `MantleIntelAudit v2.0` | Mantle Sepolia | `0x7fAb1E37d992109d3aA747703436ff4e261391b7` | [View on Mantlescan](https://sepolia.mantlescan.xyz/address/0x7fAb1E37d992109d3aA747703436ff4e261391b7) |
+| `MantleIntelAudit v2.0` | Mantle Sepolia | `0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b` | [View on Mantlescan](https://sepolia.mantlescan.xyz/address/0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b) |
 | `MantleIntelAgentNFT (ERC-8004)` | Mantle Sepolia | `0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C` | [View on Mantlescan](https://sepolia.mantlescan.xyz/address/0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C) |
 
-Sourcify-verified with exact-match status on both creation and runtime bytecode. Finding count grows as the pipeline runs — verify the current total on [Mantlescan](https://sepolia.mantlescan.xyz/address/0x7fAb1E37d992109d3aA747703436ff4e261391b7).
+Sourcify-verified with exact-match status on both creation and runtime bytecode. Finding count grows as the pipeline runs — verify the current total on [Mantlescan](https://sepolia.mantlescan.xyz/address/0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b).
 
 ```bash
 # Verify on Sourcify — returns "perfect"
-curl "https://sourcify.dev/server/check-all-by-addresses?addresses=0x7fAb1E37d992109d3aA747703436ff4e261391b7&chainIds=5003"
+curl "https://sourcify.dev/server/check-all-by-addresses?addresses=0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b&chainIds=5003"
 # → [{"address":"0x7fAb1E37...","chainIds":[{"chainId":"5003","status":"perfect"}]}]
 
 # Read on-chain findings — no wallet required
-cast call 0x7fAb1E37d992109d3aA747703436ff4e261391b7 \
+cast call 0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b \
   "getPublicFindings(uint256,uint256)(string[])" 0 5 \
   --rpc-url https://rpc.sepolia.mantle.xyz
 ```
@@ -307,7 +307,7 @@ All environment variables are optional — the system runs fully live with no co
 MANTLE_RPC_URL=https://rpc.mantle.xyz       # default, no key needed
 DASHSCOPE_API_KEY=your_key                   # Qwen-Max LLM (falls back to templates)
 TELEGRAM_BOT_TOKEN=your_token
-AUDIT_PRIVATE_KEY=your_deployer_key          # for on-chain submission
+KEYSTORE_PASSWORD=your_password              # for on-chain submission
 ```
 
 ---
@@ -356,9 +356,9 @@ mantle-intel-agent/
 | Institutional | $499/mo | Funds, DAOs, protocol treasuries |
 | Enterprise | $999/mo | Market makers, hedge funds, VC deal flow |
 
-**Market:** $2.1B → $8.4B on-chain analytics TAM (32% CAGR). Mantle SAM: 500 institutional subscribers.  
+**Market:** $2.1B → $8.4B on-chain analytics TAM (32% CAGR). Mantle SAM: 500 professional subscribers.  
 **Revenue target:** $660K ARR by end of 2027.  
-**GTM:** Protocol partnerships (Lendle, Agni, Merchant Moe as first B2B clients) → Mantle Foundation grant → ETH Global presence.
+**GTM:** Protocol partnerships (Lendle, Agni, Merchant Moe as first B2B clients) → ETH Global presence.
 
 ---
 
@@ -383,9 +383,9 @@ mantle-intel-agent/
 | **Live Dashboard** | https://mantle-intel-agent.vercel.app |
 | **Demo Video** | https://youtu.be/AuGx1f44Qfw |
 | **GitHub** | https://github.com/sodiq-code/mantle-intel-agent |
-| **Audit Contract** | https://sepolia.mantlescan.xyz/address/0x7fAb1E37d992109d3aA747703436ff4e261391b7 |
+| **Audit Contract** | https://sepolia.mantlescan.xyz/address/0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b |
 | **NFT Contract** | https://sepolia.mantlescan.xyz/address/0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C |
-| **Sourcify Verification** | https://sourcify.dev/#/lookup/0x7fAb1E37d992109d3aA747703436ff4e261391b7 |
+| **Sourcify Verification** | https://sourcify.dev/#/lookup/0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b |
 | **Live API** | https://mantle-intel-agent.vercel.app/api/live-feed?format=json |
 
 ---
@@ -399,7 +399,7 @@ Any trading bot, protocol, or dashboard can subscribe to Mantle Intel Agent's si
 ```solidity
 // Subscribe your contract or wallet to the intel feed
 // Network: Mantle Sepolia (Chain ID 5003)
-// Contract: 0x7fAb1E37d992109d3aA747703436ff4e261391b7
+// Contract: 0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b
 
 interface IMantleIntelAudit {
     function subscribe(string calldata subscriptionType) external;
@@ -409,7 +409,7 @@ interface IMantleIntelAudit {
 }
 
 // Subscribe from any wallet or smart contract
-IMantleIntelAudit intel = IMantleIntelAudit(0x7fAb1E37d992109d3aA747703436ff4e261391b7);
+IMantleIntelAudit intel = IMantleIntelAudit(0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b);
 intel.subscribe("whale");        // subscribe to whale anomaly signals
 intel.subscribe("meth_depeg");   // subscribe to mETH depeg alerts
 intel.subscribe("all");          // subscribe to all signal types
@@ -423,12 +423,12 @@ string[] memory findings = intel.getPublicFindings(0, 10);
 
 ```bash
 # CLI — check subscription status
-cast call 0x7fAb1E37d992109d3aA747703436ff4e261391b7 \
+cast call 0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b \
   "isSubscribed(address)(bool)" YOUR_WALLET_ADDRESS \
   --rpc-url https://rpc.sepolia.mantle.xyz
 
 # Pull last 10 findings (read-only, no wallet needed)
-cast call 0x7fAb1E37d992109d3aA747703436ff4e261391b7 \
+cast call 0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b \
   "getPublicFindings(uint256,uint256)(string[])" 0 10 \
   --rpc-url https://rpc.sepolia.mantle.xyz
 ```
@@ -450,7 +450,7 @@ Search `@MantleIntelBot` on Telegram. Type `/start` to see live findings. `/stat
 
 **3. Query findings on-chain**
 ```bash
-cast call 0x7fAb1E37d992109d3aA747703436ff4e261391b7 \
+cast call 0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b \
   "getPublicFindings(uint256,uint256)(string[])" 0 5 \
   --rpc-url https://rpc.sepolia.mantle.xyz
 ```

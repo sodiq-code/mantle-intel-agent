@@ -13,7 +13,7 @@
 
 | Contract | Address | Block | Purpose |
 |----------|---------|-------|---------|
-| **MantleIntelAudit** | `0x7fAb1E37d992109d3aA747703436ff4e261391b7` | 39851391 | Immutable anomaly audit trail — SHA256 tamper-evident hashes |
+| **MantleIntelAudit** | `0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b` | 39851391 | Immutable anomaly audit trail — SHA256 tamper-evident hashes |
 | **MantleIntelAgentNFT** | `0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C` | 39815592 | ERC-8004 agent identity NFT |
 
 ---
@@ -40,24 +40,24 @@ All anomaly findings from the autonomous pipeline are permanently recorded on `M
 
 ```bash
 # Check total finding count (live — grows as pipeline runs)
-cast call 0x7fAb1E37d992109d3aA747703436ff4e261391b7 \
+cast call 0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b \
   "findingCount()(uint256)" \
   --rpc-url https://rpc.sepolia.mantle.xyz
 
 # Read first 5 findings (offset=0, limit=5)
-cast call 0x7fAb1E37d992109d3aA747703436ff4e261391b7 \
+cast call 0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b \
   "getPublicFindings(uint256,uint256)(uint256[],uint256)" 0 5 \
   --rpc-url https://rpc.sepolia.mantle.xyz
 
 # Read next 5 findings (offset=5, limit=5)
-cast call 0x7fAb1E37d992109d3aA747703436ff4e261391b7 \
+cast call 0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b \
   "getPublicFindings(uint256,uint256)(uint256[],uint256)" 5 5 \
   --rpc-url https://rpc.sepolia.mantle.xyz
 ```
 
 ### Explorer Links
-- **Contract:** https://explorer.sepolia.mantle.xyz/address/0x7fAb1E37d992109d3aA747703436ff4e261391b7
-- **Transactions:** https://explorer.sepolia.mantle.xyz/address/0x7fAb1E37d992109d3aA747703436ff4e261391b7?tab=txs
+- **Contract:** https://explorer.sepolia.mantle.xyz/address/0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b
+- **Transactions:** https://explorer.sepolia.mantle.xyz/address/0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b?tab=txs
 
 ---
 
@@ -101,7 +101,7 @@ The `MantleIntelAudit` contract supports on-chain signal subscriptions:
 
 ```bash
 # Check if address is subscribed
-cast call 0x7fAb1E37d992109d3aA747703436ff4e261391b7 \
+cast call 0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b \
   "isSubscribed(address)(bool)" 0xB47Ba223B73980E69AEF53B0d202F9785698DAEa \
   --rpc-url https://rpc.sepolia.mantle.xyz
 ```

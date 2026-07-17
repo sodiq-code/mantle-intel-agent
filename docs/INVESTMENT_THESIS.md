@@ -9,7 +9,7 @@
 
 Mantle's DeFi ecosystem — $500M+ TVL across Merchant Moe, Lendle, Agni Finance, mETH, and 15+ protocols — generates thousands of on-chain signals per hour. Today:
 
-- **Institutional traders** cannot distinguish informed whale flows from noise without expensive Nansen subscriptions ($1,200/mo) that barely cover Mantle-native data
+- **Professional traders** cannot distinguish informed whale flows from noise without expensive Nansen subscriptions ($1,200/mo) that barely cover Mantle-native data
 - **Retail DeFi users** have zero visibility into smart money positioning before it impacts their LP positions
 - **Protocol teams** have no real-time anomaly alerts for their own TVL — they discover exploits and liquidation cascades after the fact
 - **Mirana itself** — as a Mantle-aligned fund — currently has no purpose-built tool for monitoring Mantle-specific on-chain signals
@@ -44,7 +44,7 @@ Mantle Intel Agent is a **5-agent AI pipeline** that continuously:
 - Mantle ecosystem users: **~85,000 active wallets** (Q2 2026 on-chain data)
 
 ### Serviceable Addressable Market (SAM)
-- Mantle-focused traders, funds, and protocols: ~500 potential institutional subscribers
+- Mantle-focused traders, funds, and protocols: ~500 potential professional subscribers
 - At $99-999/mo → **$600k–$6M ARR from Mantle alone** at 10% penetration
 
 ### Serviceable Obtainable Market (SOM — 12-month target)
@@ -65,7 +65,7 @@ Mantle Intel Agent is a **5-agent AI pipeline** that continuously:
 
 ### Live System Validation
 - **Live API:** `https://mantle-intel-agent.vercel.app/api/live-feed` — `demo_mode: false`, real Mantle mainnet blocks
-- **On-chain log:** 5 findings hashed + submitted to `MantleIntelAudit.sol` (0x7fAb1E37d992109d3aA747703436ff4e261391b7, Mantle Sepolia)
+- **On-chain log:** 5 findings hashed + submitted to `MantleIntelAudit.sol` (0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b, Mantle Sepolia)
 - **Sourcify verified:** Contract source publicly verifiable
 - **NFT identity:** ERC-8004 agent identity minted (0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C)
 
@@ -98,7 +98,7 @@ Mantle Intel Agent is a **5-agent AI pipeline** that continuously:
 ```
 Free          →  5-min delay, 10 findings/response, public dashboard
 Professional  →  $99/mo  — real-time WebSocket, 500 findings/day, 30-day history
-Institutional →  $999/mo — real-time + predictive, unlimited, custom protocols, SLA
+Professional →  $999/mo — real-time + predictive, unlimited, custom protocols, SLA
 Enterprise    →  Custom  — white-label, on-premise, dedicated support
 ```
 
@@ -106,9 +106,9 @@ Enterprise    →  Custom  — white-label, on-premise, dedicated support
 1. **Protocol partnerships** — Lendle, Agni, Merchant Moe pay for their own TVL monitoring data (B2B)
 2. **API licensing** — CEXs pay for Mantle smart money flow data (listing/trading decisions)
 3. **Signal marketplace** — Analyst-submitted signals with on-chain verification (protocol fee)
-4. **Grant funding** — Mantle Foundation ecosystem grants for infrastructure projects
+4. **Partnership funding** — Mantle Foundation ecosystem grants for infrastructure projects
 
-### Unit Economics (Institutional Tier)
+### Unit Economics (Professional Tier)
 - CAC: ~$500 (conference, DM outreach, hackathon visibility)
 - LTV: $999 × 18 months avg retention = **$17,982 LTV**
 - LTV/CAC: **35.9x** — extremely capital-efficient SaaS model
@@ -149,7 +149,7 @@ Enterprise    →  Custom  — white-label, on-premise, dedicated support
 
 **For Mirana Ventures (Turing Test Hackathon):**
 - **$100K prize** → Mainnet deployment, dedicated RPC node, subgraph indexer, first 10 beta users
-- **Strategic partnership** → Mirana as first institutional subscriber + signal validation partner
+- **Strategic partnership** → Mirana as first professional subscriber + signal validation partner
 - **Portfolio integration** → Mantle Intel alerts integrated into Mirana's Mantle portfolio monitoring
 
 **Post-hackathon investment:**
@@ -176,4 +176,4 @@ Enterprise    →  Custom  — white-label, on-premise, dedicated support
 
 *Mantle Intel Agent | Turing Test Hackathon 2026 | Alpha & Data Track (Mirana Ventures)*  
 *Live: https://mantle-intel-agent.vercel.app | GitHub: sodiq-code/mantle-intel-agent*  
-*Contract: 0x7fAb1E37d992109d3aA747703436ff4e261391b7 (Mantle Sepolia)*
+*Contract: 0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b (Mantle Sepolia)*
