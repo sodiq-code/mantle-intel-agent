@@ -117,7 +117,8 @@ class AuditAgent:
         self.contract_address = contract_address or os.getenv(
             "AUDIT_CONTRACT_ADDRESS", "")
         self.rpc_url = rpc_url or os.getenv(
-            "MANTLE_RPC_URL", "https://rpc.mantle.xyz")
+            "AUDIT_RPC_URL", os.getenv(
+            "MANTLE_TESTNET_RPC", "https://rpc.sepolia.mantle.xyz"))
         self.private_key = private_key or os.getenv("AGENT_PRIVATE_KEY", "")
         self.network = network or os.getenv("NETWORK", "testnet")
         self._w3: Optional[object] = None

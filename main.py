@@ -36,6 +36,37 @@ from agents.pipeline import MantleIntelPipeline
 from bot.telegram_bot import MantleIntelBot
 
 
+def _send_telegram_direct(incident: dict):
+    """Direct HTTP Telegram alert — no dependencies, always works."""
+    import urllib.request, ssl
+    token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
+    if not token or not chat_id:
+        return
+    atype = incident.get("type", "anomaly")
+    block = incident.get("latest_block", incident.get("block", "?"))
+    conf = incident.get("peak_confidence", incident.get("confidence_pct", 0))
+    state = incident.get("state", "NEW")
+    text = (
+        f"🔍 *Mantle Intel Alert*\n"
+        f"Type: `{atype}`\n"
+        f"Block: `{block}`\n"
+        f"Confidence: `{conf}%`\n"
+        f"State: `{state}`\n"
+        f"Contract: `0x7266cD15...Ed530b`"
+    )
+    payload = json.dumps({"chat_id": chat_id, "text": text, "parse_mode": "Markdown"}).encode()
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    try:
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
+        urllib.request.urlopen(req, timeout=10, context=ctx)
+    except Exception:
+        pass  # Best-effort alert
+
+
 def print_banner():
     print("\n" + "="*70)
     print("  MANTLE INTEL AGENT")
@@ -85,13 +116,15 @@ async def run_demo(args):
             print("⚠️  Telegram bot: TELEGRAM_BOT_TOKEN not set — running without bot")
             bot = None
 
-    async def on_finding(finding: dict, insight_text: str):
-        print_finding(finding)
+    async def on_incident(incident: dict):
+        print_finding(incident)
         if bot:
-            await bot.push_finding(finding, insight_text)
+            await bot.push_incident(incident)
+        # Direct Telegram fallback (works without python-telegram-bot)
+        _send_telegram_direct(incident)
 
     pipeline = MantleIntelPipeline(
-        on_finding=on_finding,
+        on_incident=on_incident,
         poll_interval=30,
         blocks_per_cycle=100,
     )
