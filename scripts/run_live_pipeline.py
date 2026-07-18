@@ -48,9 +48,9 @@ sys.path.insert(0, str(ROOT))
 try:
     from agents.collector.collector_agent    import CollectorAgent
     from agents.anomaly.anomaly_agent        import AnomalyAgent
-    from agents.smartmoney.smartmoney_agent  import SmartMoneyAgent
+    from agents.smart_money.smart_money_agent import SmartMoneyAgent
     from agents.audit.audit_agent            import AuditAgent
-    from agents.telegram.telegram_bot        import TelegramBot
+    from bot.telegram_bot                    import MantleIntelBot as TelegramBot
     AGENTS_OK = True
 except ImportError as e:
     log.warning(f"Agent import issue: {e} — running in lightweight mode")
