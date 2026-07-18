@@ -435,7 +435,7 @@ export async function buildSnapshot(includeProtocolState = true) {
     },
     smart_money_summary: {
       signals_generated: findings.filter(f => f.smart_money?.tier1_involved).length,
-      tracked_wallets:   activeWhales > 0 ? activeWhales : 67,
+      tracked_wallets:   activeWhales,
       known_labels:      Object.keys(KNOWN_WALLETS).length,
       tier1_alerts:      activeTier1,
       total_flow_usd:    Math.round(totalUsd),
