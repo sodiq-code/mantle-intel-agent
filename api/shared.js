@@ -394,6 +394,10 @@ export async function buildSnapshot(includeProtocolState = true) {
   const avgTx    = txCounts.length > 0 ? txCounts.reduce((a,b)=>a+b,0)/txCounts.length : 0;
   const totalUsd = mainnetFeatures.reduce((s,f) => s + f.total_value_usd, 0);
 
+  const allLargeTransfers = mainnetFeatures.flatMap(f => f.large_transfers);
+  const activeTier1 = allLargeTransfers.filter(t => t.tier_from === 1 || t.tier_to === 1).length;
+  const activeWhales = new Set(allLargeTransfers.flatMap(t => [t.from, t.to])).size;
+
   const snapshot = {
     live:          true,
     last_updated:  new Date().toISOString(),
@@ -413,11 +417,6 @@ export async function buildSnapshot(includeProtocolState = true) {
         rpc: MANTLE_SEPOLIA,
       }
     },
-  const allLargeTransfers = mainnetFeatures.flatMap(f => f.large_transfers);
-  const activeTier1 = allLargeTransfers.filter(t => t.tier_from === 1 || t.tier_to === 1).length;
-  const activeWhales = new Set(allLargeTransfers.flatMap(t => [t.from, t.to])).size;
-
-  return {
     stats: {
       cycles_run:       Math.floor(mainnet.latest / 50),
       blocks_processed: mainnet.latest,
