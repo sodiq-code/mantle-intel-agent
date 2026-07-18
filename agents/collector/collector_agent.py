@@ -212,9 +212,7 @@ class CollectorAgent:
 
     def _init_web3(self):
         if not WEB3_AVAILABLE:
-            self.logger.warning("web3_not_installed",
-                                msg="pip install web3 — running demo mode")
-            self._demo_mode = True
+            self.logger.error("web3_not_installed", msg="pip install web3 required. Cannot run without it.")
             return
         try:
             self._w3 = Web3(Web3.HTTPProvider(
@@ -227,17 +225,14 @@ class CollectorAgent:
             else:
                 raise ConnectionError("RPC not reachable")
         except Exception as e:
-            self.logger.warning("rpc_unavailable", error=str(
-                e), msg="Switching to demo mode")
-            self._demo_mode = True
+            self.logger.error("rpc_unavailable", error=str(e), msg="Cannot collect real blocks.")
 
     # ── Main data collection ──────────────────────────────────────────────────
 
     async def collect_blocks(self, num_blocks: int = 50) -> list[BlockSummary]:
         """Collect and summarize the last `num_blocks` blocks."""
-        if self._demo_mode:
-            return self._generate_demo_blocks(num_blocks)
-
+        if not self._w3:
+            return []
         summaries = []
         try:
             latest = self._w3.eth.block_number
@@ -262,8 +257,7 @@ class CollectorAgent:
                              to_block=latest)
         except Exception as e:
             self.logger.error("collection_failed", error=str(e))
-            return self._generate_demo_blocks(num_blocks)
-
+            return []
         return summaries
 
     async def poll_protocol_state(self) -> ProtocolStateSnapshot:
@@ -278,7 +272,7 @@ class CollectorAgent:
         await self._fetch_pyth_prices(snap)
 
         # 2. mETH protocol state
-        if not self._demo_mode and self._w3:
+        if self._w3:
             await self._fetch_meth_state(snap)
             await self._fetch_merchant_moe_state(snap)
             await self._fetch_lendle_state(snap)

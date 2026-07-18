@@ -131,16 +131,12 @@ class AuditAgent:
 
     def _init_web3(self):
         if not WEB3_AVAILABLE:
-            self.logger.warning("web3_not_installed",
-                                msg="Running in demo mode — no on-chain writes")
-            self._demo_mode = True
-            return
+            self.logger.error("web3_not_installed", msg="Running in demo mode - no on-chain writes. PIP install web3 required.")
+            raise ImportError("web3 is required for audit agent")
 
         if not self.contract_address or not self.private_key:
-            self.logger.warning("missing_config",
-                                msg="CONTRACT_ADDRESS or AGENT_PRIVATE_KEY not set — demo mode")
-            self._demo_mode = True
-            return
+            self.logger.error("missing_config", msg="CONTRACT_ADDRESS or AGENT_PRIVATE_KEY not set")
+            raise ValueError("Missing contract address or private key")
 
         try:
             self._w3 = Web3(Web3.HTTPProvider(
@@ -160,10 +156,8 @@ class AuditAgent:
                              wallet=self._account.address,
                              network=self.network)
         except Exception as e:
-            self.logger.warning("web3_init_failed", error=str(
-                e), msg="Falling back to demo mode")
-            self._demo_mode = True
-
+            self.logger.error("web3_init_failed", error=str(e), msg="Failed to initialize web3 or contract")
+            raise
     # ── Main audit function ───────────────────────────────────────────────────
 
     async def record_finding(self, finding) -> AuditRecord:
@@ -176,21 +170,20 @@ class AuditAgent:
             block_height=finding.block_height,
         )
 
-        if self._demo_mode:
-            record.audit_status = "demo"
-            record.on_chain_tx = f"0x{'demo' + finding.sha256_hash()[:60]}"
-            self.logger.info("audit_demo_mode",
+        if not self._contract:
+            record.audit_status = "failed"
+            record.error = "Contract not initialized"
+            self.logger.error("audit_failed", finding_id=finding.finding_id, error="No contract")
+            self._audit_log.append(record)
+            return record
+
+        try:
+            tx_hash, on_chain_id = await self._submit_to_chain(finding, record.finding_hash)
+            record.on_chain_tx = tx_hash
+            record.on_chain_id = on_chain_id
+            record.audit_status = "recorded"
+            self.logger.info("finding_recorded_on_chain",
                              finding_id=finding.finding_id,
-                             hash=record.finding_hash[:16] + "...",
-                             anomaly_type=finding.anomaly_type)
-        else:
-            try:
-                tx_hash, on_chain_id = await self._submit_to_chain(finding, record.finding_hash)
-                record.on_chain_tx = tx_hash
-                record.on_chain_id = on_chain_id
-                record.audit_status = "recorded"
-                self.logger.info("finding_recorded_on_chain",
-                                 finding_id=finding.finding_id,
                                  tx=tx_hash,
                                  on_chain_id=on_chain_id)
             except Exception as e:
@@ -253,8 +246,8 @@ class AuditAgent:
 
     async def verify_finding(self, finding_hash: str) -> dict:
         """Query contract to verify a finding hash."""
-        if self._demo_mode or not self._contract:
-            return {"verified": True, "demo": True, "hash": finding_hash}
+        if not self._contract:
+            return {"verified": False, "error": "No contract"}
 
         try:
             hash_bytes = bytes.fromhex(finding_hash.lstrip("0x"))
@@ -272,8 +265,8 @@ class AuditAgent:
 
     async def get_chain_stats(self) -> dict:
         """Get total findings count from contract."""
-        if self._demo_mode or not self._contract:
-            return {"total_findings": len(self._audit_log), "demo": True}
+        if not self._contract:
+            return {"total_findings": 0, "error": "No contract"}
         try:
             count = self._contract.functions.findingCount().call()
             return {"total_findings": count, "contract": self.contract_address}
