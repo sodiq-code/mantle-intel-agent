@@ -89,7 +89,7 @@ class MantleIntelPipeline:
             self.logger.warning("no_blocks_collected")
             return []
 
-        latest_block = max(b.get("number", 0) for b in blocks) if blocks else 0
+        latest_block = max(getattr(b, 'block_num', 0) if not isinstance(b, dict) else b.get("number", 0) for b in blocks) if blocks else 0
 
         self._stats["blocks_processed"] += len(blocks)
 
