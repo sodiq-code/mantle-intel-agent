@@ -2,7 +2,7 @@ import { Shield, ExternalLink } from "lucide-react";
 import { G, EXPLORER_BASE, cfg } from "./Shared.jsx";
 
 export function AuditTab({ data, findings }) {
-  const CONTRACT = "0x7fAb1E37d992109d3aA747703436ff4e261391b7";
+  const CONTRACT = "0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b";
   const auditCount = data?.protocol_state?.audit_contract?.finding_count ?? findings.length ?? 0;
 
   // Use the live findings fetched from the edge function

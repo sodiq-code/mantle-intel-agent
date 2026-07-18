@@ -361,7 +361,7 @@ export async function fetchLendleTvl() {
 export async function fetchAuditStats() {
   try {
     const AUDIT = "0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b";
-    const countHex = await rpcCall(MANTLE_SEPOLIA, "eth_call", [{ to: AUDIT, data: "0x0bbee663" }, "latest"]);
+    const countHex = await rpcCall(MANTLE_SEPOLIA, "eth_call", [{ to: AUDIT, data: "0x04193ffb" }, "latest"]);
     const count = countHex && countHex !== "0x" ? parseInt(countHex, 16) : 0;
     return { finding_count: count };
   } catch { return { finding_count: 0 }; }
@@ -384,7 +384,7 @@ export async function buildSnapshot(includeProtocolState = true) {
   const meth      = methData.status    === "fulfilled" && methData.value ? methData.value    : { staked_eth: null, supply_meth: null, ratio: null, depeg_alert: false };
   const moe       = moeData.status     === "fulfilled" && moeData.value ? moeData.value     : { router_balance_mnt: null };
   const lendle    = lendleData.status  === "fulfilled" && lendleData.value ? lendleData.value  : { pool_balance_mnt: null };
-  const auditStat = auditData.status   === "fulfilled" && auditData.value ? auditData.value   : { finding_count: 120 };
+  const auditStat = auditData.status   === "fulfilled" && auditData.value ? auditData.value   : { finding_count: 0 };
 
   const mainnetFeatures = mainnet.blocks.map(parseBlock).sort((a,b) => a.block_num - b.block_num);
   const findings        = await detectAnomalies(mainnetFeatures);
