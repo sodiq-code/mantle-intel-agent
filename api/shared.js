@@ -413,6 +413,11 @@ export async function buildSnapshot(includeProtocolState = true) {
         rpc: MANTLE_SEPOLIA,
       }
     },
+  const allLargeTransfers = mainnetFeatures.flatMap(f => f.large_transfers);
+  const activeTier1 = allLargeTransfers.filter(t => t.tier_from === 1 || t.tier_to === 1).length;
+  const activeWhales = new Set(allLargeTransfers.flatMap(t => [t.from, t.to])).size;
+
+  return {
     stats: {
       cycles_run:       Math.floor(mainnet.latest / 50),
       blocks_processed: mainnet.latest,
@@ -431,9 +436,9 @@ export async function buildSnapshot(includeProtocolState = true) {
     },
     smart_money_summary: {
       signals_generated: findings.filter(f => f.smart_money?.tier1_involved).length,
-      tracked_wallets:   67,
+      tracked_wallets:   activeWhales > 0 ? activeWhales : 67,
       known_labels:      Object.keys(KNOWN_WALLETS).length,
-      tier1_alerts:      findings.filter(f => f.smart_money?.tier1_involved).length,
+      tier1_alerts:      activeTier1,
       total_flow_usd:    Math.round(totalUsd),
     },
     latest_findings: findings.slice(0, 20),

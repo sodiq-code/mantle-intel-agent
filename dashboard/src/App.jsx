@@ -211,7 +211,7 @@ export default function App() {
             value={auditCount}
             sub="MantleIntelAudit.sol" accent="#3B82F6"/>
           <StatTile icon={TrendingUp}    label="SMART MONEY"
-            value={sm.known_labels || 0}
+            value={sm.tracked_wallets || 0}
             sub={`${sm.tier1_alerts||0} tier-1 alerts`} accent="#A855F7"/>
         </div>
 
