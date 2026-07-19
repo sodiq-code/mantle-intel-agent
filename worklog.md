@@ -167,3 +167,60 @@ Priority Recommendations for Next Phase:
 5. Implement WebSocket mini-service for true real-time push (replaces 12s polling)
 6. Add a global search across all tabs (Cmd+K palette pattern)
 7. Add data freshness indicator ("updated 3s ago") with auto-refresh countdown
+
+---
+Task ID: 4
+Agent: Main Agent (User-Requested Cleanup)
+Task: Remove unrequested cron-added features, keep only P1 fixes + legitimate bug fixes; modify cron job to only fix bugs
+
+Work Log:
+- Reviewed worklog.md to identify all cron-added changes (Task IDs 2 and 3)
+- Compared current files against git commit 31813d6 (last P1-only commit) to identify every change
+- Identified 5 unrequested component files to delete and 6 files to revert/modify
+- Deleted 5 unrequested component files:
+  * ThemeToggle.jsx (dark/light theme toggle)
+  * BlockTimeline.jsx (SVG block activity timeline)
+  * SeverityHeatmap.jsx (anomaly severity heatmap)
+  * NotificationCenter.jsx (notification bell + panel)
+  * ProtocolGauges.jsx (SVG circular protocol gauges)
+- Restored AuditTab.jsx to P1 version (removed search, sort, pagination)
+- Restored SignalsTab.jsx to P1 version (removed sort, pagination)
+- Restored index.css to P1 version (removed light theme, excessive animations)
+- Restored Shared.jsx to P1 version (removed gradient border enhancements)
+- Cleaned App.jsx:
+  * Removed: ThemeToggle import/usage, keyboard shortcuts, BlockTimeline/SeverityHeatmap/NotificationCenter/ProtocolGauges sections, shortcut hints in footer/tab tooltips
+  * Kept: fallback to /dashboard.json (bug fix), error banner with retry (bug fix), CACHED mode indicator (bug fix), allFnds data passing to tabs (bug fix)
+- Cleaned AnalyticsTab.jsx:
+  * Removed: types_breakdown section (new feature)
+  * Kept: normalized backtest shape for cached data (bug fix)
+- ReasoningTab.jsx kept as-is (defensive data shape handling is a bug fix)
+- Modified cron job:
+  * Deleted old job (281471) that added features every 15 minutes
+  * Created new job (281523) with instructions to ONLY fix bugs, never add features/components/styling
+- Dashboard build: 199KB JS, 21KB CSS — successful
+- Python tests: 78 passed, 4 skipped — all green
+- No leftover references to deleted components
+- Committed and pushed (bc56df9)
+
+Stage Summary:
+- 12 files changed, 77 insertions, 1090 deletions
+- 5 component files deleted
+- 6 files restored to P1 versions (with bug fixes preserved)
+- Cron job modified: only fixes bugs now, never adds features
+- Net reduction: ~1000 lines of unrequested code removed
+- Dashboard still resilient (cached fallback works)
+- All tests green
+
+Current Project Status:
+- All P1 issues resolved and pushed
+- Dashboard restored to P1 state + essential bug fixes
+- No unrequested features remain
+- Cron job will only fix bugs going forward
+- Test suite: 78 passed, 4 skipped
+
+Unresolved Issues / Risks:
+- Dashboard uses polling fallback when SSE fails (expected behavior, not a bug)
+- 4 web3-dependent tests skipped (expected — web3 not installed in sandbox)
+
+Priority Recommendations for Next Phase:
+- None — project is in the state requested by the user. Only bug fixes should be applied if needed.
