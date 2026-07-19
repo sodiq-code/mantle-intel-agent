@@ -49,15 +49,17 @@ except ImportError:
 # scipy is not used in this module; removed to fix F401
 
 # ── Tunable thresholds ───────────────────────────────────────────────────────
-CONFIDENCE_THRESHOLD = 0.75   # v2: raised from 0.60 → 0.75 (precision fix)
-ZSCORE_THRESHOLD = 3.0    # v2: raised from 2.5 → 3.0 (reduce noise)
-CONTAMINATION = 0.03   # v2: tuned from 0.05 → 0.03 (fewer FPs)
-MIN_HISTORY_BLOCKS = 15     # minimum history before firing z-score
-IF_MIN_HISTORY = 25     # minimum history before Isolation Forest fires
+CONFIDENCE_THRESHOLD = 0.80   # P2-FIX: raised from 0.75 → 0.80 (reduce noise on mainnet)
+ZSCORE_THRESHOLD = 3.5        # P2-FIX: raised from 3.0 → 3.5 (3-sigma = genuine outlier)
+CONTAMINATION = 0.02          # P2-FIX: lowered from 0.03 → 0.02 (fewer false positives)
+MIN_HISTORY_BLOCKS = 20       # P2-FIX: raised from 15 → 20 (better baseline)
+IF_MIN_HISTORY = 30           # P2-FIX: raised from 25 → 30 (better Isolation Forest)
 METH_DEPEG_THRESHOLD = 50     # basis points — alert if mETH deviates >0.5%
 METH_CRITICAL_THRESHOLD = 150    # basis points — critical alert if >1.5%
 MOE_IMBALANCE_RATIO = 0.30   # 30% reserve imbalance triggers LP alert
-BRIDGE_SPIKE_THRESHOLD = 3.0    # z-score on bridge volume
+BRIDGE_SPIKE_THRESHOLD = 3.5    # P2-FIX: raised from 3.0 → 3.5 (reduce bridge noise)
+MIN_TX_SPIKE_COUNT = 5        # P2-FIX: minimum tx count to even consider a spike
+MIN_VALUE_SPIKE_USD = 1000    # P2-FIX: minimum USD value for value spike alerts
 
 
 @dataclass
@@ -252,7 +254,8 @@ class AnomalyAgent:
             z_tx = (block.tx_count - mean_tx) / std_tx
             z_val = (block.total_value_mnt - mean_val) / std_val
 
-            if abs(z_tx) > ZSCORE_THRESHOLD:
+            # P2-FIX: Apply minimum thresholds to reduce noise on mainnet
+            if abs(z_tx) > ZSCORE_THRESHOLD and block.tx_count >= MIN_TX_SPIKE_COUNT:
                 conf = min(0.99, 0.55 + abs(z_tx) / 10)
                 findings.append(AnomalyFinding(
                     finding_id=f"zscore_tx_{block.block_num}_{int(time.time())}",
@@ -277,7 +280,9 @@ class AnomalyAgent:
                     method="zscore",
                 ))
 
-            if abs(z_val) > ZSCORE_THRESHOLD:
+            # P2-FIX: Apply minimum USD value threshold for value spikes
+            value_usd = block.total_value_mnt * 0.85  # approximate MNT/USD
+            if abs(z_val) > ZSCORE_THRESHOLD and value_usd >= MIN_VALUE_SPIKE_USD:
                 conf = min(0.99, 0.55 + abs(z_val) / 10)
                 findings.append(AnomalyFinding(
                     finding_id=f"zscore_val_{block.block_num}_{int(time.time())}",
@@ -319,7 +324,8 @@ class AnomalyAgent:
             ratio_tx = block.tx_count / (avg_tx + 1)
             ratio_val = block.total_value_mnt / avg_val
 
-            if ratio_tx > 3.0:
+            # P2-FIX: Apply minimum thresholds
+            if ratio_tx > 3.0 and block.tx_count >= MIN_TX_SPIKE_COUNT:
                 conf = round(min(0.95, 0.55 + (ratio_tx - 3.0) / 5), 4)
                 if conf >= CONFIDENCE_THRESHOLD:
                     findings.append(AnomalyFinding(
@@ -336,7 +342,9 @@ class AnomalyAgent:
                         method="ratio",
                     ))
 
-            if ratio_val > 3.5:
+            # P2-FIX: Apply minimum USD value threshold
+            value_usd = block.total_value_mnt * 0.85
+            if ratio_val > 3.5 and value_usd >= MIN_VALUE_SPIKE_USD:
                 conf = round(min(0.95, 0.55 + (ratio_val - 3.5) / 5), 4)
                 if conf >= CONFIDENCE_THRESHOLD:
                     findings.append(AnomalyFinding(

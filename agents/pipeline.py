@@ -198,8 +198,9 @@ class MantleIntelPipeline:
         clusters, sm_signals = self.smart_money.analyze(blocks)
 
         # Stage 4 & 5: Insight + Audit for each anomaly
-        # Limit on-chain writes to prevent event loop starvation
-        MAX_ONCHAIN_PER_CYCLE = 3
+        # P2-FIX: Raised from 3 → 6 — now that web3 calls use asyncio.to_thread,
+        # we can safely write more findings per cycle without blocking the event loop.
+        MAX_ONCHAIN_PER_CYCLE = 6
         onchain_count = 0
         # Collect incident notifications to batch at end of cycle
         # (prevents 4 notifications for same-block anomalies → 1 composite)

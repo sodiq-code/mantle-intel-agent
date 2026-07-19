@@ -13,6 +13,7 @@ Falls back to demo/simulation mode when no RPC is reachable.
 from __future__ import annotations
 import os as _os
 
+import asyncio
 import os
 import time
 import hashlib
@@ -356,7 +357,10 @@ class CollectorAgent:
             snap.data_sources.append("pyth_fallback")
 
     async def _fetch_meth_state(self, snap: ProtocolStateSnapshot):
-        """Poll mETH protocol contract for staking rate and supply."""
+        """Poll mETH protocol contract for staking rate and supply.
+
+        P1-FIX: Uses asyncio.to_thread for web3 .call() to avoid blocking the event loop.
+        """
         try:
             meth_addr = Web3.to_checksum_address(
                 MANTLE_PROTOCOLS["meth_protocol"])
@@ -365,13 +369,13 @@ class CollectorAgent:
             # mETH exchange rate: mETHToETH() → wei
             contract = self._w3.eth.contract(
                 address=meth_addr, abi=METH_RATE_ABI)
-            rate_wei = contract.functions.mETHToETH().call()
+            rate_wei = await asyncio.to_thread(contract.functions.mETHToETH().call)
             snap.meth_eth_rate = rate_wei
 
             # mETH total supply
             tok_contract = self._w3.eth.contract(
                 address=meth_tok, abi=ERC20_SUPPLY_ABI)
-            supply_wei = tok_contract.functions.totalSupply().call()
+            supply_wei = await asyncio.to_thread(tok_contract.functions.totalSupply().call)
             snap.meth_supply = supply_wei / 1e18
 
             snap.data_sources.append("meth_rpc")
@@ -382,13 +386,16 @@ class CollectorAgent:
             snap.data_sources.append("meth_fallback")
 
     async def _fetch_merchant_moe_state(self, snap: ProtocolStateSnapshot):
-        """Poll Merchant Moe pool reserves for WETH/MNT pricing."""
+        """Poll Merchant Moe pool reserves for WETH/MNT pricing.
+
+        P1-FIX: Uses asyncio.to_thread for web3 .call() to avoid blocking the event loop.
+        """
         try:
             pair_addr = Web3.to_checksum_address(
                 MANTLE_PROTOCOLS["merchant_moe_lb"])
             contract = self._w3.eth.contract(
                 address=pair_addr, abi=MERCHANT_MOE_RESERVES_ABI)
-            res0, res1, _ = contract.functions.getReserves().call()
+            res0, res1, _ = await asyncio.to_thread(contract.functions.getReserves().call)
             snap.merchant_moe_reserve0 = res0 / 1e18  # token0 (MNT)
             snap.merchant_moe_reserve1 = res1 / 1e18  # token1 (WETH)
             snap.data_sources.append("merchant_moe_rpc")
@@ -399,12 +406,15 @@ class CollectorAgent:
             snap.data_sources.append("merchant_moe_fallback")
 
     async def _fetch_lendle_state(self, snap: ProtocolStateSnapshot):
-        """Poll Lendle pool total supply as TVL proxy."""
+        """Poll Lendle pool total supply as TVL proxy.
+
+        P1-FIX: Uses asyncio.to_thread for web3 .call() to avoid blocking the event loop.
+        """
         try:
             lendle_addr = Web3.to_checksum_address(MANTLE_PROTOCOLS["lendle"])
             contract = self._w3.eth.contract(
                 address=lendle_addr, abi=ERC20_SUPPLY_ABI)
-            supply_wei = contract.functions.totalSupply().call()
+            supply_wei = await asyncio.to_thread(contract.functions.totalSupply().call)
             snap.lendle_total_supply = supply_wei / 1e18
             snap.data_sources.append("lendle_rpc")
         except Exception as e:
@@ -430,8 +440,9 @@ class CollectorAgent:
                 MANTLE_PROTOCOLS["agni_mnt_usdt_pool"])
             contract = self._w3.eth.contract(
                 address=pool_addr, abi=AGNI_POOL_ABI)
-            snap.agni_liquidity = contract.functions.liquidity().call()
-            snap.agni_fee_tier = contract.functions.fee().call()
+            # P1-FIX: Use asyncio.to_thread for web3 .call() to avoid blocking
+            snap.agni_liquidity = await asyncio.to_thread(contract.functions.liquidity().call)
+            snap.agni_fee_tier = await asyncio.to_thread(contract.functions.fee().call)
             snap.data_sources.append("agni_rpc")
         except Exception as e:
             self.logger.warning("agni_fetch_failed", error=str(e))
