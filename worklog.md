@@ -82,3 +82,88 @@ Priority Recommendations for Next Phase:
 3. Add dark/light theme toggle
 4. Add responsive mobile layout improvements
 5. Consider adding real-time WebSocket support for instant updates
+
+---
+Task ID: 3
+Agent: Main Agent (Cron QA Session #2)
+Task: Independent QA assessment, bug fixes, new features, and styling improvements
+
+Work Log:
+- Reviewed worklog.md — prior phases (P1 fixes + visual components) confirmed complete
+- Ran full Python test suite: 78 passed, 4 skipped — all green
+- Built dashboard with vite build — successful
+- Launched vite preview (port 4173) and used agent-browser for live QA
+- CRITICAL BUG FOUND: Dashboard stuck on "INITIALIZING SECURE LINK…" loading screen forever when /api/live-feed returns 500 (vite preview cannot run Vercel Edge Functions). No fallback, no error state, no retry — app completely unusable in preview/staging.
+- Found additional bugs via code review + runtime testing:
+  * ProtocolGauges referenced filter="url(#glow)" but no <defs> block existed — glow arc invisible
+  * NotificationCenter unread count incremented on EVERY findings.length change (including decreases); clear logic inverted (only cleared on close, not open)
+  * ReasoningTab crashed (TypeError: Cannot read 'toLocaleString' of undefined) — accessed rm.total_value_usd but cached data uses rm.total_usd
+  * AnalyticsTab crashed (React error #31: object with keys {from,to}) — backtest.block_range is an object in cached data but was rendered as text; field name mismatches (blocks_analyzed vs blocks_scanned, true_positives vs tp)
+  * SignalsTab/ReasoningTab/AuditTab received `sorted` (active_incidents, empty in cached mode) instead of `allFnds` (latest_findings, 20 items) — tabs appeared empty despite data being available
+
+- BUG FIXES (6 bugs):
+  1. App.jsx: Added fallback to /dashboard.json when live API fails, error banner with retry button, "CACHED" mode indicator, loading state now resolves
+  2. ProtocolGauges.jsx: Added <GlowDefs> with feGaussianBlur filter + linearGradient track, added health progress bar, hover scale effects, unit labels
+  3. NotificationCenter.jsx: Rewrote unread tracking — compares finding IDs to previous set (only counts genuinely new), clears on panel open, added per-item dismiss, click-outside overlay, merged findings+incidents feed
+  4. ReasoningTab.jsx: Made fully defensive — supports both live API and cached raw_metrics shapes (tx_count/transfer_count, total_value_usd/total_usd, etc.), added reasoning chain connector lines with glow
+  5. AnalyticsTab.jsx: Normalized backtest shape (handles object block_range, field aliases tp/true_positives, blocks_scanned/blocks_analyzed), added anomaly type distribution chart from stats.types_breakdown
+  6. App.jsx: Changed Signals/Reasoning/Audit tabs to receive allFnds (latest_findings) instead of sorted incidents
+
+- NEW FEATURES:
+  1. ThemeToggle.jsx (new file): Dark/light theme toggle with localStorage persistence, animated sun/moon icon transition, data-theme attribute on <html>
+  2. index.css: Added light theme CSS overrides, focus-visible rings, selection color, count-up/float animations, gradient text utility, range thumb hover scale
+  3. App.jsx: Keyboard shortcuts — number keys 1-8 switch tabs, "r" triggers refresh; shortcut hints shown in footer and tab tooltips
+  4. AuditTab.jsx (rewritten): Search box (block/type/title/hash), type filter chips, 4 sortable columns (block/type/confidence/txhash) with chevron indicators, pagination (10 per page) with prev/next + numbered buttons, result count "1-10 of 20"
+  5. SignalsTab.jsx (enhanced): 4 sort options (action/type/block/confidence) with directional toggle, pagination (6 per page), animated slide-up cards with gradient backgrounds
+  6. ProtocolGauges: Health progress bar, healthy count "4/4 HEALTHY", unit labels (mETH/MNT), hover scale on gauges and stats
+  7. NotificationCenter: Per-item dismiss (X on hover), "Mark all read" button, total count footer, incident vs finding badges
+
+- STYLING ENHANCEMENTS:
+  * CSS: 30KB (was 24KB) — added light theme, animations, focus rings
+  * All tabs now have animate-fade-in entrance
+  * SignalsTab cards use slide-up animation with staggered delay
+  * Sort buttons, pagination, filter chips all have hover states
+  * Empty states redesigned with icons and helpful context text
+  * Reasoning chain now has vertical connector lines with glow dots
+
+- VERIFICATION (agent-browser QA):
+  * All 8 tabs tested via keyboard shortcuts — 0 crashes, all alive
+  * Theme toggle confirmed working (data-theme switches dark↔light, persists)
+  * Audit tab pagination confirmed (1-10 of 20, page 2 available)
+  * Audit tab sort confirmed (clicking Confidence header re-sorts)
+  * Notification center confirmed (opens, shows alerts, dismiss buttons work)
+  * VLM analysis of dark theme: "polished, cohesive, professional, no layout issues"
+  * Cached mode banner displays correctly: "Live API unavailable — showing cached snapshot. (API 500)"
+  * Python tests: 78 passed, 4 skipped
+  * Dashboard build: 228KB JS / 30KB CSS — successful
+
+Stage Summary:
+- 9 files modified, 1 new file created (ThemeToggle.jsx)
+- 6 bugs fixed (1 critical: loading-forever; 2 crash bugs: ReasoningTab/AnalyticsTab; 3 logic bugs)
+- 7 new features added (theme toggle, keyboard shortcuts, audit search/sort/pagination, signals sort/pagination, health bar, notification dismiss, type distribution chart)
+- Dashboard now fully functional in preview/staging via cached fallback
+- All 8 tabs verified working with cached data
+- 78 Python tests still passing
+
+Current Project Status:
+- All P1 issues resolved (phase 1)
+- 4 visual components added (phase 2: BlockTimeline, SeverityHeatmap, NotificationCenter, ProtocolGauges)
+- 6 bugs fixed + 7 new features added (phase 3, this session)
+- Dashboard is now resilient: works with live API OR cached snapshot, never stuck on loading
+- All tabs functional with both data shapes (live API + cached dashboard.json)
+
+Unresolved Issues / Risks:
+- Light theme has partial coverage: main shell (header, stat tiles) switches correctly, but tab content panels use inline-styled dark backgrounds (#0D0D0D) that don't respond to theme CSS. Full light theme would require refactoring all components to use CSS variables instead of inline styles.
+- VLM noted some contrast issues in light mode (yellow CACHED badge, light text on dark panels)
+- agent-browser cannot test the live SSE stream (vite preview doesn't run Edge Functions); stream path only exercisable in production Vercel deployment
+- Sort indicator chevrons in AuditTab are 9-11px — functional but small; could enlarge for better visibility
+- WebSocket real-time support still not implemented (recommendation from phase 2)
+
+Priority Recommendations for Next Phase:
+1. Refactor tab components to use CSS variables for backgrounds — enables complete light theme coverage
+2. Enlarge sort indicator icons (12-14px) for better discoverability
+3. Add a "Copy as JSON" button to APITab for full snapshot export
+4. Add CSV export to AuditTab for the filtered/sorted findings
+5. Implement WebSocket mini-service for true real-time push (replaces 12s polling)
+6. Add a global search across all tabs (Cmd+K palette pattern)
+7. Add data freshness indicator ("updated 3s ago") with auto-refresh countdown
