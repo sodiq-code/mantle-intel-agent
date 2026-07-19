@@ -70,3 +70,40 @@ The contract's core functions — `submitFinding()`, `getPublicFindings()`, `get
 **Contract deployed at:** `0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b` (Mantle Sepolia)  
 **Verified on Sourcify:** https://sourcify.dev/#/lookup/0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b  
 **GitHub:** https://github.com/sodiq-code/mantle-intel-agent
+
+---
+
+## Supply Chain Security Roadmap
+
+| Level | Description | Status |
+|-------|-------------|--------|
+| **SLSA Level 1** | Documented build process, provenance available | ✅ Current — Dockerfile, pyproject.toml, pinned deps |
+| **SLSA Level 2** | Hosted build platform, signed build provenance | 🎯 **Phase 1 target** — GitHub Actions + cosign |
+| **SLSA Level 3** | Hardened build platform, non-falsifiable provenance | 📋 Phase 2 |
+| **SLSA Level 4** | Hermetic builds, two-party review | 📋 Phase 3 |
+
+### SLSA Level 2 Implementation Plan (Phase 1)
+
+1. **GitHub Actions CI/CD** — Replace manual builds with hosted CI pipeline
+2. **Container signing** — Sign Docker images with `cosign` (Sigstore)
+3. **SBOM generation** — Generate Software Bill of Materials with `syft`
+4. **Provenance attestation** — Use `slsa-github-generator` for SLSA provenance
+5. **Verification** — `cosign verify-attestation` for downstream consumers
+
+```yaml
+# Planned GitHub Actions workflow (Phase 1)
+name: Build & Sign
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+      - run: pip install -r requirements.txt
+      - run: docker build -t mantle-intel-agent .
+      - uses: sigstore/cosign-installer@v3
+      - run: cosign sign --key env://COSIGN_KEY mantle-intel-agent
+      - uses: anchore/sbom-action@v0
+      - uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml
+```

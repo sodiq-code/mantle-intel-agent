@@ -1,0 +1,85 @@
+# ── P3-28 + P3-33: Subgraph Schema ─────────────────────────────────────────────
+# Indexes FindingRecorded and IntelFeedSubscription events
+# Enables <50ms historical queries vs RPC 2-5s
+
+type Finding @entity {
+  id: ID!                          # findingId as string
+  findingHash: Bytes!              # bytes32 SHA256 hash
+  anomalyType: String!             # e.g. "whale_accumulation"
+  confidenceScore: Int!            # 0-100 (contract enforces >= 75)
+  blockHeight: BigInt!             # Mantle block number
+  recorder: Bytes!                 # Agent wallet address
+  timestamp: BigInt!               # Unix timestamp
+  blockNumber: BigInt!             # Ethereum block number (for indexing)
+  transactionHash: Bytes!          # Transaction hash
+}
+
+type Subscription @entity {
+  id: ID!                          # subscriber address + timestamp
+  subscriber: Bytes!               # Subscriber wallet address
+  subscriptionType: String!        # "all" | "whale_only" | "smart_money_only" | "high_confidence"
+  timestamp: BigInt!               # Unix timestamp
+  active: Boolean!                 # Whether currently subscribed
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+type SubscriptionEvent @entity {
+  id: ID!                          # transactionHash + logIndex
+  subscriber: Bytes!               # Subscriber wallet address
+  eventType: String!               # "subscribed" | "unsubscribed"
+  subscriptionType: String         # Type (null for unsubscribe)
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+type Agent @entity {
+  id: ID!                          # Agent wallet address
+  agentName: String!               # Human-readable name
+  registeredAt: BigInt!            # Registration timestamp
+  findingsCount: Int!              # Number of findings recorded
+  blockNumber: BigInt!
+}
+
+type IntelFeedDelivery @entity {
+  id: ID!                          # findingId + subscriber
+  findingId: BigInt!               # Finding that was delivered
+  subscriber: Bytes!               # Subscriber who received it
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}
+
+type DailyStats @entity {
+  id: ID!                          # Date string "YYYY-MM-DD"
+  findingsCount: Int!              # Total findings that day
+  uniqueAnomalyTypes: Int!         # Number of distinct anomaly types
+  avgConfidence: Float!            # Average confidence score
+  newSubscriptions: Int!           # New subscriptions that day
+  topAnomalyType: String!          # Most frequent anomaly type
+  timestamp: BigInt!
+}
+
+# ── Query Examples ─────────────────────────────────────────────────────────────
+#
+# Get all whale accumulation findings:
+#   query { findings(where: { anomalyType: "whale_accumulation" }, orderBy: timestamp, orderDirection: desc) { ... }}
+#
+# Get high-confidence findings (>90):
+#   query { findings(where: { confidenceScore_gt: 90 }, orderBy: timestamp, orderDirection: desc) { ... }}
+#
+# Get findings by recorder address:
+#   query { findings(where: { recorder: "0x..." }, orderBy: timestamp, orderDirection: desc) { ... }}
+#
+# Get all active subscriptions:
+#   query { subscriptions(where: { active: true }) { subscriber subscriptionType }}
+#
+# Get subscription events for a specific subscriber:
+#   query { subscriptionEvents(where: { subscriber: "0x..." }, orderBy: timestamp, orderDirection: desc) { ... }}
+#
+# Get daily stats:
+#   query { dailyStatss(orderBy: timestamp, orderDirection: desc, first: 30) { id findingsCount avgConfidence }}
+#
+# Get recent deliveries for a subscriber:
+#   query { intelFeedDeliveries(where: { subscriber: "0x..." }, orderBy: timestamp, orderDirection: desc, first: 10) { ... }}

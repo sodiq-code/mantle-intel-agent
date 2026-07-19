@@ -6,8 +6,12 @@ Run: uvicorn server:app --host 0.0.0.0 --port 8000
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import os
+import time
+from collections import defaultdict
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 try:
@@ -69,6 +73,13 @@ API_KEY = os.getenv("API_KEY")
 
 @app.middleware("http")
 async def api_key_middleware(request: Request, call_next):
+    # P3-30: Record anonymous analytics for API requests
+    if request.url.path.startswith("/api/"):
+        _analytics.record_request(
+            endpoint=request.url.path,
+            client_ip=request.client.host if request.client else None,
+        )
+
     # Allow static assets and root (React app) without API key
     if request.url.path.startswith("/api/"):
         if not API_KEY:
@@ -97,8 +108,166 @@ _pipeline_task = None
 DATA_DIR      = Path("data")
 FINDINGS_PATH = DATA_DIR / "findings.jsonl"
 DASHBOARD_PATH = DATA_DIR / "dashboard.json"
+ANALYTICS_PATH = DATA_DIR / "analytics.jsonl"
 
 DATA_DIR.mkdir(exist_ok=True)
+
+
+# ── P3-30: Anonymous Usage Analytics ───────────────────────────────────────────
+# Privacy-first: NO cookies, NO fingerprinting, NO wallet addresses, NO PII.
+# Only tracks: endpoint hit counts, daily unique session hashes (SHA256 of IP),
+# pipeline cycle counts, and finding type distributions.
+
+class _Analytics:
+    """In-memory analytics with daily JSONL persistence.
+
+    All data is aggregated and anonymous. Individual requests are never
+    stored — only daily rollup counts.
+    """
+
+    def __init__(self):
+        self._day = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d")
+        self._endpoint_counts: dict[str, int] = defaultdict(int)
+        self._daily_sessions: set[str] = set()    # SHA256 hashes of IPs
+        self._finding_types: dict[str, int] = defaultdict(int)
+        self._pipeline_cycles = 0
+        self._total_api_calls = 0
+        self._total_findings_served = 0
+        self._start_time = time.time()
+
+    def record_request(self, endpoint: str, client_ip: str | None = None) -> None:
+        """Record an API request. client_ip is hashed immediately, never stored."""
+        self._maybe_rotate()
+        self._endpoint_counts[endpoint] += 1
+        self._total_api_calls += 1
+        if client_ip:
+            # Hash the IP so we can count unique sessions without storing PII
+            session_hash = hashlib.sha256(
+                (client_ip + self._day).encode()
+            ).hexdigest()[:16]
+            self._daily_sessions.add(session_hash)
+
+    def record_finding_served(self, count: int = 1) -> None:
+        self._total_findings_served += count
+
+    def record_finding_type(self, anomaly_type: str) -> None:
+        self._finding_types[anomaly_type] += 1
+
+    def record_pipeline_cycle(self) -> None:
+        self._pipeline_cycles += 1
+
+    def _maybe_rotate(self) -> None:
+        """Rotate daily analytics to JSONL if the day has changed."""
+        today = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d")
+        if today != self._day:
+            self._flush_to_disk()
+            self._day = today
+            self._endpoint_counts.clear()
+            self._daily_sessions.clear()
+            self._finding_types.clear()
+            self._pipeline_cycles = 0
+            self._total_api_calls = 0
+            self._total_findings_served = 0
+
+    def _flush_to_disk(self) -> None:
+        """Append daily rollup to analytics JSONL."""
+        rollup = {
+            "date": self._day,
+            "unique_sessions": len(self._daily_sessions),
+            "total_api_calls": self._total_api_calls,
+            "endpoint_counts": dict(self._endpoint_counts),
+            "finding_types_served": dict(self._finding_types),
+            "findings_served": self._total_findings_served,
+            "pipeline_cycles": self._pipeline_cycles,
+        }
+        try:
+            with open(ANALYTICS_PATH, "a") as f:
+                f.write(json.dumps(rollup, default=str) + "\n")
+        except (OSError, ValueError) as exc:
+            structlog.get_logger("analytics").warning(
+                "analytics_flush_failed", error=str(exc))
+
+    def get_summary(self, days: int = 30) -> dict:
+        """Get aggregated analytics for the last N days.
+
+        Returns only aggregated, non-identifiable counts.
+        No IP hashes, no individual request records.
+        """
+        # Load historical data from JSONL
+        historical = {"total_api_calls": 0, "unique_sessions": 0,
+                      "findings_served": 0, "pipeline_cycles": 0,
+                      "finding_types": defaultdict(int),
+                      "endpoint_counts": defaultdict(int),
+                      "days_active": 0}
+
+        if ANALYTICS_PATH.exists():
+            try:
+                with open(ANALYTICS_PATH) as f:
+                    lines = [l.strip() for l in f if l.strip()]
+                # Only last N days
+                for line in lines[-days:]:
+                    try:
+                        day_data = json.loads(line)
+                        historical["total_api_calls"] += day_data.get("total_api_calls", 0)
+                        historical["unique_sessions"] += day_data.get("unique_sessions", 0)
+                        historical["findings_served"] += day_data.get("findings_served", 0)
+                        historical["pipeline_cycles"] += day_data.get("pipeline_cycles", 0)
+                        historical["days_active"] += 1
+                        for k, v in day_data.get("finding_types_served", {}).items():
+                            historical["finding_types"][k] += v
+                        for k, v in day_data.get("endpoint_counts", {}).items():
+                            historical["endpoint_counts"][k] += v
+                    except (json.JSONDecodeError, ValueError):
+                        pass
+            except (OSError, ValueError):
+                pass
+
+        # Add current (in-memory) day
+        current_day = {
+            "total_api_calls": self._total_api_calls,
+            "unique_sessions": len(self._daily_sessions),
+            "findings_served": self._total_findings_served,
+            "pipeline_cycles": self._pipeline_cycles,
+        }
+
+        total_api = historical["total_api_calls"] + current_day["total_api_calls"]
+        total_sessions = historical["unique_sessions"] + current_day["unique_sessions"]
+        total_findings = historical["findings_served"] + current_day["findings_served"]
+        total_cycles = historical["pipeline_cycles"] + current_day["pipeline_cycles"]
+
+        # Merge finding types
+        all_finding_types = dict(historical["finding_types"])
+        for k, v in self._finding_types.items():
+            all_finding_types[k] = all_finding_types.get(k, 0) + v
+
+        all_endpoint_counts = dict(historical["endpoint_counts"])
+        for k, v in self._endpoint_counts.items():
+            all_endpoint_counts[k] = all_endpoint_counts.get(k, 0) + v
+
+        uptime_seconds = time.time() - self._start_time
+        days_active = historical["days_active"] + 1  # +1 for today
+
+        return {
+            "period_days": days,
+            "days_active": days_active,
+            "uptime_seconds": round(uptime_seconds, 1),
+            "total_api_calls": total_api,
+            "total_unique_sessions": total_sessions,
+            "avg_daily_sessions": round(total_sessions / max(days_active, 1), 1),
+            "total_findings_served": total_findings,
+            "total_pipeline_cycles": total_cycles,
+            "finding_type_distribution": all_finding_types,
+            "endpoint_distribution": all_endpoint_counts,
+            "current_day": current_day,
+            "privacy_notice": (
+                "Anonymous only. No cookies, no fingerprinting, "
+                "no wallet addresses, no PII. IPs are SHA256-hashed "
+                "and discarded after daily rollup."
+            ),
+        }
+
+
+_analytics = _Analytics()
 
 
 def get_pipeline() -> MantleIntelPipeline:
@@ -193,6 +362,11 @@ async def findings(request: Request, limit: int = 20):
             structlog.get_logger("server").warning(
                 "findings_jsonl_parse_error", error=str(exc))
 
+    # P3-30: Track finding types served (anonymous analytics)
+    for f in parsed:
+        _analytics.record_finding_type(f.get("type", "unknown"))
+    _analytics.record_finding_served(len(parsed))
+
     return JSONResponse(content={"findings": list(reversed(parsed)), "total": len(lines)})
 
 
@@ -211,6 +385,25 @@ async def stats(request: Request):
     """Pipeline stats."""
     pipeline = get_pipeline()
     return JSONResponse(content=pipeline.get_stats())
+
+
+# P3-30: Anonymous usage analytics endpoint
+@app.get("/api/analytics/summary")
+@limiter.limit("30/minute")
+async def analytics_summary(request: Request, days: int = 30):
+    """P3-30: Anonymous usage analytics — aggregated, non-identifiable stats.
+
+    Privacy notice: No cookies, no fingerprinting, no wallet addresses,
+    no PII. Client IPs are SHA256-hashed immediately and discarded after
+    daily rollup. Only aggregated counts are stored and served.
+
+    Returns DAU/MAU proxies (unique session hashes per day/month).
+    """
+    if days < 1:
+        days = 1
+    if days > 365:
+        days = 365
+    return JSONResponse(content=_analytics.get_summary(days=days))
 
 
 @app.post("/api/run-cycle")

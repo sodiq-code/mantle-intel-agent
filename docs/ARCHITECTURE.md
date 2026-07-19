@@ -203,4 +203,6 @@ Wilson 95% CI for recall: [0.697, 0.985]
 
 *GitHub:* https://github.com/sodiq-code/mantle-intel-agent  
 *Dashboard:* https://mantle-intel-agent.vercel.app  
-*Network:* Mantle Sepolia Testnet (chainId: 5003)
+*Network:* Mantle Sepolia Testnet (chainId: 5003)  
+*Model Card:* [MODEL_CARD.md](./MODEL_CARD.md)  
+*Judge Walkthrough:* [JUDGES.md](./JUDGES.md)

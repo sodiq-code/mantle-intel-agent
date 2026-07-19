@@ -29,7 +29,9 @@
 
 ### Infrastructure
 - [ ] **Mainnet contract deployment** — `MantleIntelAudit.sol` on Mantle mainnet (address TBD)
-- [ ] **Subgraph indexer** — The Graph subgraph on Mantle for fast historical query (<50ms vs RPC 2-5s)
+- [ ] **Subgraph indexer** — Ponder indexer on Mantle for fast historical query (<50ms vs RPC 2-5s) — [see subgraph/ and ponder/ directories](../subgraph/README.md)
+- [ ] **SLSA Level 2** — GitHub Actions CI/CD + cosign container signing + SBOM generation — [see SECURITY.md](./SECURITY.md)
+- [ ] **Multi-sig agent wallet** — Gnosis Safe 2-of-3 for `authorizedAgent` role — [see MULTISIG.md](./MULTISIG.md)
 - [ ] **Dedicated RPC** — Upgrade from public `rpc.mantle.xyz` to Alchemy/QuickNode dedicated node
 - [ ] **Redis cache layer** — Block cache + finding deduplication at scale (10k+ blocks/day)
 - [ ] **PostgreSQL persistence** — Replace in-memory deque with durable finding storage

@@ -1,0 +1,57 @@
+# ── P3-28: The Graph Subgraph for MantleIntelAudit ─────────────────────────────
+#
+# This subgraph indexes FindingRecorded and IntelFeedSubscription (P3-33) events
+# from the MantleIntelAudit contract, enabling <50ms historical queries.
+#
+# IMPORTANT: The Graph does not currently support Mantle natively.
+# For Mantle deployment, use the Ponder indexer (see ../ponder/ directory).
+# This subgraph.yaml works on The Graph's hosted service for chains that
+# support it (Ethereum, Arbitrum, Optimism, etc.) and can be used when
+# Mantle is added to The Graph's supported chains.
+#
+# Deploy to The Graph:
+#   graph create sodiq-code/mantle-intel-audit --node https://api.thegraph.com/deploy/
+#   graph deploy sodiq-code/mantle-intel-audit --ipfs https://api.thegraph.com/ipfs/ --node https://api.thegraph.com/deploy/
+#
+# For Mantle, use Ponder instead:
+#   cd ponder && bun install && bun run dev
+
+specVersion: 0.0.5
+description: >
+  Mantle Intel Agent — On-chain audit trail indexer.
+  Indexes FindingRecorded and IntelFeedSubscription events from MantleIntelAudit.sol
+  for fast historical queries (<50ms vs RPC 2-5s).
+repository: https://github.com/sodiq-code/mantle-intel-agent
+schema:
+  file: ./schema.graphql
+
+dataSources:
+  - kind: ethereum
+    name: MantleIntelAudit
+    network: mantle-sepolia
+    source:
+      address: "0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b"
+      abi: MantleIntelAudit
+      startBlock: 39815592
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      file: ./mapping.ts
+      entities:
+        - Finding
+        - Subscription
+        - Agent
+        - DailyStats
+      abis:
+        - name: MantleIntelAudit
+          file: ../contracts/artifacts/contracts/src/MantleIntelAudit.sol/MantleIntelAudit.json
+      eventHandlers:
+        - event: FindingRecorded(uint256 indexed findingId, bytes32 indexed findingHash, string anomalyType, uint8 confidenceScore, uint256 blockHeight, address indexed recorder, uint256 timestamp)
+          handler: handleFindingRecorded
+        - event: AgentRegistered(address indexed agent, string agentName)
+          handler: handleAgentRegistered
+        - event: IntelFeedSubscription(address indexed subscriber, string subscriptionType, uint256 timestamp)
+          handler: handleIntelFeedSubscription
+        - event: IntelFeedDelivery(uint256 indexed findingId, address indexed subscriber, uint256 timestamp)
+          handler: handleIntelFeedDelivery
