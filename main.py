@@ -58,11 +58,12 @@ def _send_telegram_direct(incident: dict):
     payload = json.dumps({"chat_id": chat_id, "text": text, "parse_mode": "Markdown"}).encode()
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     try:
-        ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
         req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
-        urllib.request.urlopen(req, timeout=10, context=ctx)
+        urllib.request.urlopen(req, timeout=10)
+    except ssl.SSLError as e:
+        # TLS cert validation failure — do not silently skip
+        print(f"⚠️  TLS verification failed for Telegram API: {e}")
+        print("   Fix: Update CA certificates or set REQUESTS_CA_BUNDLE")
     except Exception:
         pass  # Best-effort alert
 

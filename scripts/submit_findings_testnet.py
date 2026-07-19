@@ -3,7 +3,7 @@
 On-chain persistence utility — commits live pipeline findings to Mantle Sepolia.
 
 The autonomous pipeline detects anomalies from live Mantle mainnet RPC blocks.
-This script takes the initial seed findings (5 verified detections from the
+This script takes the initial seed findings (4 verified detections from the
 Jun 11 2026 backtest run, blocks 96526083–96526552) and records their
 SHA-256 hashes on MantleIntelAudit.sol, establishing the on-chain audit trail.
 
@@ -26,11 +26,11 @@ from datetime import datetime, timezone
 ROOT = Path(__file__).resolve().parent.parent
 
 # ── findings to submit ────────────────────────────────────────────────────────
-# 5 real findings from the live backtest (mainnet blocks, Jun 11 2026)
+# 4 real findings from the live backtest (mainnet blocks, Jun 11 2026)
+# NOTE: Finding at block 96526517 (confidence=0.71) removed — below 0.75 threshold
 FINDINGS_TO_SUBMIT = [
     {"block": 96526450, "type": "tx_spike",    "confidence": 0.90, "tx_count": 13},
     {"block": 96526083, "type": "tx_spike",    "confidence": 0.76, "tx_count": 6},
-    {"block": 96526517, "type": "value_spike", "confidence": 0.71, "tx_count": 5, "value_mnt": 202.9},
     {"block": 96526552, "type": "tx_spike",    "confidence": 0.76, "tx_count": 6},
     {"block": 96526386, "type": "tx_spike",    "confidence": 0.76, "tx_count": 6},
 ]
@@ -87,11 +87,8 @@ CONTRACT_ABI = [
 
 
 def finding_hash(f: dict) -> bytes:
-    canonical = json.dumps({
-        "block": f["block"],
-        "type": f["type"],
-        "confidence": f["confidence"],
-    }, sort_keys=True)
+    """Hash must match AnomalyFinding.sha256_hash() — canonical JSON over ALL fields."""
+    canonical = json.dumps(f, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(canonical.encode()).digest()
 
 

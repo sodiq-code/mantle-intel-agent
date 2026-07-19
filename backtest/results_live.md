@@ -11,6 +11,23 @@
 > numbers below should be treated as **preliminary methodology validation only**,
 > not as validated production metrics.
 
+> **🔄 UPDATED — Extended Backtest (June 11, 2026)**
+>
+> An extended backtest across **395 real Mantle mainnet blocks** (96,526,081 → 96,526,580)
+> has been completed with **14 ground truth events**. Results:
+>
+> | Metric | Value |
+> |--------|-------|
+> | Precision | 100% (0 FP) |
+> | Recall | 92.9% (13/14) |
+> | F1 | 0.963 |
+> | TP | 13 |
+> | FP | 0 |
+> | FN | 1 |
+>
+> See `backtest/results_live.json` for the full dataset.
+> The original 100-block seed=42 results are preserved below for reproducibility reference.
+
 **Last updated:** June 12, 2026  
 **Methodology:** Deterministic backtest on live Mantle RPC data with 5 injected ground truth events  
 **Reproducibility:** Fixed seed=42 — run `python backtest/backtest_live.py` to verify

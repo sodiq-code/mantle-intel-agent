@@ -13,7 +13,6 @@ from __future__ import annotations
 import os
 import json
 import time
-import asyncio
 from dataclasses import dataclass, asdict
 from typing import Optional
 import structlog

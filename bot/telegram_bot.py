@@ -24,6 +24,8 @@ except ImportError:
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
+from config import CONTRACT_ADDRESS
+
 
 WELCOME_MSG = """
 🔍 <b>Mantle Intel Agent v2.0</b>
@@ -39,7 +41,7 @@ Every finding verified on-chain via MantleIntelAudit.sol.
 /verify &lt;hash&gt;  — Verify a finding hash on-chain
 /compare &lt;type&gt; — Compare signal history (whale|smart_money|cex|mev|all)
 
-<b>Contract:</b> <code>0x7fAb1E37d992109d3aA747703436ff4e261391b7</code>
+<b>Contract:</b> <code>0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b</code>
 <b>Network:</b> Mantle Sepolia Testnet
 
 <i>Mantle Intel Agent — On-Chain Intelligence for the Mantle Ecosystem</i>

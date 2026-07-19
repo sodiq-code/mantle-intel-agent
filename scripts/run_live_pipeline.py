@@ -46,11 +46,8 @@ log = logging.getLogger("pipeline")
 # ── agent imports ─────────────────────────────────────────────────────────────
 sys.path.insert(0, str(ROOT))
 try:
-    from agents.collector.collector_agent    import CollectorAgent
-    from agents.anomaly.anomaly_agent        import AnomalyAgent
-    from agents.smart_money.smart_money_agent import SmartMoneyAgent
-    from agents.audit.audit_agent            import AuditAgent
-    from bot.telegram_bot                    import MantleIntelBot as TelegramBot
+    from agents.pipeline import MantleIntelPipeline
+    from bot.telegram_bot import MantleIntelBot as TelegramBot
     AGENTS_OK = True
 except ImportError as e:
     log.warning(f"Agent import issue: {e} — running in lightweight mode")
@@ -134,34 +131,47 @@ def lightweight_cycle(state: dict, rpc_url: str) -> dict:
     return findings
 
 
-# ── full agent cycle ──────────────────────────────────────────────────────────
-def full_agent_cycle(state: dict) -> dict:
-    """Run all 5 agents in sequence."""
-    collector   = CollectorAgent()
-    anomaly     = AnomalyAgent()
-    smartmoney  = SmartMoneyAgent()
-    audit       = AuditAgent()
+# ── full agent cycle (delegates to MantleIntelPipeline) ──────────────────────
+_pipeline_instance = None
 
-    # 1. collect
-    blocks = collector.collect(blocks=20)
-    # 2. detect
-    findings = anomaly.detect(blocks)
-    # 3. enrich
+def full_agent_cycle(state: dict) -> list:
+    """Delegate to MantleIntelPipeline.run_cycle() which orchestrates all 5 agents correctly."""
+    global _pipeline_instance
+    if _pipeline_instance is None:
+        _pipeline_instance = MantleIntelPipeline(
+            poll_interval=30,
+            blocks_per_cycle=20,
+        )
+    # run_cycle is async — run it in an event loop
+    import asyncio
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            # If there's already a running loop (unlikely in this script), use nest_asyncio
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                findings = pool.submit(asyncio.run, _pipeline_instance.run_cycle()).result()
+        else:
+            findings = loop.run_until_complete(_pipeline_instance.run_cycle())
+    except RuntimeError:
+        findings = asyncio.run(_pipeline_instance.run_cycle())
+
+    # Convert AnomalyFinding objects to dicts for persistence
+    result = []
     for f in findings:
-        f["smart_money"] = smartmoney.enrich(f)
-    # 4. audit write (if private key available)
-    if os.environ.get("PRIVATE_KEY"):
-        for f in findings:
-            try:
-                tx = audit.submit_finding(f)
-                if tx:
-                    f["tx_hash"] = tx
-                    state["on_chain_writes"] = state.get("on_chain_writes", 0) + 1
-                    log.info(f"On-chain finding written: {tx}")
-            except Exception as e:
-                log.warning(f"Audit write failed: {e}")
+        if hasattr(f, 'to_dict'):
+            result.append(f.to_dict())
+        elif isinstance(f, dict):
+            result.append(f)
+        else:
+            result.append({"type": "unknown", "data": str(f)})
 
-    return findings
+    if result:
+        state["on_chain_writes"] = state.get("on_chain_writes", 0) + sum(
+            1 for f in result if f.get("audit", {}).get("status") in ("recorded", "demo")
+        )
+
+    return result
 
 
 # ── persist findings ──────────────────────────────────────────────────────────
@@ -189,7 +199,7 @@ def send_telegram(findings: list):
             f"🔍 *Mantle Intel Alert*\n"
             f"Block: `{f.get('block','?')}`\n"
             f"Type: `{f.get('type','?')}`\n"
-            f"Confidence: `{f.get('confidence',0):.1%}`\n"
+            f"Confidence: `{f.get('confidence_pct', f.get('confidence', 0))}%`\n"
             f"TXs: `{f.get('tx_count','?')}`"
         )
         payload = json.dumps({

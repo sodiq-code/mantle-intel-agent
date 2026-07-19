@@ -13,11 +13,10 @@ v2.0 changes:
 Results written to backtest/results.md — required for verifiability score.
 """
 from __future__ import annotations
-from agents.anomaly.anomaly_agent import AnomalyAgent, AnomalyFinding, CONFIDENCE_THRESHOLD
-from agents.collector.collector_agent import CollectorAgent, BlockSummary
+from agents.anomaly.anomaly_agent import AnomalyAgent, CONFIDENCE_THRESHOLD
+from agents.collector.collector_agent import CollectorAgent
 
 import asyncio
-import json
 import os
 import time
 from datetime import datetime, timezone

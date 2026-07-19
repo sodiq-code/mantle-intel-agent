@@ -14,6 +14,8 @@ import urllib.error
 from datetime import datetime, timezone
 import structlog
 
+from config import CONTRACT_ADDRESS
+
 logger = structlog.get_logger(__name__)
 
 ANOMALY_COLORS = {
@@ -35,7 +37,7 @@ ANOMALY_LABELS = {
 }
 
 EXPLORER = "https://sepolia.mantlescan.xyz"
-CONTRACT = os.getenv("AUDIT_CONTRACT_ADDRESS", "0x7fAb1E37d992109d3aA747703436ff4e261391b7")
+CONTRACT = os.getenv("AUDIT_CONTRACT_ADDRESS", CONTRACT_ADDRESS)
 
 
 class DiscordWebhook:

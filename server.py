@@ -49,8 +49,15 @@ async def api_key_middleware(request: Request, call_next):
     # Allow static assets and root (React app) without API key
     if request.url.path.startswith("/api/"):
         if not API_KEY:
-            # If no API key is configured, warn but allow (for local testing without strict mode)
-            pass
+            env = os.getenv("ENV", "development")
+            if env == "production":
+                return JSONResponse(
+                    status_code=503,
+                    content={"error": "Service unavailable: API_KEY not configured in production"}
+                )
+            # In development mode, allow without key (with warning)
+            import structlog as _sl
+            _sl.get_logger().warning("api_key_not_set", msg="API_KEY not set — running in open mode (development only)")
         else:
             provided_key = request.headers.get("X-API-KEY")
             if provided_key != API_KEY:

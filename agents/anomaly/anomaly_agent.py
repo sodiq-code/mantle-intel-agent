@@ -46,11 +46,7 @@ try:
 except ImportError:
     SKLEARN_AVAILABLE = False
 
-try:
-    from scipy import stats as scipy_stats
-    SCIPY_AVAILABLE = True
-except ImportError:
-    SCIPY_AVAILABLE = False
+# scipy is not used in this module; removed to fix F401
 
 # ── Tunable thresholds ───────────────────────────────────────────────────────
 CONFIDENCE_THRESHOLD = 0.75   # v2: raised from 0.60 → 0.75 (precision fix)

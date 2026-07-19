@@ -17,8 +17,7 @@ from __future__ import annotations
 
 import os
 import json
-import time
-from typing import Optional
+
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -344,7 +343,7 @@ Name specific Mantle protocols: Merchant Moe, Lendle, Agni Finance, mETH, Fusion
                 investment_signal=getattr(
                     finding, "investment_signal", "Monitor for follow-on activity."),
             )
-        except KeyError as e:
+        except KeyError:
             return DEFAULT_TEMPLATE.format(
                 block_height=finding.block_height,
                 description=finding.description,

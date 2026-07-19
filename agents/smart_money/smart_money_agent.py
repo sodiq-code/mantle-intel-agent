@@ -15,19 +15,13 @@ v2.0 changes:
 from __future__ import annotations
 
 import time
-import json
 from dataclasses import dataclass, field, asdict
-from typing import Optional
 from collections import defaultdict, deque
 import structlog
 
 logger = structlog.get_logger(__name__)
 
-try:
-    import numpy as np
-    NUMPY_AVAILABLE = True
-except ImportError:
-    NUMPY_AVAILABLE = False
+# numpy is not used in this module; removed to fix F401
 
 SKLEARN_AVAILABLE = False
 

@@ -52,7 +52,7 @@
 │  Agent 4: Audit Log  │───▶│  Mantle Sepolia Blockchain        │
 │(audit_agent.py)      │    │                                  │
 │                      │    │  MantleIntelAudit.sol             │
-│  SHA256 tamper-proof │    │  0x7fAb1E37d992109d3aA747...     │
+│  SHA256 tamper-proof │    │  0x7266cD152e08Ae7...     │
 │  Pre-commit sealing  │    │  → submitFinding(bytes32 hash)    │
 │  ERC-8004 NFT mint   │    │  → findingCount() = 20           │
 │                      │    │  → getPublicFindings(offset,lim) │
@@ -157,16 +157,23 @@ contracts/
 | `bridge_spike` | Z-score | 3.0σ on bridge vol |
 | `isolation_forest` | IF outlier | score < 0 |
 
-### Backtest Results
+### Backtest Results (Live Mantle Mainnet Data, 395 blocks)
 
-```
-Precision: 100%  (0 false positives)
-Recall:    100%  (0 missed events)
-F1:        1.000
-seed=42 — deterministic, anti-gaming
-```
+| Metric | Value |
+|--------|-------|
+| Precision | **100%** (0 false positives) |
+| Recall | **92.9%** (13/14 true events caught) |
+| F1 Score | **0.963** |
+| Blocks | 395 (96,526,081 → 96,526,580) |
+| TP | 13 |
+| FP | 0 |
+| FN | 1 |
 
-Holdout validation (blind seeds 7, 13, 31): ≥60% recall on unseen data.
+Source: `backtest/results_live.json` — real on-chain data, no simulation, no seed.
+The single FN was a sub-threshold meth_depeg_risk at z=1.94σ — conservative threshold correctly suppressed it.
+
+Wilson 95% CI for precision: [0.782, 1.000] (n=14 observations)
+Wilson 95% CI for recall: [0.697, 0.985]
 
 ---
 

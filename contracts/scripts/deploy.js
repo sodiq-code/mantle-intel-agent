@@ -13,7 +13,7 @@
  *   3. npx hardhat run scripts/deploy.js --network mantle
  *
  * Current Status:
- *   Testnet deployed: 0x7fAb1E37d992109d3aA747703436ff4e261391b7
+ *   Testnet deployed: 0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b
  *   Mainnet: Ready to deploy — requires MNT for gas
  */
 

@@ -24,11 +24,9 @@ import argparse
 import json
 import time
 import statistics
-import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 import sys
-import os
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -39,18 +37,13 @@ except ImportError:
     HTTPX_OK = False
 
 try:
-    import numpy as np
     from sklearn.ensemble import IsolationForest
     from sklearn.preprocessing import StandardScaler
     SKLEARN_OK = True
 except ImportError:
     SKLEARN_OK = False
 
-try:
-    from scipy import stats as scipy_stats
-    SCIPY_OK = True
-except ImportError:
-    SCIPY_OK = False
+# scipy is not used in this module; removed to fix F401
 
 MAINNET_RPC = "https://rpc.mantle.xyz"
 TESTNET_RPC = "https://rpc.sepolia.mantle.xyz"

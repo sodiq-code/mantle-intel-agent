@@ -13,12 +13,9 @@ Falls back to demo/simulation mode when no RPC is reachable.
 from __future__ import annotations
 import os as _os
 
-import asyncio
-import json
 import os
 import time
 import hashlib
-from datetime import datetime, timezone
 from typing import Any, Optional
 import structlog
 
