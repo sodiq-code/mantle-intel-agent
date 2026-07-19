@@ -7,6 +7,27 @@ on:
     branches: [main]
 
 jobs:
+  smoke-test:
+    name: Import Smoke Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install all dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Verify main.py imports cleanly
+        run: python -c "import main"
+
+      - name: Verify CLI help works
+        run: python main.py --help
+
   test:
     name: Python Tests
     runs-on: ubuntu-latest

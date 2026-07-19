@@ -140,12 +140,14 @@ class DiscordWebhook:
 
         fields.append({"name": "Contract", "value": f"[{CONTRACT[:10]}...]({EXPLORER}/address/{CONTRACT})", "inline": False})
 
+        color = color_map.get(state, 0x6B7280)  # Default gray if no match
+
         return {
             "username": "Mantle Intel Agent",
             "avatar_url": "https://raw.githubusercontent.com/sodiq-code/mantle-intel-agent/main/docs/logo_480.png",
             "embeds": [{
                 "title": label,
-                "description": insight,
+                "description": desc,
                 "color": color,
                 "fields": fields,
                 "footer": {

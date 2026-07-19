@@ -113,13 +113,14 @@ class AuditAgent:
         rpc_url: Optional[str] = None,
         private_key: Optional[str] = None,
         network: str = None,
+        keystore_path: Optional[str] = None,
+        keystore_password: Optional[str] = None,
     ):
         self.contract_address = contract_address or os.getenv(
             "AUDIT_CONTRACT_ADDRESS", "")
         self.rpc_url = rpc_url or os.getenv(
             "AUDIT_RPC_URL", os.getenv(
             "MANTLE_TESTNET_RPC", "https://rpc.sepolia.mantle.xyz"))
-        self.private_key = private_key or os.getenv("AGENT_PRIVATE_KEY", "")
         self.network = network or os.getenv("NETWORK", "testnet")
         self._w3: Optional[object] = None
         self._contract = None
@@ -127,7 +128,67 @@ class AuditAgent:
         self._audit_log: list[AuditRecord] = []
         self.logger = logger.bind(agent="audit")
 
+        # ── Private key resolution: keystore first, env fallback ───────────
+        # Priority:
+        #   1. Explicit private_key parameter (for testing / programmatic use)
+        #   2. Encrypted keystore (KEYSTORE_PATH + KEYSTORE_PASSWORD)
+        #   3. AGENT_PRIVATE_KEY env var (legacy / CI fallback, deprecated)
+        self.private_key = self._resolve_private_key(
+            private_key, keystore_path, keystore_password)
+
         self._init_web3()
+
+    def _resolve_private_key(
+        self,
+        explicit_key: Optional[str],
+        keystore_path: Optional[str],
+        keystore_password: Optional[str],
+    ) -> str:
+        """Resolve the private key from keystore or environment.
+
+        Loads from encrypted EIP-2335 keystore by preference (the
+        documented, secure path). Falls back to the AGENT_PRIVATE_KEY
+        environment variable with a deprecation warning so existing CI
+        configurations keep working.
+        """
+        # 1. Explicit parameter (e.g. unit tests passing a key directly)
+        if explicit_key:
+            return explicit_key
+
+        # 2. Encrypted keystore (preferred — matches README / ARCHITECTURE)
+        ks_path = keystore_path or os.getenv("KEYSTORE_PATH", "keystore.json")
+        ks_pass = keystore_password or os.getenv("KEYSTORE_PASSWORD", "")
+
+        if ks_pass and os.path.isfile(ks_path):
+            try:
+                from eth_account import Account
+                with open(ks_path) as f:
+                    encrypted_key = f.read()
+                pk = Account.decrypt(encrypted_key, ks_pass)
+                self.logger.info("keystore_loaded",
+                                 path=ks_path,
+                                 msg="Private key loaded from encrypted keystore")
+                if isinstance(pk, bytes):
+                    pk = "0x" + pk.hex()
+                return pk
+            except Exception as e:
+                self.logger.warning("keystore_decrypt_failed",
+                                    path=ks_path,
+                                    error=str(e),
+                                    msg="Falling back to AGENT_PRIVATE_KEY env var")
+
+        # 3. Legacy: plaintext env var (still used in CI until keystore is set up)
+        env_key = os.getenv("AGENT_PRIVATE_KEY", "")
+        if env_key:
+            self.logger.warning(
+                "keystore_not_used",
+                msg="AGENT_PRIVATE_KEY env var is deprecated. "
+                    "Use encrypted keystore (KEYSTORE_PATH + KEYSTORE_PASSWORD) "
+                    "for production. See scripts/generate_keystore.py.")
+            return env_key
+
+        # No key available — pipeline will fail in _init_web3 with clear error
+        return ""
 
     def _init_web3(self):
         if not WEB3_AVAILABLE:
@@ -135,8 +196,14 @@ class AuditAgent:
             raise ImportError("web3 is required for audit agent")
 
         if not self.contract_address or not self.private_key:
-            self.logger.error("missing_config", msg="CONTRACT_ADDRESS or AGENT_PRIVATE_KEY not set")
-            raise ValueError("Missing contract address or private key")
+            self.logger.error("missing_config",
+                              msg="CONTRACT_ADDRESS or private key not configured. "
+                              "Set KEYSTORE_PATH + KEYSTORE_PASSWORD (preferred) or "
+                              "AGENT_PRIVATE_KEY (legacy) environment variables.")
+            raise ValueError(
+                "Missing contract address or private key. "
+                "Configure via KEYSTORE_PATH + KEYSTORE_PASSWORD (preferred) or "
+                "AGENT_PRIVATE_KEY (legacy). See scripts/generate_keystore.py.")
 
         try:
             self._w3 = Web3(Web3.HTTPProvider(
@@ -184,14 +251,14 @@ class AuditAgent:
             record.audit_status = "recorded"
             self.logger.info("finding_recorded_on_chain",
                              finding_id=finding.finding_id,
-                                 tx=tx_hash,
-                                 on_chain_id=on_chain_id)
-            except Exception as e:
-                record.audit_status = "failed"
-                record.error = str(e)
-                self.logger.error("audit_record_failed",
-                                  finding_id=finding.finding_id,
-                                  error=str(e))
+                             tx=tx_hash,
+                             on_chain_id=on_chain_id)
+        except Exception as e:
+            record.audit_status = "failed"
+            record.error = str(e)
+            self.logger.error("audit_record_failed",
+                              finding_id=finding.finding_id,
+                              error=str(e))
 
         self._audit_log.append(record)
         return record
