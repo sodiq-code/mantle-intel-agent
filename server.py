@@ -297,7 +297,7 @@ async def health():
 
     # 1. RPC connectivity check
     try:
-        if pipeline.audit._w3 and pipeline.audit._w3.is_connected():
+        if pipeline.audit._w3 and await asyncio.to_thread(pipeline.audit._w3.is_connected):
             checks["rpc"] = True
     except Exception as exc:
         structlog.get_logger("health").warning("rpc_check_failed", error=str(exc))
@@ -305,7 +305,7 @@ async def health():
     # 2. Contract reachability check
     try:
         if pipeline.audit._contract:
-            pipeline.audit._contract.functions.findingCount().call()
+            await asyncio.to_thread(pipeline.audit._contract.functions.findingCount().call)
             checks["contract"] = True
     except Exception as exc:
         structlog.get_logger("health").warning("contract_check_failed", error=str(exc))
@@ -423,15 +423,21 @@ async def run_cycle(request: Request, background_tasks: BackgroundTasks = None):
 
 @app.on_event("startup")
 async def startup():
-    """Start pipeline loop on server start."""
+    """Start pipeline loop on server start.
+
+    Pipeline init is deferred to a background task so it doesn't
+    block the server startup (the collector's _init_web3() makes
+    synchronous RPC calls).
+    """
     global _pipeline_task
-    pipeline = get_pipeline()
 
     async def run():
         try:
+            # Initialise pipeline inside the task to avoid blocking startup
+            pipeline = get_pipeline()
             await pipeline.run_continuous()
         except Exception as e:
-            print(f"Pipeline error: {e}")
+            structlog.get_logger("server").error("pipeline_error", error=str(e))
 
     _pipeline_task = asyncio.create_task(run())
 

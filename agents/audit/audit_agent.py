@@ -10,6 +10,7 @@ Anyone can independently verify any agent decision against the contract.
 """
 from __future__ import annotations
 
+import asyncio
 import os
 import json
 import time
@@ -241,11 +242,11 @@ class AuditAgent:
     async def record_finding(self, finding) -> AuditRecord:
         """Record a single finding on-chain. Returns AuditRecord."""
         # P2-16: OpenTelemetry span for audit recording
-        span_cm = None
+        # Use start_span (not start_as_current_span) to avoid contextvars
+        # issues when running inside asyncio.create_task or background threads.
         span = None
         if _otel_tracer:
-            span_cm = _otel_tracer.start_as_current_span("audit.record_finding")
-            span = span_cm.__enter__()
+            span = _otel_tracer.start_span("audit.record_finding")
             span.set_attribute("audit.finding_id", finding.finding_id)
             span.set_attribute("audit.anomaly_type", finding.anomaly_type)
             span.set_attribute("audit.confidence", finding.confidence)
@@ -294,17 +295,25 @@ class AuditAgent:
         self._audit_log.append(record)
 
         # P2-16: End OpenTelemetry span
-        if span_cm:
-            if span:
-                span.set_attribute("audit.audit_status", record.audit_status)
-                if record.on_chain_tx:
-                    span.set_attribute("audit.tx_hash", record.on_chain_tx)
-            span_cm.__exit__(None, None, None)
+        if span:
+            span.set_attribute("audit.audit_status", record.audit_status)
+            if record.on_chain_tx:
+                span.set_attribute("audit.tx_hash", record.on_chain_tx)
+            span.end()
 
         return record
 
     async def _submit_to_chain(self, finding, finding_hash: str) -> tuple[str, int]:
-        """Submit finding to MantleIntelAudit.sol. Returns (tx_hash, on_chain_id)."""
+        """Submit finding to MantleIntelAudit.sol. Returns (tx_hash, on_chain_id).
+
+        Delegates synchronous web3 calls to a thread via asyncio.to_thread
+        so the event loop is not blocked while waiting for the on-chain tx.
+        """
+        return await asyncio.to_thread(
+            self._submit_to_chain_sync, finding, finding_hash)
+
+    def _submit_to_chain_sync(self, finding, finding_hash: str) -> tuple[str, int]:
+        """Synchronous on-chain submission (runs in a worker thread)."""
         hash_bytes = bytes.fromhex(finding_hash)
         confidence_int = int(finding.confidence * 100)
 
@@ -360,18 +369,24 @@ class AuditAgent:
             return {"verified": False, "error": "No contract"}
 
         try:
-            hash_bytes = bytes.fromhex(finding_hash.lstrip("0x"))
-            result = self._contract.functions.verifyFinding(hash_bytes).call()
-            return {
-                "verified":   result[0],
-                "finding_id": result[1],
-                "timestamp":  result[2],
-                "confidence": result[3],
-                "hash":       finding_hash,
-                "explorer":   f"https://mantlescan.xyz/address/{self.contract_address}",
-            }
+            result = await asyncio.to_thread(
+                self._verify_finding_sync, finding_hash)
+            return result
         except Exception as e:
             return {"verified": False, "error": str(e)}
+
+    def _verify_finding_sync(self, finding_hash: str) -> dict:
+        """Synchronous contract verification (runs in a worker thread)."""
+        hash_bytes = bytes.fromhex(finding_hash.lstrip("0x"))
+        result = self._contract.functions.verifyFinding(hash_bytes).call()
+        return {
+            "verified":   result[0],
+            "finding_id": result[1],
+            "timestamp":  result[2],
+            "confidence": result[3],
+            "hash":       finding_hash,
+            "explorer":   f"https://mantlescan.xyz/address/{self.contract_address}",
+        }
 
     async def get_chain_stats(self) -> dict:
         """Get total findings count from contract."""
@@ -381,7 +396,8 @@ class AuditAgent:
                         "error": "Demo mode — on-chain stats unavailable"}
             return {"total_findings": 0, "error": "No contract"}
         try:
-            count = self._contract.functions.findingCount().call()
+            count = await asyncio.to_thread(
+                self._contract.functions.findingCount().call)
             return {"total_findings": count, "contract": self.contract_address}
         except Exception as e:
             return {"total_findings": 0, "error": str(e)}
