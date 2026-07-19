@@ -226,8 +226,10 @@ class CollectorAgent:
 
     # ── Main data collection ──────────────────────────────────────────────────
 
-    async def collect_blocks(self, num_blocks: int = 50) -> list[BlockSummary]:
-        """Collect and summarize the last `num_blocks` blocks."""
+    # P2-18: Sync block collection — runs in a thread via asyncio.to_thread
+    # to avoid blocking the event loop with synchronous web3.py HTTP calls.
+    def _collect_blocks_sync(self, num_blocks: int = 50) -> list[BlockSummary]:
+        """Synchronous block collection (called via asyncio.to_thread)."""
         if not self._w3:
             return []
         summaries = []
@@ -256,6 +258,15 @@ class CollectorAgent:
             self.logger.error("collection_failed", error=str(e))
             return []
         return summaries
+
+    async def collect_blocks(self, num_blocks: int = 50) -> list[BlockSummary]:
+        """Collect and summarize the last `num_blocks` blocks.
+
+        P2-18: Delegates to _collect_blocks_sync via asyncio.to_thread
+        to avoid blocking the event loop with synchronous web3.py calls.
+        """
+        import asyncio
+        return await asyncio.to_thread(self._collect_blocks_sync, num_blocks)
 
     async def poll_protocol_state(self) -> ProtocolStateSnapshot:
         """

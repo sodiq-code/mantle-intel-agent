@@ -56,7 +56,7 @@ contract MantleIntelAudit is Ownable {
     struct Finding {
         bytes32 findingHash;       // SHA256 of full finding JSON (off-chain)
         string  anomalyType;       // e.g. "whale_accumulation", "smart_money_inflow"
-        uint8   confidenceScore;   // 0-100, threshold > 75 required to record
+        uint8   confidenceScore;   // 0-100, threshold >= 75 required to record (P2-23: matches pipeline)
         uint256 blockHeight;       // Mantle block when anomaly was detected
         address recorder;          // agent wallet that submitted
         uint256 timestamp;
@@ -113,6 +113,12 @@ contract MantleIntelAudit is Ownable {
      * @param anomalyType    Human-readable anomaly category
      * @param confidenceScore 0-100 confidence from ML model
      * @param blockHeight    Mantle block number of anomaly
+     *
+     * P2-23: Confidence threshold is 75, matching the off-chain pipeline's
+     *        confidence >= 0.75 filter. This ensures the contract enforces the
+     *        same standard as the pipeline — a direct recordFinding() call with
+     *        confidence below 75 (which the pipeline would reject) is also
+     *        rejected on-chain. Thresholds must stay in sync.
      */
     function recordFinding(
         bytes32 findingHash,
@@ -120,7 +126,7 @@ contract MantleIntelAudit is Ownable {
         uint8   confidenceScore,
         uint256 blockHeight
     ) external onlyAuthorized returns (uint256 findingId) {
-        require(confidenceScore >= 50, "Confidence too low");
+        require(confidenceScore >= 75, "Confidence too low");
         require(hashToFindingId[findingHash] == 0, "Finding already recorded");
         require(bytes(anomalyType).length > 0, "Empty anomaly type");
 

@@ -184,25 +184,129 @@ class InsightAgent:
         else:
             return await self._call_openai_compatible(provider, user_prompt)
 
+    # P2-25: Prompt injection patterns to strip from LLM inputs
+    _INJECTION_PATTERNS = [
+        "ignore previous",
+        "ignore above",
+        "system:",
+        "SYSTEM:",
+        "<|system|>",
+        "[/INST]",
+        "[INST]",
+        "### Instruction",
+        "### System",
+        "You are now",
+        "New instruction",
+        "Override previous",
+    ]
+
+    @staticmethod
+    def _sanitise_for_prompt(value: str, max_len: int = 500) -> str:
+        """P2-25: Sanitise a string for safe inclusion in LLM prompts.
+
+        1. Truncates to max_len characters
+        2. Strips known prompt-injection patterns
+        """
+        if not isinstance(value, str):
+            value = str(value)
+        truncated = value[:max_len]
+        for pattern in InsightAgent._INJECTION_PATTERNS:
+            # Case-insensitive replacement for alphabetic patterns
+            lower = truncated.lower()
+            idx = lower.find(pattern.lower())
+            while idx != -1:
+                truncated = truncated[:idx] + "[REDACTED]" + truncated[idx + len(pattern):]
+                lower = truncated.lower()
+                idx = lower.find(pattern.lower())
+        return truncated
+
+    @staticmethod
+    def _sanitise_metrics(metrics: dict, max_len: int = 500) -> dict:
+        """P2-25: Sanitise raw_metrics dict for prompt inclusion.
+
+        Strips input_data/input fields (raw hex, not useful for LLM,
+        potential injection vector). Truncates string values.
+        """
+        if not isinstance(metrics, dict):
+            return {}
+        clean = {}
+        for k, v in metrics.items():
+            # Strip hex input fields entirely
+            if k in ("input_data", "input", "inputData"):
+                continue
+            if isinstance(v, str):
+                clean[k] = InsightAgent._sanitise_for_prompt(v, max_len)
+            elif isinstance(v, (int, float, bool)):
+                clean[k] = v
+            elif isinstance(v, list):
+                # Truncate lists to 5 items, sanitise each
+                clean[k] = [
+                    InsightAgent._sanitise_for_prompt(str(i), max_len) if isinstance(i, str) else i
+                    for i in v[:5]
+                ]
+            elif isinstance(v, dict):
+                clean[k] = InsightAgent._sanitise_metrics(v, max_len)
+            else:
+                clean[k] = InsightAgent._sanitise_for_prompt(str(v), max_len)
+        return clean
+
+    @staticmethod
+    def _sanitise_transfers(transfers: list, max_len: int = 500) -> list:
+        """P2-25: Sanitise large_transfers for prompt inclusion.
+
+        Strips input_data/input fields from each transfer.
+        Truncates string values. Limits to 3 transfers.
+        """
+        if not isinstance(transfers, list):
+            return []
+        clean = []
+        for t in transfers[:3]:
+            if not isinstance(t, dict):
+                continue
+            ct = {}
+            for k, v in t.items():
+                # Strip hex input fields — not useful for LLM, injection risk
+                if k in ("input_data", "input", "inputData"):
+                    continue
+                if isinstance(v, str):
+                    ct[k] = InsightAgent._sanitise_for_prompt(v, max_len)
+                else:
+                    ct[k] = v
+            clean.append(ct)
+        return clean
+
     def _build_prompt(self, finding) -> str:
-        """Build the user prompt for the LLM."""
+        """Build the user prompt for the LLM.
+
+        P2-25: All user-supplied data is sanitised before injection
+        into the prompt to prevent prompt-injection attacks.
+        """
+        # Sanitise all user-influenced fields before embedding in prompt
+        safe_description = self._sanitise_for_prompt(finding.description)
+        safe_metrics = self._sanitise_metrics(finding.raw_metrics)
+        safe_transfers = self._sanitise_transfers(finding.large_transfers)
+        safe_anomaly_type = self._sanitise_for_prompt(finding.anomaly_type, max_len=64)
+        safe_method = self._sanitise_for_prompt(finding.method, max_len=64)
+        safe_investment_signal = self._sanitise_for_prompt(
+            getattr(finding, 'investment_signal', 'N/A'), max_len=200)
+
         return f"""Generate an institutional intelligence report for this Mantle on-chain anomaly.
 The reader is a portfolio manager at a professional crypto fund making real capital decisions.
 
-Anomaly Type: {finding.anomaly_type}
+Anomaly Type: {safe_anomaly_type}
 Block Height: {finding.block_height}
 Timestamp: {finding.timestamp}
 Confidence: {finding.confidence * 100:.1f}%
-Detection Method: {finding.method}
-Observation: {getattr(finding, 'investment_signal', 'N/A')}
+Detection Method: {safe_method}
+Observation: {safe_investment_signal}
 Affected Protocols: {getattr(finding, 'affected_protocols', [])}
 Lead Time (blocks): {getattr(finding, 'lead_time_blocks', 0)}
 
-Raw Description: {finding.description}
+Raw Description: {safe_description}
 
-Raw Metrics: {json.dumps(finding.raw_metrics, indent=2)}
+Raw Metrics: {json.dumps(safe_metrics, indent=2)}
 
-Large Transfers Involved: {json.dumps(finding.large_transfers[:3], indent=2) if finding.large_transfers else 'None'}
+Large Transfers Involved: {json.dumps(safe_transfers, indent=2) if safe_transfers else 'None'}
 
 Write a 3-5 sentence investment intelligence report. Structure:
 1. The single most actionable insight (lead with specific USD amounts and protocol names)

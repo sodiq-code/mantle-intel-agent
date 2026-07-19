@@ -19,6 +19,12 @@ import structlog
 
 logger = structlog.get_logger(__name__)
 
+# P2-16: OpenTelemetry tracing
+try:
+    from agents.tracing import tracer as _otel_tracer
+except ImportError:
+    _otel_tracer = None
+
 try:
     from web3 import Web3
     from web3.middleware import geth_poa_middleware
@@ -228,6 +234,16 @@ class AuditAgent:
 
     async def record_finding(self, finding) -> AuditRecord:
         """Record a single finding on-chain. Returns AuditRecord."""
+        # P2-16: OpenTelemetry span for audit recording
+        span = None
+        if _otel_tracer:
+            span = _otel_tracer.start_as_current_span("audit.record_finding")
+            span.__enter__()
+            span.set_attribute("audit.finding_id", finding.finding_id)
+            span.set_attribute("audit.anomaly_type", finding.anomaly_type)
+            span.set_attribute("audit.confidence", finding.confidence)
+            span.set_attribute("audit.block_height", finding.block_height)
+
         record = AuditRecord(
             finding_id=finding.finding_id,
             finding_hash=finding.sha256_hash(),
@@ -260,6 +276,14 @@ class AuditAgent:
                               error=str(e))
 
         self._audit_log.append(record)
+
+        # P2-16: End OpenTelemetry span
+        if span:
+            span.set_attribute("audit.audit_status", record.audit_status)
+            if record.on_chain_tx:
+                span.set_attribute("audit.tx_hash", record.on_chain_tx)
+            span.__exit__(None, None, None)
+
         return record
 
     async def _submit_to_chain(self, finding, finding_hash: str) -> tuple[str, int]:
@@ -340,12 +364,60 @@ class AuditAgent:
             return {"total_findings": 0, "error": str(e)}
 
     def save_audit_log(self, path: str = "data/audit_log.jsonl"):
-        """Persist audit log to JSONL."""
+        """Persist audit log to JSONL with rotation (P2-27)."""
         os.makedirs(os.path.dirname(path), exist_ok=True)
+
+        # P2-27: Rotate audit log if it's from a previous day
+        self._rotate_audit_log(path)
+
         with open(path, "a") as f:
             for rec in self._audit_log:
                 f.write(json.dumps(rec.to_dict()) + "\n")
         self._audit_log = []  # flush after save
+
+    @staticmethod
+    def _rotate_audit_log(file_path: str, max_age_days: int = 30) -> None:
+        """P2-27: Rotate audit JSONL files if they are from a previous day."""
+        from pathlib import Path as _Path
+        from datetime import datetime as _dt, timezone as _tz
+        import gzip
+
+        p = _Path(file_path)
+        if not p.exists():
+            return
+
+        mtime = _dt.fromtimestamp(p.stat().st_mtime, tz=_tz.utc)
+        now = _dt.now(tz=_tz.utc)
+
+        if mtime.date() < now.date():
+            date_suffix = mtime.strftime("%Y-%m-%d")
+            rotated_name = p.stem + f"-{date_suffix}" + p.suffix + ".gz"
+            rotated_path = p.parent / rotated_name
+
+            try:
+                with open(p, "rb") as f_in:
+                    with gzip.open(rotated_path, "wb") as f_out:
+                        f_out.writelines(f_in)
+                p.write_text("")
+                logger.info("audit_log_rotated",
+                           original=str(p),
+                           rotated=str(rotated_path))
+            except Exception as e:
+                logger.warning("audit_log_rotation_failed",
+                              path=str(p), error=str(e))
+
+        # Clean up old gzipped files
+        try:
+            for gz_file in p.parent.glob(p.stem + "-*.jsonl.gz"):
+                gz_mtime = _dt.fromtimestamp(
+                    gz_file.stat().st_mtime, tz=_tz.utc)
+                age_days = (now - gz_mtime).days
+                if age_days > max_age_days:
+                    gz_file.unlink()
+                    logger.info("old_audit_log_cleaned",
+                               path=str(gz_file), age_days=age_days)
+        except Exception as e:
+            logger.warning("audit_rotation_cleanup_failed", error=str(e))
 
     @property
     def demo_mode(self) -> bool:

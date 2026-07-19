@@ -27,6 +27,12 @@ from agents.audit.audit_agent import AuditAgent
 from agents.incident import IncidentManager
 from bot.discord_webhook import push_incident as discord_push
 
+# P2-16: OpenTelemetry tracing
+try:
+    from agents.tracing import tracer as _otel_tracer
+except ImportError:
+    _otel_tracer = None
+
 logger = structlog.get_logger(__name__)
 
 os.makedirs("data", exist_ok=True)
@@ -52,11 +58,14 @@ class MantleIntelPipeline:
         self.blocks_per_cycle = blocks_per_cycle
         self._running = False
         self._findings: list[dict] = []
+        self._consecutive_failures = 0       # P2-26: Circuit breaker counter
+        self._circuit_open = False           # P2-26: Circuit breaker flag
         self._stats = {
             "cycles_run":      0,
             "blocks_processed": 0,
             "findings_total":   0,
             "started_at":       None,
+            "last_cycle_success": None,      # P2-17: Timestamp of last successful cycle
         }
         self.incident_manager = IncidentManager()
 
@@ -76,12 +85,22 @@ class MantleIntelPipeline:
 
     async def run_cycle(self) -> list[dict]:
         """Run one full pipeline cycle. Returns list of new finding dicts."""
+        # P2-16: OpenTelemetry span for pipeline cycle
+        span = None
+        if _otel_tracer:
+            span = _otel_tracer.start_as_current_span("pipeline.run_cycle")
+            span.__enter__()
+            span.set_attribute("pipeline.cycle_number",
+                              self._stats["cycles_run"] + 1)
+
         cycle_start = time.time()
         new_findings = []
 
         self.logger.info("cycle_start", cycle=self._stats["cycles_run"] + 1)
 
         # Stage 1: Collect
+        # P2-18: collect_blocks now uses asyncio.to_thread internally
+        # to avoid blocking the event loop with synchronous web3.py HTTP calls
         blocks = await self.collector.collect_blocks(self.blocks_per_cycle)
         protocol_state = await self.collector.poll_protocol_state()
 
@@ -161,12 +180,26 @@ class MantleIntelPipeline:
 
         self._stats["cycles_run"] += 1
         self._stats["findings_total"] += len(new_findings)
+        self._stats["last_cycle_success"] = datetime.now(tz=timezone.utc).isoformat()  # P2-17
+
+        # P2-26: Reset circuit breaker on successful cycle
+        if self._consecutive_failures > 0:
+            self.logger.info("circuit_breaker_reset",
+                             previous_failures=self._consecutive_failures)
+        self._consecutive_failures = 0
+        self._circuit_open = False
 
         elapsed = time.time() - cycle_start
         self.logger.info("cycle_complete",
                          cycle=self._stats["cycles_run"],
                          new_findings=len(new_findings),
                          elapsed_s=round(elapsed, 2))
+
+        # P2-16: End OpenTelemetry span
+        if span:
+            span.set_attribute("pipeline.new_findings", len(new_findings))
+            span.set_attribute("pipeline.elapsed_s", round(elapsed, 2))
+            span.__exit__(None, None, None)
 
         return new_findings
 
@@ -186,7 +219,12 @@ class MantleIntelPipeline:
     # ── Continuous loop ───────────────────────────────────────────────────────
 
     async def run_continuous(self):
-        """Run pipeline continuously with poll_interval delay between cycles."""
+        """Run pipeline continuously with poll_interval delay between cycles.
+
+        P2-26: Implements circuit breaker pattern to prevent runaway failures.
+        After 5 consecutive failures, the circuit opens and applies
+        exponential backoff before retrying.
+        """
         self._running = True
         self._stats["started_at"] = datetime.now(tz=timezone.utc).isoformat()
         self.logger.info("pipeline_started", interval=self.poll_interval)
@@ -195,7 +233,38 @@ class MantleIntelPipeline:
             try:
                 await self.run_cycle()
             except Exception as e:
-                self.logger.error("cycle_error", error=str(e))
+                # P2-26: Circuit breaker — count consecutive failures
+                self._consecutive_failures += 1
+                self.logger.error("cycle_error",
+                                 error=str(e),
+                                 consecutive_failures=self._consecutive_failures)
+
+                if self._consecutive_failures >= 5:
+                    self._circuit_open = True
+                    backoff_seconds = 5 * self.poll_interval  # 5x normal interval
+                    self.logger.critical(
+                        "circuit_breaker_open",
+                        consecutive_failures=self._consecutive_failures,
+                        backoff_seconds=backoff_seconds,
+                        msg=f"Pipeline has failed {self._consecutive_failures} times "
+                            f"consecutively. Pausing for {backoff_seconds}s "
+                            f"before retry.")
+                    # Notify incident channels about circuit breaker
+                    try:
+                        await self._notify_incident({
+                            "type": "circuit_breaker",
+                            "consecutive_failures": self._consecutive_failures,
+                            "backoff_seconds": backoff_seconds,
+                            "message": f"Pipeline circuit breaker opened after "
+                                       f"{self._consecutive_failures} failures. "
+                                       f"Backing off for {backoff_seconds}s.",
+                        })
+                    except Exception as notify_err:
+                        self.logger.warning("circuit_breaker_notify_failed",
+                                           error=str(notify_err))
+                    await asyncio.sleep(backoff_seconds)
+                    continue
+
             await asyncio.sleep(self.poll_interval)
 
     def stop(self):
@@ -205,7 +274,8 @@ class MantleIntelPipeline:
     # ── Persistence ───────────────────────────────────────────────────────────
 
     def _append_finding(self, finding: dict):
-        """Append finding to JSONL store."""
+        """Append finding to JSONL store with rotation (P2-27)."""
+        self._rotate_if_needed(FINDINGS_PATH)
         with open(FINDINGS_PATH, "a") as f:
             f.write(json.dumps(finding, default=str) + "\n")
 
@@ -225,7 +295,64 @@ class MantleIntelPipeline:
             json.dump(dashboard_data, f, default=str, indent=2)
 
     def get_stats(self) -> dict:
-        return {**self._stats, "latest_findings": len(self._findings)}
+        return {**self._stats, "latest_findings": len(self._findings),
+                "circuit_open": self._circuit_open,
+                "consecutive_failures": self._consecutive_failures}
 
     def get_latest_findings(self, n: int = 10) -> list[dict]:
         return self._findings[-n:]
+
+    # ── File Rotation (P2-27) ──────────────────────────────────────────────────
+
+    @staticmethod
+    def _rotate_if_needed(file_path: str, max_age_days: int = 30) -> None:
+        """P2-27: Rotate JSONL files if they are from a previous day.
+
+        Strategy:
+          - If the file's mtime is from a previous day, gzip the old file
+            with a date suffix and start a fresh file.
+          - Clean up gzipped files older than max_age_days.
+          - Same logic can be applied to findings.jsonl and audit_log.jsonl.
+        """
+        from pathlib import Path as _Path
+        import gzip
+
+        p = _Path(file_path)
+        if not p.exists():
+            return
+
+        # Check if file is from a previous day
+        mtime = datetime.fromtimestamp(p.stat().st_mtime, tz=timezone.utc)
+        now = datetime.now(tz=timezone.utc)
+
+        if mtime.date() < now.date():
+            # Rotate: gzip the old file with date suffix
+            date_suffix = mtime.strftime("%Y-%m-%d")
+            rotated_name = p.stem + f"-{date_suffix}" + p.suffix + ".gz"
+            rotated_path = p.parent / rotated_name
+
+            try:
+                with open(p, "rb") as f_in:
+                    with gzip.open(rotated_path, "wb") as f_out:
+                        f_out.writelines(f_in)
+                # Truncate original to start fresh
+                p.write_text("")
+                logger.info("file_rotated",
+                           original=str(p),
+                           rotated=str(rotated_path))
+            except Exception as e:
+                logger.warning("file_rotation_failed",
+                              path=str(p), error=str(e))
+
+        # Clean up old gzipped files
+        try:
+            for gz_file in p.parent.glob(p.stem + "-*.jsonl.gz"):
+                gz_mtime = datetime.fromtimestamp(
+                    gz_file.stat().st_mtime, tz=timezone.utc)
+                age_days = (now - gz_mtime).days
+                if age_days > max_age_days:
+                    gz_file.unlink()
+                    logger.info("old_rotated_file_cleaned",
+                               path=str(gz_file), age_days=age_days)
+        except Exception as e:
+            logger.warning("rotation_cleanup_failed", error=str(e))
