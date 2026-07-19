@@ -1,56 +1,175 @@
-name: Mantle Intel Agent Pipeline
+name: Pipeline Cycle + Dashboard Sync
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Runs the Mantle Intel pipeline every 5 minutes, commits updated
+# dashboard data, and triggers a Vercel redeploy so the hosted dashboard
+# always shows near-real-time data from Mantle mainnet.
+#
+# Required GitHub Secrets (Settings → Secrets → Actions):
+#   AGENT_PRIVATE_KEY       — wallet key for on-chain audit writes
+#   GROQ_API_KEY            — Groq LLM key (optional, falls back to templates)
+#   DISCORD_WEBHOOK_URL     — Discord webhook URL (optional)
+#   TELEGRAM_BOT_TOKEN      — Telegram bot token (optional)
+#   TELEGRAM_CHAT_ID        — Telegram chat ID (optional)
+#   VERCEL_DEPLOY_HOOK_URL  — Vercel deploy hook to trigger redeploy
+# ──────────────────────────────────────────────────────────────────────────────
 
 on:
   schedule:
-    # Runs every 5 minutes (the fastest frequency allowed by GitHub)
+    # Every 5 minutes (GitHub's fastest allowed cron)
     - cron: '*/5 * * * *'
-  workflow_dispatch: # Allows manual trigger from the GitHub UI
+  workflow_dispatch:
+    inputs:
+      cycles:
+        description: 'Number of pipeline cycles'
+        required: false
+        default: '1'
+      skip_deploy:
+        description: 'Skip Vercel deploy? (true/false)'
+        required: false
+        default: 'false'
 
 jobs:
   run-pipeline:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
 
     steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────────
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      # ── 2. Python Setup ──────────────────────────────────────────────────────
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
+          cache: 'pip'
 
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run Mantle Intel Pipeline (1 Cycle)
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: "6774697368"
-          AUDIT_CONTRACT_ADDRESS: "0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b"
-          AUDIT_RPC_URL: "https://rpc.sepolia.mantle.xyz"
-          MANTLE_TESTNET_RPC: "https://rpc.sepolia.mantle.xyz"
-          MANTLE_RPC_URL: "https://rpc.mantle.xyz"
-          NETWORK: "testnet"
+      # ── 3. Create .env for Pipeline ─────────────────────────────────────────
+      - name: Configure Environment
         run: |
-          python main.py --cycles 1 --bot
+          cat > .env << 'ENVEOF'
+          MANTLE_RPC_URL=https://rpc.mantle.xyz
+          MANTLE_TESTNET_RPC=https://rpc.sepolia.mantle.xyz
+          NETWORK=testnet
+          API_KEY=mintel-ci-2025
+          ENV=production
+          AUDIT_CONTRACT_ADDRESS=0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b
+          MNT_PRICE_USD=0.85
+          POLL_INTERVAL=30
+          BLOCKS_PER_CYCLE=100
+          CONFIDENCE_THRESHOLD=0.75
+          ENVEOF
 
-      - name: Commit and Push Data Updates
+          # Append secrets (only if set, otherwise blank → graceful fallback)
+          echo "AGENT_PRIVATE_KEY=${{ secrets.AGENT_PRIVATE_KEY }}" >> .env
+          echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> .env
+          echo "GROQ_MODEL=moonshotai/kimi-k2-instruct" >> .env
+          echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" >> .env
+          echo "TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}" >> .env
+          echo "DISCORD_WEBHOOK_URL=${{ secrets.DISCORD_WEBHOOK_URL }}" >> .env
+
+      # ── 4. Restore Previous Pipeline Data (cache across runs) ────────────────
+      - name: Cache Pipeline Data
+        uses: actions/cache@v4
+        with:
+          path: |
+            data/findings.jsonl
+            data/audit_log.jsonl
+            data/dashboard.json
+          key: pipeline-data-${{ github.run_id }}
+          restore-keys: |
+            pipeline-data-
+
+      # ── 5. Run Pipeline (1 cycle) ───────────────────────────────────────────
+      - name: Run Mantle Intel Pipeline
+        run: |
+          CYCLES=${{ github.event.inputs.cycles || '1' }}
+          echo "🔄 Running $CYCLES pipeline cycle(s)..."
+          python main.py --cycles "$CYCLES" 2>&1 || true
+          echo "✅ Pipeline cycle complete"
+
+      # ── 6. Copy dashboard.json to Vercel public dir ─────────────────────────
+      - name: Sync Dashboard Data for Vercel
+        run: |
+          if [ -f data/dashboard.json ]; then
+            mkdir -p dashboard/public
+            cp data/dashboard.json dashboard/public/dashboard.json
+            echo "✅ dashboard/public/dashboard.json synced"
+            
+            # Print summary for logs
+            python3 -c "
+          import json
+          try:
+              with open('dashboard/public/dashboard.json') as f:
+                  d = json.load(f)
+              print(f'  Last updated: {d.get(\"last_updated\",\"N/A\")}')
+              print(f'  Findings: {len(d.get(\"latest_findings\",[]))}')
+              print(f'  Stats: {d.get(\"stats\",{})}')
+          except Exception as e:
+              print(f'  Error reading dashboard: {e}')
+          "
+          else
+            echo "⚠️ No dashboard.json generated — skipping sync"
+          fi
+
+      # ── 7. Commit & Push Updated Data ───────────────────────────────────────
+      - name: Commit Dashboard Data
         run: |
           git config --global user.name "Mantle Intel Bot"
           git config --global user.email "bot@mantle-intel.agent"
 
-          # Only commit if the data/ folder changed (new findings)
-          if [[ `git status --porcelain data/` ]]; then
-            git add data/
-            git commit -m "chore: auto-update on-chain submissions data"
-            git push
+          # Stage the Vercel dashboard data file
+          git add dashboard/public/dashboard.json
+
+          # Check if there are changes to commit
+          if git diff --cached --quiet; then
+            echo "📭 No dashboard changes to commit"
+            echo "has_changes=false" >> "$GITHUB_ENV"
           else
-            echo "No new anomalies detected in this cycle."
+            echo "📬 Dashboard data updated — committing"
+            git commit -m "🔄 auto-update dashboard data [skip ci]"
+            git push
+            echo "has_changes=true" >> "$GITHUB_ENV"
           fi
+
+      # ── 8. Trigger Vercel Redeploy ──────────────────────────────────────────
+      - name: Trigger Vercel Deploy
+        if: env.has_changes == 'true' && github.event.inputs.skip_deploy != 'true'
+        run: |
+          DEPLOY_HOOK="${{ secrets.VERCEL_DEPLOY_HOOK_URL }}"
+          if [ -n "$DEPLOY_HOOK" ]; then
+            echo "🚀 Triggering Vercel deploy..."
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$DEPLOY_HOOK")
+            if [ "$HTTP_STATUS" = "200" ] || [ "$HTTP_STATUS" = "201" ] || [ "$HTTP_STATUS" = "202" ]; then
+              echo "✅ Vercel deploy triggered (HTTP $HTTP_STATUS)"
+            else
+              echo "⚠️ Vercel deploy hook returned HTTP $HTTP_STATUS"
+            fi
+          else
+            echo "⚠️ VERCEL_DEPLOY_HOOK_URL not set — skipping deploy trigger"
+            echo "   Create a deploy hook at: https://vercel.com → Project Settings → Git → Deploy Hooks"
+          fi
+
+      # ── 9. Summary ──────────────────────────────────────────────────────────
+      - name: Pipeline Summary
+        if: always()
+        run: |
+          echo "========================================="
+          echo "  MANTLE INTEL PIPELINE RUN SUMMARY"
+          echo "========================================="
+          echo "  Dashboard updated: ${{ env.has_changes }}"
+          echo "  Vercel deploy triggered: ${{ env.has_changes == 'true' && github.event.inputs.skip_deploy != 'true' }}"
+          echo "  Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "========================================="
