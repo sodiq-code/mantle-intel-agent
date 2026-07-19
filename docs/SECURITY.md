@@ -73,6 +73,12 @@ The contract's core functions — `submitFinding()`, `getPublicFindings()`, `get
 
 ---
 
+## Key Management
+
+The `authorizedAgent` role is currently held by a single EOA. Before mainnet deployment, this should be upgraded to a **Gnosis Safe 2-of-3 multi-sig** to eliminate the single point of failure. See [MULTISIG.md](./MULTISIG.md) for the full setup guide and security checklist.
+
+---
+
 ## Supply Chain Security Roadmap
 
 | Level | Description | Status |

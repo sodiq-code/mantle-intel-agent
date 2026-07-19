@@ -411,6 +411,7 @@ async def analytics_summary(request: Request, days: int = 30):
 async def run_cycle(request: Request, background_tasks: BackgroundTasks):
     """Trigger a pipeline cycle manually."""
     pipeline = get_pipeline()
+    _analytics.record_pipeline_cycle()  # P3-30: Track cycle triggers
     background_tasks.add_task(pipeline.run_cycle)
     return {"message": "Cycle started"}
 
@@ -472,6 +473,11 @@ else:
         return {"message": "Mantle Intel Agent API. Dashboard not built yet — run: cd dashboard && npm run build"}
 
 
-if __name__ == "__main__":
+def main():
+    """Entry point for `mantle-intel` CLI script (pyproject.toml [project.scripts])."""
     import uvicorn
     uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=False)
+
+
+if __name__ == "__main__":
+    main()

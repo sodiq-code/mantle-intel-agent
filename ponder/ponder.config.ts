@@ -8,7 +8,7 @@
 import { createConfig } from "@ponder/core";
 import { http } from "viem";
 
-import { MantleIntelAudit } from "../contracts/artifacts/contracts/src/MantleIntelAudit.sol/MantleIntelAudit.json";
+import { MantleIntelAudit } from "../contracts/artifacts/src/MantleIntelAudit.sol/MantleIntelAudit.json";
 
 export default createConfig({
   networks: {
