@@ -173,6 +173,8 @@ class InsightAgent:
                                     provider=provider["name"],
                                     error=str(e)[:100])
                 continue
+        # All providers failed — use template fallback
+        self._active_provider = None  # Fix: clear stale provider reference
         return self._template_generate(finding)
 
     async def _call_provider(self, provider: dict, finding) -> str:
@@ -474,7 +476,7 @@ Name specific Mantle protocols: Merchant Moe, Lendle, Agni Finance, mETH, Fusion
             "hash": finding.sha256_hash(),
             "hex_hash": finding.hex_bytes32(),
             "insight": insight_text,
-            "insight_provider": self._active_provider["name"] if self._active_provider else "template",
+            "insight_provider": (self._active_provider["name"] if self._active_provider else "template"),
             "raw_metrics": finding.raw_metrics,
             "method": finding.method,
             "transfers": finding.large_transfers[:5],

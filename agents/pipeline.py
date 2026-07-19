@@ -26,6 +26,7 @@ from agents.insight.insight_agent import InsightAgent
 from agents.audit.audit_agent import AuditAgent
 from agents.incident import IncidentManager
 from bot.discord_webhook import push_incident as discord_push
+from bot.telegram_bot import MantleIntelBot
 
 # P2-16: OpenTelemetry tracing
 try:
@@ -69,6 +70,9 @@ class MantleIntelPipeline:
         }
         self.incident_manager = IncidentManager()
 
+        # Initialize logger first (needed by subsequent init)
+        self.logger = logger.bind(component="pipeline")
+
         # Initialize agents
         self.collector = CollectorAgent(poll_interval=poll_interval)
         self.anomaly = AnomalyAgent()
@@ -76,10 +80,20 @@ class MantleIntelPipeline:
         self.insight = InsightAgent()
         self.audit = AuditAgent()
 
-        self.logger = logger.bind(component="pipeline")
+        # Initialize Telegram bot for push notifications
+        self.telegram_bot = MantleIntelBot()
+        self.telegram_bot.set_pipeline(self)
+        if self.telegram_bot.is_configured():
+            self.logger.info("telegram_bot_configured",
+                             chat_id=self.telegram_bot.chat_id)
+        else:
+            self.logger.warning("telegram_bot_not_configured",
+                                msg="Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID to enable Telegram alerts")
+
         self.logger.info("pipeline_initialized",
                          demo_mode=self.collector.demo_mode,
-                         audit_demo=self.audit.demo_mode)
+                         audit_demo=self.audit.demo_mode,
+                         telegram=self.telegram_bot.is_configured())
 
     # ── Single cycle ──────────────────────────────────────────────────────────
 
@@ -224,17 +238,24 @@ class MantleIntelPipeline:
         return new_findings
 
     async def _notify_incident(self, incident: dict):
-        """Push an incident update to the configured bots."""
+        """Push an incident update to the configured bots (Discord + Telegram)."""
         if self.on_incident:
             try:
                 await self.on_incident(incident)
             except Exception as cb_e:
                 self.logger.warning("callback_failed", error=str(cb_e))
 
+        # Discord webhook notification
         try:
             discord_push(incident)
         except Exception as dc_e:
             self.logger.warning("discord_webhook_failed", error=str(dc_e))
+
+        # Telegram push notification
+        try:
+            await self.telegram_bot.push_incident(incident)
+        except Exception as tg_e:
+            self.logger.warning("telegram_push_failed", error=str(tg_e))
 
     # ── Continuous loop ───────────────────────────────────────────────────────
 
