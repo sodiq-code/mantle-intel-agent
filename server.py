@@ -408,11 +408,16 @@ async def analytics_summary(request: Request, days: int = 30):
 
 @app.post("/api/run-cycle")
 @limiter.limit("5/minute")  # P2-19: Stricter for mutation endpoint
-async def run_cycle(request: Request, background_tasks: BackgroundTasks):
+async def run_cycle(request: Request, background_tasks: BackgroundTasks = None):
     """Trigger a pipeline cycle manually."""
     pipeline = get_pipeline()
     _analytics.record_pipeline_cycle()  # P3-30: Track cycle triggers
-    background_tasks.add_task(pipeline.run_cycle)
+    if background_tasks is None:
+        # Fallback for slowapi compatibility: run synchronously
+        import asyncio
+        asyncio.create_task(pipeline.run_cycle())
+    else:
+        background_tasks.add_task(pipeline.run_cycle)
     return {"message": "Cycle started"}
 
 

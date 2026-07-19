@@ -37,7 +37,8 @@ from bot.telegram_bot import MantleIntelBot
 
 def _send_telegram_direct(incident: dict):
     """Direct HTTP Telegram alert — no dependencies, always works."""
-    import urllib.request, ssl
+    import urllib.request
+    import ssl
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
     if not token or not chat_id:

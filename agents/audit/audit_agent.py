@@ -192,23 +192,26 @@ class AuditAgent:
                     "for production. See scripts/generate_keystore.py.")
             return env_key
 
-        # No key available — pipeline will fail in _init_web3 with clear error
+        # No key available — _init_web3 will activate demo mode
         return ""
 
     def _init_web3(self):
         if not WEB3_AVAILABLE:
-            self.logger.error("web3_not_installed", msg="Running in demo mode - no on-chain writes. PIP install web3 required.")
-            raise ImportError("web3 is required for audit agent")
+            self.logger.warning("web3_not_installed",
+                                msg="Running in demo mode — no on-chain writes. "
+                                "pip install web3 required for on-chain audit.")
+            self._demo_mode = True
+            return
 
         if not self.contract_address or not self.private_key:
-            self.logger.error("missing_config",
-                              msg="CONTRACT_ADDRESS or private key not configured. "
-                              "Set KEYSTORE_PATH + KEYSTORE_PASSWORD (preferred) or "
-                              "AGENT_PRIVATE_KEY (legacy) environment variables.")
-            raise ValueError(
-                "Missing contract address or private key. "
-                "Configure via KEYSTORE_PATH + KEYSTORE_PASSWORD (preferred) or "
-                "AGENT_PRIVATE_KEY (legacy). See scripts/generate_keystore.py.")
+            self.logger.warning("demo_mode_active",
+                                msg="CONTRACT_ADDRESS or private key not configured. "
+                                "Running in demo mode — findings will be logged "
+                                "but NOT recorded on-chain. "
+                                "Set KEYSTORE_PATH + KEYSTORE_PASSWORD (preferred) "
+                                "or AGENT_PRIVATE_KEY (legacy) to enable on-chain audit.")
+            self._demo_mode = True
+            return
 
         try:
             self._w3 = Web3(Web3.HTTPProvider(
@@ -228,17 +231,21 @@ class AuditAgent:
                              wallet=self._account.address,
                              network=self.network)
         except Exception as e:
-            self.logger.error("web3_init_failed", error=str(e), msg="Failed to initialize web3 or contract")
-            raise
+            self.logger.error("web3_init_failed",
+                              error=str(e),
+                              msg="Failed to initialize web3 or contract. "
+                              "Falling back to demo mode.")
+            self._demo_mode = True
     # ── Main audit function ───────────────────────────────────────────────────
 
     async def record_finding(self, finding) -> AuditRecord:
         """Record a single finding on-chain. Returns AuditRecord."""
         # P2-16: OpenTelemetry span for audit recording
+        span_cm = None
         span = None
         if _otel_tracer:
-            span = _otel_tracer.start_as_current_span("audit.record_finding")
-            span.__enter__()
+            span_cm = _otel_tracer.start_as_current_span("audit.record_finding")
+            span = span_cm.__enter__()
             span.set_attribute("audit.finding_id", finding.finding_id)
             span.set_attribute("audit.anomaly_type", finding.anomaly_type)
             span.set_attribute("audit.confidence", finding.confidence)
@@ -253,9 +260,18 @@ class AuditAgent:
         )
 
         if not self._contract:
-            record.audit_status = "failed"
-            record.error = "Contract not initialized"
-            self.logger.error("audit_failed", finding_id=finding.finding_id, error="No contract")
+            if self._demo_mode:
+                record.audit_status = "demo"
+                record.error = "Demo mode — finding not recorded on-chain"
+                self.logger.info("audit_demo_mode",
+                                 finding_id=finding.finding_id,
+                                 msg="Finding logged locally (not on-chain) — demo mode active")
+            else:
+                record.audit_status = "failed"
+                record.error = "Contract not initialized"
+                self.logger.error("audit_failed",
+                                  finding_id=finding.finding_id,
+                                  error="No contract")
             self._audit_log.append(record)
             return record
 
@@ -278,11 +294,12 @@ class AuditAgent:
         self._audit_log.append(record)
 
         # P2-16: End OpenTelemetry span
-        if span:
-            span.set_attribute("audit.audit_status", record.audit_status)
-            if record.on_chain_tx:
-                span.set_attribute("audit.tx_hash", record.on_chain_tx)
-            span.__exit__(None, None, None)
+        if span_cm:
+            if span:
+                span.set_attribute("audit.audit_status", record.audit_status)
+                if record.on_chain_tx:
+                    span.set_attribute("audit.tx_hash", record.on_chain_tx)
+            span_cm.__exit__(None, None, None)
 
         return record
 
@@ -337,6 +354,9 @@ class AuditAgent:
     async def verify_finding(self, finding_hash: str) -> dict:
         """Query contract to verify a finding hash."""
         if not self._contract:
+            if self._demo_mode:
+                return {"verified": False, "demo_mode": True,
+                        "error": "Demo mode — on-chain verification unavailable"}
             return {"verified": False, "error": "No contract"}
 
         try:
@@ -356,6 +376,9 @@ class AuditAgent:
     async def get_chain_stats(self) -> dict:
         """Get total findings count from contract."""
         if not self._contract:
+            if self._demo_mode:
+                return {"total_findings": 0, "demo_mode": True,
+                        "error": "Demo mode — on-chain stats unavailable"}
             return {"total_findings": 0, "error": "No contract"}
         try:
             count = self._contract.functions.findingCount().call()

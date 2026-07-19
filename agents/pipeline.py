@@ -86,10 +86,11 @@ class MantleIntelPipeline:
     async def run_cycle(self) -> list[dict]:
         """Run one full pipeline cycle. Returns list of new finding dicts."""
         # P2-16: OpenTelemetry span for pipeline cycle
+        span_cm = None
         span = None
         if _otel_tracer:
-            span = _otel_tracer.start_as_current_span("pipeline.run_cycle")
-            span.__enter__()
+            span_cm = _otel_tracer.start_as_current_span("pipeline.run_cycle")
+            span = span_cm.__enter__()
             span.set_attribute("pipeline.cycle_number",
                                self._stats["cycles_run"] + 1)
 
@@ -196,10 +197,11 @@ class MantleIntelPipeline:
                          elapsed_s=round(elapsed, 2))
 
         # P2-16: End OpenTelemetry span
-        if span:
-            span.set_attribute("pipeline.new_findings", len(new_findings))
-            span.set_attribute("pipeline.elapsed_s", round(elapsed, 2))
-            span.__exit__(None, None, None)
+        if span_cm:
+            if span:
+                span.set_attribute("pipeline.new_findings", len(new_findings))
+                span.set_attribute("pipeline.elapsed_s", round(elapsed, 2))
+            span_cm.__exit__(None, None, None)
 
         return new_findings
 
