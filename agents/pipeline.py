@@ -16,6 +16,7 @@ import json
 import os
 import time
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional, Callable
 import structlog
 
@@ -90,10 +91,60 @@ class MantleIntelPipeline:
             self.logger.warning("telegram_bot_not_configured",
                                 msg="Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID to enable Telegram alerts")
 
+        # P0-FIX: Recover state from persistent JSONL on restart
+        self._recover_state()
+
         self.logger.info("pipeline_initialized",
                          demo_mode=self.collector.demo_mode,
                          audit_demo=self.audit.demo_mode,
-                         telegram=self.telegram_bot.is_configured())
+                         telegram=self.telegram_bot.is_configured(),
+                         recovered_findings=len(self._findings))
+
+    # ── State Recovery (P0-FIX) ─────────────────────────────────────────────────
+
+    def _recover_state(self):
+        """Reload findings from findings.jsonl on server restart.
+
+        Without this, every server restart wipes in-memory findings, causing
+        the dashboard to show empty data until the next anomaly is found.
+        This reads the last 100 findings from JSONL to repopulate the
+        in-memory list so the dashboard immediately has data.
+        """
+        if not Path(FINDINGS_PATH).exists():
+            return
+
+        try:
+            with open(FINDINGS_PATH) as f:
+                lines = [l.strip() for l in f if l.strip()]
+
+            if not lines:
+                return
+
+            # Load last 100 findings
+            parsed = []
+            for line in lines[-100:]:
+                try:
+                    parsed.append(json.loads(line))
+                except (json.JSONDecodeError, ValueError):
+                    pass
+
+            if parsed:
+                self._findings = parsed
+                self._stats["findings_total"] = len(lines)  # total ever recorded
+                self._stats["blocks_processed"] = max(
+                    (f.get("block", 0) for f in parsed), default=0
+                ) - min(
+                    (f.get("block", 0) for f in parsed), default=0
+                )
+                self.logger.info("state_recovered",
+                                 findings_loaded=len(parsed),
+                                 total_in_jsonl=len(lines))
+
+                # Also recover dashboard.json
+                self._update_dashboard()
+
+        except Exception as e:
+            self.logger.warning("state_recovery_failed", error=str(e))
 
     # ── Single cycle ──────────────────────────────────────────────────────────
 
@@ -338,7 +389,12 @@ class MantleIntelPipeline:
             f.write(json.dumps(finding, default=str) + "\n")
 
     def _update_dashboard(self):
-        """Write latest state to dashboard.json for the web UI."""
+        """Write latest state to dashboard.json for the web UI.
+
+        Also syncs to dashboard/public/dashboard.json for Vercel static deployment,
+        so the hosted dashboard always shows the latest data even when the
+        FastAPI server is unreachable.
+        """
         dashboard_data = {
             "last_updated":    datetime.now(tz=timezone.utc).isoformat(),
             "stats":           self._stats,
@@ -351,6 +407,15 @@ class MantleIntelPipeline:
         }
         with open(DASHBOARD_PATH, "w") as f:
             json.dump(dashboard_data, f, default=str, indent=2)
+
+        # P0-FIX: Also sync to Vercel public directory for static deployment
+        vercel_public_path = Path("dashboard/public/dashboard.json")
+        try:
+            vercel_public_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(vercel_public_path, "w") as f:
+                json.dump(dashboard_data, f, default=str, indent=2)
+        except Exception as e:
+            self.logger.warning("vercel_dashboard_sync_failed", error=str(e))
 
     def get_stats(self) -> dict:
         return {**self._stats, "latest_findings": len(self._findings),

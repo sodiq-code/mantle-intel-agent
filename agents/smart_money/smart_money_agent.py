@@ -494,9 +494,11 @@ class SmartMoneyAgent:
 
     def summary(self) -> dict:
         signals_list = list(self._signals)
+        tier1 = len([s for s in signals_list if s.tier == 1])
         return {
             "tracked_wallets":  len(self._wallet_activity),
             "known_labels":     len(KNOWN_LABELS),
+            "tier1_alerts":     tier1,
             "signals_generated": len(signals_list),
             "latest_signals":   [s.to_dict() for s in signals_list[-5:]],
             "compare_available": True,

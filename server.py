@@ -417,10 +417,48 @@ async def live_feed(request: Request):
 
     # Compute derived stats
     all_findings = pipeline.get_latest_findings(100)
+
+    # P0-FIX: If no findings in memory but JSONL exists, load from disk
+    if not all_findings and FINDINGS_PATH.exists():
+        try:
+            with open(FINDINGS_PATH) as f:
+                lines = [l.strip() for l in f if l.strip()]
+            for line in lines[-100:]:
+                try:
+                    all_findings.append(json.loads(line))
+                except (json.JSONDecodeError, ValueError):
+                    pass
+            # Reverse so newest is first (JSONL is appended chronologically)
+            all_findings = list(reversed(all_findings))
+        except Exception:
+            pass
+
     confidences = [f.get("confidence", 0) for f in all_findings if f.get("confidence")]
     avg_confidence = sum(confidences) / max(len(confidences), 1)
     high_conf_pct = int(len([c for c in confidences if c >= 0.85]) / max(len(confidences), 1) * 100)
     avg_tx = sum(b.get("tx_count", 0) for b in recent_blocks) / max(len(recent_blocks), 1)
+
+    # P1-FIX: Enrich smart money summary from findings when pipeline hasn't cycled
+    if not sm_summary.get("tracked_wallets") and all_findings:
+        smart_money_findings = [f for f in all_findings if f.get("smart_money", {}).get("signals")]
+        sm_summary = {
+            **sm_summary,
+            "tracked_wallets": len(set(
+                s.get("wallet", "") for f in smart_money_findings
+                for s in f.get("smart_money", {}).get("signals", [])
+                if s.get("wallet")
+            )) or sm_summary.get("tracked_wallets", 0),
+            "tier1_alerts": len([f for f in smart_money_findings
+                                 if any(s.get("tier") == 1
+                                        for s in f.get("smart_money", {}).get("signals", []))]),
+            "total_signals": len(smart_money_findings),
+        }
+
+    # P1-FIX: Always try to get on-chain audit count, even if contract read fails
+    audit_count_from_findings = len([f for f in all_findings
+                                     if f.get("audit", {}).get("status") not in ("demo", "deferred", None)])
+    if not protocol_state.get("audit_contract"):
+        protocol_state["audit_contract"] = {"finding_count": audit_count_from_findings or len(all_findings)}
 
     return JSONResponse(content={
         "last_updated": datetime.now(tz=timezone.utc).isoformat(),
@@ -439,6 +477,12 @@ async def live_feed(request: Request):
         "demo_mode": pipeline.collector.demo_mode,
         "contract_address": pipeline.audit.contract_address or "not_deployed",
         "network": pipeline.audit.network,
+        "pipeline_status": {
+            "running": pipeline._running,
+            "circuit_open": pipeline._circuit_open,
+            "consecutive_failures": pipeline._consecutive_failures,
+            "last_cycle_success": pipeline._stats.get("last_cycle_success"),
+        },
     })
 
 
