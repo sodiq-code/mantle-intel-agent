@@ -38,9 +38,9 @@ def init_tracing(service_name: str = "mantle-intel-agent") -> Optional[object]:
         from opentelemetry.sdk.resources import Resource
     except ImportError:
         logger.info("otel_not_installed",
-                     msg="opentelemetry packages not installed. "
-                         "Install with: pip install opentelemetry-api "
-                         "opentelemetry-sdk opentelemetry-exporter-otlp")
+                    msg="opentelemetry packages not installed. "
+                        "Install with: pip install opentelemetry-api "
+                        "opentelemetry-sdk opentelemetry-exporter-otlp")
         return None
 
     resource = Resource.create({

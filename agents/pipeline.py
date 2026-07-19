@@ -91,7 +91,7 @@ class MantleIntelPipeline:
             span = _otel_tracer.start_as_current_span("pipeline.run_cycle")
             span.__enter__()
             span.set_attribute("pipeline.cycle_number",
-                              self._stats["cycles_run"] + 1)
+                               self._stats["cycles_run"] + 1)
 
         cycle_start = time.time()
         new_findings = []
@@ -236,8 +236,8 @@ class MantleIntelPipeline:
                 # P2-26: Circuit breaker — count consecutive failures
                 self._consecutive_failures += 1
                 self.logger.error("cycle_error",
-                                 error=str(e),
-                                 consecutive_failures=self._consecutive_failures)
+                                  error=str(e),
+                                  consecutive_failures=self._consecutive_failures)
 
                 if self._consecutive_failures >= 5:
                     self._circuit_open = True
@@ -261,7 +261,7 @@ class MantleIntelPipeline:
                         })
                     except Exception as notify_err:
                         self.logger.warning("circuit_breaker_notify_failed",
-                                           error=str(notify_err))
+                                            error=str(notify_err))
                     await asyncio.sleep(backoff_seconds)
                     continue
 
@@ -338,11 +338,11 @@ class MantleIntelPipeline:
                 # Truncate original to start fresh
                 p.write_text("")
                 logger.info("file_rotated",
-                           original=str(p),
-                           rotated=str(rotated_path))
+                            original=str(p),
+                            rotated=str(rotated_path))
             except Exception as e:
                 logger.warning("file_rotation_failed",
-                              path=str(p), error=str(e))
+                               path=str(p), error=str(e))
 
         # Clean up old gzipped files
         try:
@@ -353,6 +353,6 @@ class MantleIntelPipeline:
                 if age_days > max_age_days:
                     gz_file.unlink()
                     logger.info("old_rotated_file_cleaned",
-                               path=str(gz_file), age_days=age_days)
+                                path=str(gz_file), age_days=age_days)
         except Exception as e:
             logger.warning("rotation_cleanup_failed", error=str(e))

@@ -125,7 +125,7 @@ class AuditAgent:
             "AUDIT_CONTRACT_ADDRESS", "")
         self.rpc_url = rpc_url or os.getenv(
             "AUDIT_RPC_URL", os.getenv(
-            "MANTLE_TESTNET_RPC", "https://rpc.sepolia.mantle.xyz"))
+                "MANTLE_TESTNET_RPC", "https://rpc.sepolia.mantle.xyz"))
         self.network = network or os.getenv("NETWORK", "testnet")
         self._w3: Optional[object] = None
         self._contract = None
@@ -400,11 +400,11 @@ class AuditAgent:
                         f_out.writelines(f_in)
                 p.write_text("")
                 logger.info("audit_log_rotated",
-                           original=str(p),
-                           rotated=str(rotated_path))
+                            original=str(p),
+                            rotated=str(rotated_path))
             except Exception as e:
                 logger.warning("audit_log_rotation_failed",
-                              path=str(p), error=str(e))
+                               path=str(p), error=str(e))
 
         # Clean up old gzipped files
         try:
@@ -415,7 +415,7 @@ class AuditAgent:
                 if age_days > max_age_days:
                     gz_file.unlink()
                     logger.info("old_audit_log_cleaned",
-                               path=str(gz_file), age_days=age_days)
+                                path=str(gz_file), age_days=age_days)
         except Exception as e:
             logger.warning("audit_rotation_cleanup_failed", error=str(e))
 
