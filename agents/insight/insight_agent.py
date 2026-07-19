@@ -4,7 +4,7 @@ Multi-provider LLM with resilient fallback chain.
 
 v4.0 architecture (institutional-grade reliability):
   Tier 1: Local LLM via Ollama (always available, no tokens, no rate limits)
-  Tier 2: Groq API (free, ~500 tps, openai/gpt-oss-120b — newest flagship)
+  Tier 2: Groq API (free, ~500 tps, moonshotai/kimi-k2-instruct — newest, fast, non-deprecated)
   Tier 3: OpenRouter (multi-provider fallback, free tier available)
   Tier 4: Enhanced rule-based templates (always works, deterministic)
 
@@ -65,8 +65,8 @@ class InsightAgent:
 
     Architecture (institutional-grade reliability):
       Tier 1: Local LLM via Ollama (always available, no tokens)
-      Tier 2: Groq API (free, fast, reliable) — uses openai/gpt-oss-120b
-              (newest flagship, ~500 tps, replaces deprecated llama-3.3-70b-versatile)
+      Tier 2: Groq API (free, fast, reliable) — uses moonshotai/kimi-k2-instruct
+              (newest, fast, non-deprecated — replaces deprecated llama-3.3-70b-versatile)
       Tier 3: OpenRouter (multi-provider fallback)
       Tier 4: Enhanced rule-based templates (always works)
 
@@ -108,12 +108,14 @@ class InsightAgent:
             })
 
         # Tier 2: Groq Production Tier (free, ~500 tps)
-        # Using openai/gpt-oss-120b — newest flagship (replaces deprecated llama-3.3-70b-versatile)
-        # Fallback alternatives:
+        # Using moonshotai/kimi-k2-instruct — newest, fast, non-deprecated
+        # (replaces deprecated llama-3.3-70b-versatile and llama-3.1-8b-instant)
+        # Fallback alternatives (all non-deprecated, new releases):
+        #   - openai/gpt-oss-120b (largest flagship, most capable but slower)
+        #   - meta-llama/llama-4-scout-17b-16e-instruct (Llama 4, multimodal)
+        #   - meta-llama/llama-4-maverick-17b-128e-instruct (Llama 4 Maverick)
+        #   - qwen/qwen3-32b (Qwen 3, 32B params)
         #   - qwen/qwen3.6-27b (lightweight, very fast)
-        #   - moonshotai/kimi-k2-instruct (Kimi K2, capable)
-        #   - llama-4-scout-17b-16e-instruct (multimodal, smaller)
-        #   - deepseek-r1-distill-llama-70b (reasoning-focused)
         groq_key = os.getenv("GROQ_API_KEY")
         if groq_key:
             providers.append({

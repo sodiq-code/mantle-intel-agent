@@ -9,10 +9,17 @@ Usage:
 """
 import os
 import json
-import urllib.request
-import urllib.error
 from datetime import datetime, timezone
 import structlog
+
+try:
+    import httpx
+    _HTTPX_AVAILABLE = True
+except ImportError:
+    _HTTPX_AVAILABLE = False
+
+import urllib.request
+import urllib.error
 
 from config import CONTRACT_ADDRESS
 
@@ -49,16 +56,55 @@ class DiscordWebhook:
 
     @property
     def is_configured(self) -> bool:
-        return bool(self.webhook_url and self.webhook_url.startswith("https://discord.com/api/webhooks/"))
+        return bool(
+            self.webhook_url
+            and self.webhook_url.startswith("https://discord.com/api/webhooks/")
+        )
 
     def push(self, incident: dict) -> bool:
-        """Send an incident update to Discord. Returns True on success."""
+        """Send an incident update to Discord. Returns True on success.
+
+        Uses httpx (preferred) with fallback to urllib.request.
+        httpx handles proxies, redirects, and encoding better than urllib.
+        """
         if not self.is_configured:
-            self.log.debug("webhook_not_configured", msg="Set DISCORD_WEBHOOK_URL to enable Discord alerts")
+            self.log.debug(
+                "webhook_not_configured",
+                msg="Set DISCORD_WEBHOOK_URL to enable Discord alerts")
             return False
 
+        payload = self._build_payload(incident)
+
+        # Prefer httpx — handles proxies/encoding better than urllib
+        if _HTTPX_AVAILABLE:
+            return self._push_httpx(payload, incident)
+        return self._push_urllib(payload, incident)
+
+    def _push_httpx(self, payload: dict, incident: dict) -> bool:
+        """Send via httpx (preferred path)."""
         try:
-            payload = self._build_payload(incident)
+            resp = httpx.post(
+                self.webhook_url,
+                json=payload,
+                timeout=10,
+            )
+            success = resp.status_code in (200, 204)
+            if success:
+                self.log.info("discord_alert_sent",
+                              incident_id=incident.get("incident_id"))
+            else:
+                self.log.error("discord_webhook_http_error",
+                               status=resp.status_code,
+                               body=resp.text[:200])
+            return success
+        except Exception as e:
+            self.log.error("discord_webhook_failed", error=str(e))
+            # Fallback to urllib
+            return self._push_urllib(payload, incident)
+
+    def _push_urllib(self, payload: dict, incident: dict) -> bool:
+        """Fallback: send via urllib.request."""
+        try:
             data = json.dumps(payload).encode("utf-8")
             req = urllib.request.Request(
                 self.webhook_url,
@@ -73,7 +119,8 @@ class DiscordWebhook:
                                   incident_id=incident.get("incident_id"))
                 return success
         except urllib.error.HTTPError as e:
-            self.log.error("discord_webhook_http_error", status=e.code, reason=e.reason)
+            self.log.error("discord_webhook_http_error",
+                           status=e.code, reason=e.reason)
         except Exception as e:
             self.log.error("discord_webhook_failed", error=str(e))
         return False
@@ -81,7 +128,7 @@ class DiscordWebhook:
     def _build_payload(self, incident: dict) -> dict:
         """Build a Discord webhook payload for an incident update."""
         atype = incident.get("type", "anomaly")
-        
+
         label_map = {
             "whale_accumulation":   "Whale Accumulation",
             "whale_distribution":   "Whale Distribution",
@@ -90,28 +137,19 @@ class DiscordWebhook:
             "value_spike":          "Value Spike",
             "multivariate_anomaly": "Multivariate Anomaly",
         }
-        
-        icon_map = {
-            "whale_accumulation":  "🐋",
-            "smart_money_inflow":  "🧠",
-            "tx_spike":            "📈",
-            "value_spike":         "💰",
-        }
-        
+
         state = incident.get("state", "🟡 Incident")
-        
+
         color_map = {
             "🟡 Incident Opened":    16776960,  # Yellow
             "🟠 Incident Escalated": 16744192,  # Orange
             "🔴 Incident Critical":  16711680,  # Red
             "✅ Incident Resolved":  3066993,   # Green
         }
-        
-        icon = icon_map.get(atype, "⚡")
+
         label = label_map.get(atype, atype.replace("_", " ").title())
-        
+
         conf = incident.get("peak_confidence", 0)
-        zscore = incident.get("peak_zscore")
         start = incident.get("start_block", 0)
         latest = incident.get("latest_block", 0)
         dur = incident.get("duration_blocks", 1)
@@ -120,19 +158,32 @@ class DiscordWebhook:
         fhash = incident.get("latest_hash", "")
         timestamp = incident.get("timestamp", "N/A")
         detectors = incident.get("detectors", [])
-        
-        detectors_str = "\n".join(f"✓ {d}" for d in detectors) if detectors else "✓ Baseline Anomaly"
-        
-        desc = f"{insight}\n\n**Incident ID:** `{incident.get('incident_id', 'N/A')}`\n**Status:** {state}\n**Detection Confidence:** {conf}% (Anomaly Detection)"
-        
+
+        detectors_str = (
+            "\n".join(f"✓ {d}" for d in detectors)
+            if detectors else "✓ Baseline Anomaly"
+        )
+
+        incident_id = incident.get('incident_id', 'N/A')
+        desc = (
+            f"{insight}\n\n**Incident ID:** `{incident_id}`\n"
+            f"**Status:** {state}\n"
+            f"**Detection Confidence:** {conf}% (Anomaly Detection)"
+        )
+
         fields = [
-            {"name": "Blocks", "value": f"`{start:,}` to `{latest:,}` (Duration: {dur} blocks)", "inline": False},
+            {"name": "Blocks",
+             "value": f"`{start:,}` to `{latest:,}` "
+                      f"(Duration: {dur} blocks)",
+             "inline": False},
             {"name": "Occurrences", "value": str(occ), "inline": True},
-            {"name": "Timestamp (UTC)", "value": f"`{timestamp}`", "inline": True},
+            {"name": "Timestamp (UTC)",
+             "value": f"`{timestamp}`", "inline": True},
         ]
-            
-        fields.append({"name": "Evidence", "value": detectors_str, "inline": False})
-            
+
+        fields.append(
+            {"name": "Evidence", "value": detectors_str, "inline": False})
+
         if fhash:
             fields.append({
                 "name": "Latest SHA-256 Hash",
@@ -140,20 +191,29 @@ class DiscordWebhook:
                 "inline": False
             })
 
-        fields.append({"name": "Contract", "value": f"[{CONTRACT[:10]}...]({EXPLORER}/address/{CONTRACT})", "inline": False})
+        contract_link = (
+            f"[{CONTRACT[:10]}...]({EXPLORER}/address/{CONTRACT})")
+        fields.append(
+            {"name": "Contract", "value": contract_link, "inline": False})
 
-        color = color_map.get(state, 0x6B7280)  # Default gray if no match
+        color = color_map.get(state, 0x6B7280)  # Default gray
 
         return {
             "username": "Mantle Intel Agent",
-            "avatar_url": "https://raw.githubusercontent.com/sodiq-code/mantle-intel-agent/main/docs/logo_480.png",
+            "avatar_url": (
+                "https://raw.githubusercontent.com/sodiq-code/"
+                "mantle-intel-agent/main/docs/logo_480.png"
+            ),
             "embeds": [{
                 "title": label,
                 "description": desc,
                 "color": color,
                 "fields": fields,
                 "footer": {
-                    "text": f"Mantle Intel Agent · {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}"
+                    "text": (
+                        f"Mantle Intel Agent · "
+                        f"{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}"
+                    )
                 },
                 "url": f"{EXPLORER}/address/{CONTRACT}"
             }]
