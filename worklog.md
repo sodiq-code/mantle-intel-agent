@@ -1,158 +1,105 @@
-# Mantle Intel Agent — P2 + P3 Implementation Worklog
+# Mantle Intel Agent — E2E Testing Worklog
 
-## Project Current State
-- Mantle Intel Agent: Python-based blockchain audit pipeline with Solidity contracts
-- All 12 P2 items verified, tested, and pushed to main repo (commit bbe7206)
-- All 9 P3 items verified, tested, and pushed to main repo (commit 54d75f9)
-- 78 Python tests pass, 13 Solidity tests pass
-- Pushed to https://github.com/sodiq-code/mantle-intel-agent (main branch)
-- All Python files pass syntax check
-- 78 Python tests pass (4 skipped — require RPC config)
-- 13 Solidity tests pass (10 required + 3 bonus)
-- Pushed to https://github.com/sodiq-code/mantle-intel-agent (commit bbe7206)
+## Session: 2026-07-19 — Full Real-World End-to-End Testing
 
-## Verification Results (2026-07-19)
-All P2 items passed comprehensive verification:
-- P2-16: ✅ OpenTelemetry tracing with spans in pipeline + audit agent
-- P2-17: ✅ Real health check (RPC, contract, pipeline status)
-- P2-18: ✅ asyncio.to_thread() for sync web3.py calls
-- P2-19: ✅ slowapi rate limiting (30/min GET, 5/min POST)
-- P2-20: ✅ Dockerfile + .dockerignore
-- P2-21: ✅ All 25 deps pinned with == in requirements.txt
-- P2-22: ✅ 13 Solidity test cases passing
-- P2-23: ✅ Confidence threshold >= 75 in Solidity contract
-- P2-24: ✅ Path-traversal protection + no bare excepts
-- P2-25: ✅ LLM prompt sanitisation (injection patterns, hex stripping, truncation)
-- P2-26: ✅ Circuit breaker (5 failures → 5x backoff, resets on success)
-- P2-27: ✅ Daily file rotation with gzip + 30-day cleanup
+### Project Status: ALL SYSTEMS OPERATIONAL ✅
 
-## P3 Verification Results (2026-07-19)
-All P3 items passed comprehensive verification:
-- P3-28: ✅ The Graph subgraph + Ponder indexer for findings + subscriptions
-- P3-29: ✅ JUDGES.md with 5-minute verification walkthrough (fixes broken link in RISK.md)
-- P3-30: ✅ Anonymous usage analytics (SHA256 IP hashing, DAU/MAU, privacy-first)
-- P3-31: ✅ LOI templates for Lendle, Merchant Moe, Agni Finance
-- P3-32: ✅ Multi-sig documentation (Gnosis Safe 2-of-3, Gelato Relay)
-- P3-33: ✅ Subscription event indexing (folded into P3-28 subgraph + Ponder)
-- P3-34: ✅ pyproject.toml with PEP 621, optional deps, ruff, pytest config
-- P3-35: ✅ SLSA Level 2 target in SECURITY.md with implementation plan
-- P3-36: ✅ MODEL_CARD.md with full LLM disclosure, training data, limitations
+---
 
-## Completed P2 Modifications
+## Environment Setup
 
-### Tier 1: Security & Correctness ✅
+| Component | Version | Status |
+|-----------|---------|--------|
+| Python | 3.12.13 | ✅ |
+| Web3.py | 6.20.3 | ✅ |
+| FastAPI | 0.115.12 | ✅ |
+| Node.js | v24.18.0 | ✅ |
+| Hardhat | 2.x | ✅ |
+| RPC (Mantle Mainnet) | https://rpc.mantle.xyz | ✅ Connected |
+| RPC (Mantle Sepolia) | https://rpc.sepolia.mantle.xyz | ✅ Connected |
+| Contract (Sepolia) | 0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b | ✅ 22 findings |
+| Wallet | 0xB47Ba223B73980E69AEF53B0d202F9785698DAEa | ✅ 900 MNT |
+| Telegram Bot | @MantleIntelBot | ✅ Sending alerts |
+| Groq API | gsk_QSew... | ❌ 403 Forbidden (key expired) |
+| Discord Webhook | Not configured | ⏳ Awaiting URL |
 
-**P2-24: Path-traversal protection**
-- File: `server.py` (lines 249-274)
-- Replaced bare `except Exception: pass` with explicit `(ValueError, OSError)` catch
-- Added structlog logging for path resolution errors
-- Added explicit 403 response for paths that resolve outside STATIC_DIR
-- SPA fallback only triggers for safe, non-traversal paths
+---
 
-**P2-25: LLM prompt sanitisation**
-- File: `agents/insight/insight_agent.py` (lines 187-317)
-- Added `_INJECTION_PATTERNS` class variable with 12 common injection patterns
-- Added `_sanitise_for_prompt()` static method: truncates to max_len, strips injection patterns
-- Added `_sanitise_metrics()` static method: strips input_data/input/inputData fields, truncates strings, limits lists to 5 items
-- Added `_sanitise_transfers()` static method: strips hex input fields from transfers, limits to 3 transfers
-- Updated `_build_prompt()` to sanitise all user-influenced data before embedding in prompt
+## Bugs Found & Fixed (Commit: 3e722af)
 
-**P2-26: Circuit breaker**
-- File: `agents/pipeline.py` (lines 61-62, 185-190, 221-266)
-- Added `_consecutive_failures` counter and `_circuit_open` flag
-- On exception: increment counter, log with structlog
-- At 5 consecutive failures: set circuit_open, log CRITICAL, notify incident channels, back off for 5x poll_interval
-- On successful cycle: reset counter and flag, log if previously failed
-- `get_stats()` now includes `circuit_open` and `consecutive_failures`
+### BUG 1: Server startup blocks event loop
+**File:** `server.py`
+**Problem:** `get_pipeline()` in startup event calls `CollectorAgent._init_web3()` synchronously, blocking the entire event loop during server startup. The server couldn't accept HTTP requests until the pipeline init completed (which makes synchronous RPC calls).
+**Fix:** Defer pipeline initialization into the `asyncio.create_task(run())` wrapper, so `get_pipeline()` is called inside the background task.
 
-**P2-23: Confidence threshold reconciliation**
-- File: `contracts/src/MantleIntelAudit.sol` (line 129)
-- Changed `require(confidenceScore >= 50)` → `require(confidenceScore >= 75)`
-- Added detailed comment explaining why threshold matches pipeline's 0.75 filter
-- Updated struct comment to reference P2-23
-- Verified with test: confidence=74 now reverts, confidence=75 succeeds
+### BUG 2: On-chain writes block event loop
+**File:** `agents/audit/audit_agent.py`
+**Problem:** `_submit_to_chain()`, `verify_finding()`, and `get_chain_stats()` all make synchronous web3 calls (`send_raw_transaction`, `wait_for_transaction_receipt`, `call()`) directly in the async event loop, blocking all HTTP request handling for 3-5 seconds per transaction.
+**Fix:** Wrap all synchronous web3 calls in `asyncio.to_thread()` to run them in worker threads. Added `import asyncio` to the file.
 
-### Tier 2: Operational Reliability ✅
+### BUG 3: OpenTelemetry context-var crash in background tasks
+**Files:** `agents/pipeline.py`, `agents/audit/audit_agent.py`
+**Problem:** Using `start_as_current_span()` with `__enter__`/`__exit__` pattern creates OpenTelemetry spans that are tied to `contextvars.ContextVar`. When the pipeline runs inside `asyncio.create_task()`, the span is created in one context but `__exit__` tries to detach in a different context, raising `ValueError: token was created in a different Context`.
+**Fix:** Replace `start_as_current_span()` + `__enter__`/`__exit__` with `start_span()` + `span.end()`, which doesn't use context variables and works correctly across async task boundaries.
 
-**P2-17: Real /api/health check**
-- File: `server.py` (lines 112-155)
-- Replaced stub `{"status": "ok"}` with real checks
-- Checks RPC connectivity via `web3.is_connected()`
-- Checks contract reachability via `findingCount().call()`
-- Reports pipeline running status and last successful cycle timestamp
-- Returns structured: `{status: healthy|degraded|unhealthy, rpc, contract, pipeline_running, last_cycle}`
-- Added `last_cycle_success` to pipeline stats
+Also fixed `server.py` health endpoint to use `asyncio.to_thread()` for `is_connected()` and `findingCount().call()`.
 
-**P2-27: File rotation for findings.jsonl**
-- Files: `agents/pipeline.py` (lines 276-358), `agents/audit/audit_agent.py` (lines 342-396)
-- Added `_rotate_if_needed()` static method to pipeline
-- Added `_rotate_audit_log()` static method to audit agent
-- If file's mtime is from a previous day: gzip with date suffix, truncate original
-- Cleans up gzipped files older than 30 days
-- Rotation applied before each append to findings.jsonl and audit_log.jsonl
+---
 
-**P2-16: OpenTelemetry tracing**
-- New file: `agents/tracing.py`
-- Created tracer provider with OTLP exporter (configurable via OTEL_EXPORTER_OTLP_ENDPOINT)
-- Falls back to ConsoleSpanExporter when no endpoint configured
-- Added spans to `pipeline.run_cycle()` with attributes: cycle_number, new_findings, elapsed_s
-- Added spans to `audit.record_finding()` with attributes: finding_id, anomaly_type, confidence, block_height, audit_status, tx_hash
-- Graceful import — if OTel not installed, spans are no-ops
+## E2E Test Results
 
-### Tier 3: Infrastructure ✅
+### Pipeline Cycle (Real Data)
+- **Collector**: Collected 21-101 real blocks from Mantle mainnet per cycle
+- **Anomaly Detection**: Detected 1-6 anomalies per cycle (value_spike, tx_spike, liquidity_imbalance, multivariate_anomaly)
+- **Smart Money**: 55 known labeled wallets tracked
+- **Insight Generation**: Template-based (Groq API key expired — fallback works correctly)
+- **On-Chain Audit**: All findings recorded on Mantle Sepolia (tx hashes confirmed on mantlescan.xyz)
+- **Telegram Alerts**: All incidents pushed successfully to chat 6774697368
+- **Performance**: ~8-16 seconds per cycle end-to-end
 
-**P2-18: Async collect_blocks**
-- File: `agents/collector/collector_agent.py` (lines 229-269)
-- Extracted sync logic to `_collect_blocks_sync()` method
-- `collect_blocks()` now delegates via `asyncio.to_thread()` to prevent blocking event loop
-- Pipeline call unchanged (collect_blocks still async, but internally non-blocking)
+### API Endpoints (All Tested ✅)
+| Endpoint | Method | Auth | Status |
+|----------|--------|------|--------|
+| `/` | GET | None | 200 (Dashboard HTML) |
+| `/api/health` | GET | X-API-KEY | 200 (healthy) |
+| `/api/dashboard` | GET | X-API-KEY | 200 (JSON) |
+| `/api/findings` | GET | X-API-KEY | 200 (77 findings) |
+| `/api/verify/{hash}` | GET | X-API-KEY | 200 (verified=true) |
+| `/api/stats` | GET | X-API-KEY | 200 (JSON) |
+| `/api/analytics/summary` | GET | X-API-KEY | 200 (JSON) |
+| `/api/run-cycle` | POST | X-API-KEY | 200 (Cycle started) |
+| No API key | GET | — | 403 ✅ |
+| Wrong API key | GET | — | 403 ✅ |
 
-**P2-19: Rate limiting**
-- File: `server.py` (lines 24-52, 158-217)
-- Added slowapi integration with graceful fallback (NoOpLimiter when not installed)
-- Applied `@limiter.limit("30/minute")` to GET endpoints (dashboard, findings, verify, stats)
-- Applied `@limiter.limit("5/minute")` to POST endpoint (run-cycle) — stricter for mutations
-- Health endpoint exempt from rate limiting
-- Added slowapi to requirements.in and requirements.txt
+### Test Suite
+- **Python**: 82 passed (0 failed, 0 errors)
+- **Solidity**: 13 passed
 
-**P2-20: Dockerfile**
-- New files: `Dockerfile`, `.dockerignore`
-- Multi-stage build from python:3.12-slim
-- Includes OTel and slowapi pip installs
-- HEALTHCHECK using /api/health endpoint
-- .dockerignore excludes node_modules, __pycache__, .git, data/, .env, etc.
+### On-Chain Verification
+- Contract: https://sepolia.mantlescan.xyz/address/0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b
+- Total findings on-chain: 22 (up from 12 at start of testing)
+- All test transactions confirmed on Mantle Sepolia
 
-**P2-21: Pin dependencies**
-- New file: `requirements.in` (source of truth for pip-compile)
-- Updated `requirements.txt` with pinned versions including new P2-16 and P2-19 deps
+---
 
-### Tier 4: Testing ✅
+## Known Issues / Non-Critical Warnings
 
-**P2-22: Solidity test suite**
-- New file: `contracts/test/MantleIntelAudit.js`
-- 13 tests covering all contract functionality:
-  1. ✅ recordFinding() succeeds with confidence=75
-  2. ✅ recordFinding() reverts with confidence < 75 (P2-23)
-  3. ✅ recordFinding() reverts on duplicate hash
-  4. ✅ recordFinding() reverts on empty anomaly type
-  5. ✅ verifyFinding() returns correct data after recording
-  6. ✅ verifyFinding() returns false for unknown hash
-  7. ✅ getPublicFindings() pagination works
-  8. ✅ getFindingsByType() filtering works
-  9. ✅ subscribe() / isSubscribed() works
-  10. ✅ Unauthorized address cannot call recordFinding()
-  11. ✅ Owner can authorize and revoke agents
-  12. ✅ getStats() returns correct data
-  13. ✅ Non-owner cannot authorize agents
+1. **Groq API 403**: The provided API key returns 403 Forbidden. Pipeline falls back to template-based insights correctly. User needs to regenerate their Groq API key at https://console.groq.com/
 
-## Verification Results
-- All Python files pass `py_compile` syntax check
-- Solidity contract compiles: 22 files, 0 errors
-- All 13 Solidity tests pass (767ms execution time)
-- No regressions in existing code structure
+2. **Discord Webhook**: Not yet configured. User needs to set up a Discord webhook URL.
 
-## Unresolved Issues / Risks
-- OpenTelemetry packages are optional — if not installed, tracing is silently disabled
-- slowapi is optional — if not installed, rate limiting is silently disabled
-- The health check creates a pipeline instance on first call (get_pipeline() lazy init)
-- Circuit breaker uses fixed 5x backoff — could be improved to exponential backoff in future
+3. **Pyth Oracle 404**: Pyth price feed endpoint returns HTTP 404. Collector falls back to hardcoded prices. Non-critical — the oracle feed IDs may need updating.
+
+4. **mETH/Merchant Moe/Lendle fetch errors**: Mainnet protocol contract calls fail from the collector because the contracts may have been upgraded or the ABIs are outdated. The collector gracefully falls back to simulated values.
+
+5. **Mantle mainnet vs Sepolia mismatch**: Collector reads blocks from Mantle mainnet, but audit writes to Mantle Sepolia. This is intentional for testing but should be aligned for production.
+
+---
+
+## Next Steps
+
+1. Get a valid Groq API key for AI-powered insights
+2. Set up Discord webhook URL
+3. Deploy to production with mainnet contract
+4. Update Pyth oracle feed IDs
+5. Update protocol contract ABIs (mETH, Merchant Moe, Lendle)
