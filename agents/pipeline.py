@@ -150,6 +150,9 @@ class MantleIntelPipeline:
         # Limit on-chain writes to prevent event loop starvation
         MAX_ONCHAIN_PER_CYCLE = 3
         onchain_count = 0
+        # Collect incident notifications to batch at end of cycle
+        # (prevents 4 notifications for same-block anomalies → 1 composite)
+        _cycle_incident_ids = set()
         for finding in anomalies:
             try:
                 # Generate insight
@@ -193,11 +196,12 @@ class MantleIntelPipeline:
                 self._findings = self._findings[-100:]  # keep last 100
                 self._append_finding(dashboard_card)
 
-                # Process Incident State for Bots
+                # Process Incident State — collect incident IDs, don't notify yet
                 incident_update = self.incident_manager.process_finding(
                     dashboard_card, latest_block)
                 if incident_update:
-                    await self._notify_incident(incident_update)
+                    inc_id = incident_update.get("incident_id")
+                    _cycle_incident_ids.add(inc_id)
 
             except Exception as e:
                 self.logger.error("finding_processing_failed",
@@ -205,6 +209,19 @@ class MantleIntelPipeline:
                                   error=str(e))
             # Yield to event loop between findings to prevent starvation
             await asyncio.sleep(0)
+
+        # ── Send ONE composite notification per incident ──────────────────────
+        # After all findings in this cycle are processed, send the final
+        # composite state of each incident as a single notification.
+        for inc_id in _cycle_incident_ids:
+            for key, inc in self.incident_manager.active_incidents.items():
+                if inc["id"] == inc_id:
+                    notification = self.incident_manager._format_incident_notification(inc)
+                    await self._notify_incident(notification)
+                    # Mark as notified so next cycle doesn't re-notify
+                    inc["last_notified_state"] = inc["state"]
+                    inc["last_notified_occurrences"] = inc["occurrences"]
+                    break
 
         # Save audit log
         self.audit.save_audit_log(AUDIT_LOG_PATH)

@@ -87,6 +87,10 @@ def anomaly_icon(anomaly_type: str) -> str:
         "tx_spike":            "📈",
         "value_spike":         "💰",
         "multivariate_anomaly": "🔍",
+        "liquidity_imbalance": "💧",
+        "meth_depeg":          "⚡",
+        "cross_protocol_anomaly": "🌐",
+        "composite":           "🔥",
     }
     return icons.get(anomaly_type, "⚡")
 
@@ -99,6 +103,10 @@ def anomaly_label(anomaly_type: str) -> str:
         "tx_spike":             "TX Volume Spike",
         "value_spike":          "Value Spike",
         "multivariate_anomaly": "Multivariate Anomaly",
+        "liquidity_imbalance":  "Liquidity Imbalance",
+        "meth_depeg":           "mETH Depeg",
+        "cross_protocol_anomaly": "Cross-Protocol Anomaly",
+        "composite":            "Composite Anomaly",
     }
     return labels.get(anomaly_type, anomaly_type.replace("_", " ").title())
 
@@ -149,6 +157,8 @@ class MantleIntelBot:
 
     def _format_incident_message(self, incident: dict) -> str:
         atype   = incident.get("type", "anomaly")
+        is_composite = incident.get("is_composite", False)
+        anomaly_types = incident.get("anomaly_types", [atype])
         state   = incident.get("state", "🟡 Incident")
         start   = incident.get("start_block", 0)
         latest  = incident.get("latest_block", 0)
@@ -159,16 +169,29 @@ class MantleIntelBot:
         insight = incident.get("insight_sample", "")
 
         insight_trimmed = insight[:800] + "..." if len(insight) > 800 else insight
-        
+
         detectors_list = incident.get("detectors", [])
         if detectors_list:
             evidence_str = "\n".join(f"✓ {d}" for d in detectors_list)
         else:
             evidence_str = "✓ Baseline Anomaly"
 
+        # Composite: show all signals in the label
+        if is_composite:
+            labels = [anomaly_label(t) for t in anomaly_types]
+            type_label = " + ".join(labels[:3])
+            if len(anomaly_types) > 3:
+                type_label += f" +{len(anomaly_types) - 3} more"
+            icon = "🔥"  # composite icon
+            signals_line = f"<b>Signals:</b> {', '.join(labels)}\n"
+        else:
+            type_label = anomaly_label(atype)
+            icon = anomaly_icon(atype)
+            signals_line = ""
+
         return INCIDENT_TEMPLATE.format(
-            icon=anomaly_icon(atype),
-            anomaly_type_label=anomaly_label(atype),
+            icon=icon,
+            anomaly_type_label=type_label,
             insight=insight_trimmed,
             incident_id=incident.get("incident_id", "N/A"),
             state=state,

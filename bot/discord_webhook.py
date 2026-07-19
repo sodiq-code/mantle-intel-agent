@@ -128,6 +128,8 @@ class DiscordWebhook:
     def _build_payload(self, incident: dict) -> dict:
         """Build a Discord webhook payload for an incident update."""
         atype = incident.get("type", "anomaly")
+        is_composite = incident.get("is_composite", False)
+        anomaly_types = incident.get("anomaly_types", [atype])
 
         label_map = {
             "whale_accumulation":   "Whale Accumulation",
@@ -136,6 +138,9 @@ class DiscordWebhook:
             "tx_spike":             "TX Volume Spike",
             "value_spike":          "Value Spike",
             "multivariate_anomaly": "Multivariate Anomaly",
+            "liquidity_imbalance":  "Liquidity Imbalance",
+            "meth_depeg":           "mETH Depeg",
+            "cross_protocol_anomaly": "Cross-Protocol Anomaly",
         }
 
         state = incident.get("state", "🟡 Incident")
@@ -147,7 +152,15 @@ class DiscordWebhook:
             "✅ Incident Resolved":  3066993,   # Green
         }
 
-        label = label_map.get(atype, atype.replace("_", " ").title())
+        # Composite: show all anomaly types in one title
+        if is_composite:
+            labels = [label_map.get(t, t.replace("_", " ").title())
+                      for t in anomaly_types]
+            title = " + ".join(labels[:3])  # max 3 in title
+            if len(anomaly_types) > 3:
+                title += f" +{len(anomaly_types) - 3} more"
+        else:
+            title = label_map.get(atype, atype.replace("_", " ").title())
 
         conf = incident.get("peak_confidence", 0)
         start = incident.get("start_block", 0)
@@ -165,8 +178,17 @@ class DiscordWebhook:
         )
 
         incident_id = incident.get('incident_id', 'N/A')
+
+        # For composite: list all anomaly types detected
+        signals_line = ""
+        if is_composite:
+            signal_labels = [label_map.get(t, t.replace("_", " ").title())
+                             for t in anomaly_types]
+            signals_line = f"**Signals Detected:** {', '.join(signal_labels)}\n"
+
         desc = (
-            f"{insight}\n\n**Incident ID:** `{incident_id}`\n"
+            f"{insight}\n\n{signals_line}"
+            f"**Incident ID:** `{incident_id}`\n"
             f"**Status:** {state}\n"
             f"**Detection Confidence:** {conf}% (Anomaly Detection)"
         )
@@ -205,7 +227,7 @@ class DiscordWebhook:
                 "mantle-intel-agent/main/docs/logo_480.png"
             ),
             "embeds": [{
-                "title": label,
+                "title": title,
                 "description": desc,
                 "color": color,
                 "fields": fields,
