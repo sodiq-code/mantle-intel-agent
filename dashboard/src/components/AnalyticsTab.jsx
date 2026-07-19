@@ -56,7 +56,7 @@ export function AnalyticsTab({ data, backtest }) {
           { label:"Blocks Processed",  value:(stats.blocks_processed||0).toLocaleString(),col:"#3B82F6" },
           { label:"Avg Confidence",    value:`${((stats.avg_confidence||0)*100).toFixed(1)}%`, col:"#A855F7" },
           { label:"High Signal %",     value:`${stats.high_confidence_pct||0}%`,          col:"#EF4444" },
-          { label:"Wallets Tracked",   value:`${sm.tracked_wallets||67}`,                 col:"#F97316" },
+          { label:"Wallets Tracked",   value:`${sm.tracked_wallets||0}`,                  col:"#F97316" },
           { label:"Tier-1 Alerts",     value:`${sm.tier1_alerts||0}`,                     col:"#EAB308" },
         ].map(({ label, value, col }) => (
           <div key={label} className="rounded-xl border p-4" style={{ borderColor:"#1F2937", background:"#0D0D0D" }}>

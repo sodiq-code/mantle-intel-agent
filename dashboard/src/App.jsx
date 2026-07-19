@@ -13,6 +13,10 @@ import { AnalyticsTab } from "./components/AnalyticsTab.jsx";
 import { AuditTab } from "./components/AuditTab.jsx";
 import { ROITab } from "./components/ROITab.jsx";
 import { APITab } from "./components/APITab.jsx";
+import { BlockTimeline } from "./components/BlockTimeline.jsx";
+import { SeverityHeatmap } from "./components/SeverityHeatmap.jsx";
+import { NotificationCenter } from "./components/NotificationCenter.jsx";
+import { ProtocolGauges } from "./components/ProtocolGauges.jsx";
 
 const LIVE_FEED_URL = "/api/live-feed";
 const SSE_FEED_URL  = "/api/live-feed?stream=1";
@@ -182,6 +186,7 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-2 ml-auto flex-shrink-0">
+            <NotificationCenter incidents={activeInc} findings={allFnds}/>
             <div className="flex items-center gap-1.5 text-xs font-mono px-2.5 py-1 rounded-full border"
               style={{ borderColor: connected ? G+"40":"#374151", color: connected ? G:"#6B7280", background: connected ? G+"10":"transparent" }}>
               {connected ? <Wifi size={10}/> : <WifiOff size={10}/>}
@@ -214,6 +219,15 @@ export default function App() {
             value={sm.tracked_wallets || 0}
             sub={`${sm.tier1_alerts||0} tier-1 alerts`} accent="#A855F7"/>
         </div>
+
+        {/* Block Activity Timeline & Severity Heatmap */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <BlockTimeline blocks={data?.recent_blocks || []} findings={allFnds}/>
+          <SeverityHeatmap findings={allFnds} blocks={data?.recent_blocks || []}/>
+        </div>
+
+        {/* Protocol Health Gauges */}
+        <ProtocolGauges protocolState={data?.protocol_state}/>
 
         <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-hide">
           {TABS.map(({ key, label, icon: Icon, badge }) => (
@@ -299,9 +313,12 @@ export default function App() {
         {activeTab === "audit"     && <AuditTab     data={data} findings={sorted}/>}
         {activeTab === "api"       && <APITab       data={data} contract={contract}/>}
 
-        <div className="border-t pt-6 flex items-center justify-between text-xs font-mono text-slate-500"
+        <div className="border-t pt-6 pb-4 flex items-center justify-between text-xs font-mono text-slate-500"
           style={{ borderColor:"rgba(255,255,255,0.05)" }}>
-          <span>Mantle Intel Agent v6.0 · On-Chain Intelligence · Mantle Ecosystem</span>
+          <div className="flex flex-col gap-1">
+            <span className="text-slate-400">Mantle Intel Agent v6.0 · On-Chain Intelligence</span>
+            <span className="text-gray-700">Powered by 5-agent AI pipeline · IsolationForest + Z-Score + Multi-Confirm</span>
+          </div>
           <div className="flex items-center gap-5 hidden sm:flex">
             <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-1 hover:text-white transition-colors">

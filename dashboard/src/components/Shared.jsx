@@ -92,18 +92,25 @@ export function StatTile({ label, value, sub, accent = G, icon: Icon, live }) {
   return (
     <div className="relative overflow-hidden rounded-xl p-4 glass-card group">
       <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-slate-950/90 pointer-events-none" />
+      {/* Animated gradient border on hover */}
+      <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+        style={{ background: `linear-gradient(135deg, ${accent}15, transparent 60%)` }}/>
       <div className="relative z-10">
         <div className="flex items-start justify-between mb-3">
-          <div className="p-2 rounded-lg transition-transform group-hover:scale-110" style={{ backgroundColor: accent + "18" }}>
+          <div className="p-2 rounded-lg transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg" 
+            style={{ backgroundColor: accent + "18", boxShadow: `0 0 0 0 ${accent}00` }}>
             <Icon size={14} style={{ color: accent }}/>
           </div>
-          {live && <PulseDot color={accent}/>}
+          <div className="flex items-center gap-2">
+            {live && <PulseDot color={accent}/>}
+          </div>
         </div>
         <div className="text-2xl font-black font-mono text-white leading-none mb-1 group-hover:glow-text transition-all duration-300">{value}</div>
-        <div className="text-xs font-semibold" style={{ color: accent }}>{label}</div>
-        {sub && <div className="text-xs text-slate-400 mt-0.5">{sub}</div>}
+        <div className="text-xs font-semibold tracking-wide" style={{ color: accent }}>{label}</div>
+        {sub && <div className="text-xs text-slate-500 mt-0.5 font-mono">{sub}</div>}
       </div>
-      <div className="absolute bottom-0 left-0 right-0 h-px transition-all duration-300 group-hover:h-0.5" style={{ backgroundColor: accent + "60" }}/>
+      <div className="absolute bottom-0 left-0 right-0 h-0.5 transition-all duration-500 group-hover:h-1"
+        style={{ background: `linear-gradient(90deg, transparent, ${accent}80, transparent)` }}/>
     </div>
   );
 }
