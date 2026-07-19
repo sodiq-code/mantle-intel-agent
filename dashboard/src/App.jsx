@@ -3,11 +3,10 @@ import {
   AlertTriangle, Activity, Shield, ExternalLink,
   RefreshCw, TrendingUp, BarChart2,
   Wifi, WifiOff, Server, DollarSign, Cpu, Globe, GitBranch,
-  Sun, Moon, AlertCircle, Zap
+  AlertCircle, Zap
 } from "lucide-react";
 
 import { G, PulseDot, StatTile, FindingRow, IncidentCard, EXPLORER_BASE } from "./components/Shared.jsx";
-import { ThemeToggle, useTheme } from "./components/ThemeToggle.jsx";
 import { SignalsTab } from "./components/SignalsTab.jsx";
 import { ReasoningTab } from "./components/ReasoningTab.jsx";
 import { ProtocolTab } from "./components/ProtocolTab.jsx";
@@ -15,10 +14,6 @@ import { AnalyticsTab } from "./components/AnalyticsTab.jsx";
 import { AuditTab } from "./components/AuditTab.jsx";
 import { ROITab } from "./components/ROITab.jsx";
 import { APITab } from "./components/APITab.jsx";
-import { BlockTimeline } from "./components/BlockTimeline.jsx";
-import { SeverityHeatmap } from "./components/SeverityHeatmap.jsx";
-import { NotificationCenter } from "./components/NotificationCenter.jsx";
-import { ProtocolGauges } from "./components/ProtocolGauges.jsx";
 
 const LIVE_FEED_URL = "/api/live-feed";
 const SSE_FEED_URL  = "/api/live-feed?stream=1";
@@ -38,9 +33,6 @@ export default function App() {
   const [newIds,      setNewIds]      = useState(new Set());
   const [lastRefresh, setLastRefresh] = useState(null);
   const prevIds = useRef(new Set());
-
-  // Theme
-  useTheme();
 
   const applyData = useCallback((d, isDemo = false) => {
     setData(d);
@@ -112,19 +104,6 @@ export default function App() {
     const t = setInterval(fetchSnap, REFRESH_MS);
     return () => { active = false; clearInterval(t); };
   }, [applyData, fetchSnap, API_KEY]);
-
-  // Keyboard shortcuts: number keys 1-8 to switch tabs, 'r' to refresh
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-      const tabs = ["findings","signals","reasoning","roi","protocol","analytics","audit","api"];
-      const n = parseInt(e.key, 10);
-      if (n >= 1 && n <= tabs.length) setActiveTab(tabs[n-1]);
-      if (e.key.toLowerCase() === 'r' && !e.metaKey && !e.ctrlKey) fetchSnap();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [fetchSnap]);
 
   if (loading) return (
     <div className="min-h-screen bg-slate-950 flex flex-col pt-14">
@@ -211,17 +190,17 @@ export default function App() {
                 <span className="text-white">#{chain.mainnet.latest_block.toLocaleString()}</span>
               </span>
             )}
-            <span className="text-slate-700">|</span>
+            <span>|</span>
             <span className="flex items-center gap-1">
               <span>INCIDENTS</span>
               <span className="text-white font-bold">{activeInc.length}</span>
             </span>
-            <span className="text-slate-700">|</span>
+            <span>|</span>
             <span className="flex items-center gap-1">
               <span>AVG CONF</span>
               <span className="text-white font-bold">{((stats.avg_confidence||0)*100).toFixed(1)}%</span>
             </span>
-            <span className="text-slate-700">|</span>
+            <span>|</span>
             <span className="flex items-center gap-1">
               <span>ON-CHAIN</span>
               <span className="font-bold" style={{ color: G }}>{auditCount}</span>
@@ -229,14 +208,12 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-2 ml-auto flex-shrink-0">
-            <NotificationCenter incidents={activeInc} findings={allFnds}/>
-            <ThemeToggle/>
             <div className="flex items-center gap-1.5 text-xs font-mono px-2.5 py-1 rounded-full border"
               style={{ borderColor: connected ? G+"40":"#374151", color: connected ? G: demoMode ? "#EAB308" : "#6B7280", background: connected ? G+"10" : demoMode ? "#EAB30810" : "transparent" }}>
               {connected ? <Wifi size={10}/> : demoMode ? <AlertCircle size={10}/> : <WifiOff size={10}/>}
               {connected ? "LIVE" : demoMode ? "CACHED" : "POLLING"}
             </div>
-            <button onClick={fetchSnap} title="Refresh (R)"
+            <button onClick={fetchSnap}
               className="p-2 rounded-lg border border-white/10 hover:bg-white/5 text-gray-500 hover:text-white transition-colors">
               <RefreshCw size={13}/>
             </button>
@@ -268,7 +245,7 @@ export default function App() {
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <StatTile icon={Activity}      label="LATEST BLOCK"     live
-            value={chain.mainnet?.latest_block?.toLocaleString() || (chain.testnet?.latest_block?.toLocaleString?.()) || "—"}
+            value={chain.mainnet?.latest_block?.toLocaleString() || "—"}
             sub="Mantle L2 mainnet" accent={G}/>
           <StatTile icon={AlertTriangle} label="ANOMALIES FOUND"
             value={allFnds.length}
@@ -281,19 +258,9 @@ export default function App() {
             sub={`${sm.tier1_alerts||0} tier-1 alerts`} accent="#A855F7"/>
         </div>
 
-        {/* Block Activity Timeline & Severity Heatmap */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-          <BlockTimeline blocks={data?.recent_blocks || []} findings={allFnds}/>
-          <SeverityHeatmap findings={allFnds} blocks={data?.recent_blocks || []}/>
-        </div>
-
-        {/* Protocol Health Gauges */}
-        <ProtocolGauges protocolState={data?.protocol_state}/>
-
         <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-hide">
-          {TABS.map(({ key, label, icon: Icon, badge }, idx) => (
+          {TABS.map(({ key, label, icon: Icon, badge }) => (
             <button key={key} onClick={() => setActiveTab(key)}
-              title={`Switch to ${label} (${idx+1})`}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap flex-shrink-0 relative overflow-hidden group"
               style={{
                 background: activeTab===key ? G+"15" : "transparent",
@@ -303,10 +270,9 @@ export default function App() {
               <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
               <Icon size={14} className="transition-transform group-hover:scale-110" />
               {label}
-              <span className="text-[9px] font-mono text-slate-700 group-hover:text-slate-600 ml-0.5 hidden lg:inline">{idx+1}</span>
               {(badge === "NEW" || badge > 0) && (
                 <span className="text-[10px] px-1.5 py-0.5 rounded-full font-mono ml-1 shadow-sm"
-                  style={{
+                  style={{ 
                     background: badge==="NEW" ? "#A855F725" : (activeTab===key ? G+"30":"#334155"),
                     color: badge==="NEW" ? "#D8B4FE" : (activeTab===key ? "#A7F3D0":"#CBD5E1"),
                     border: `1px solid ${badge==="NEW" ? "#A855F750" : (activeTab===key ? G+"50":"transparent")}`
@@ -353,8 +319,8 @@ export default function App() {
             </div>
 
             {sorted.length === 0 ? (
-              <div className="text-center py-20 text-gray-800 rounded-xl border border-white/5">
-                <Activity size={32} className="mx-auto mb-3 animate-pulse" style={{ color: G }}/>
+              <div className="text-center py-20 text-gray-800">
+                <Activity size={32} className="mx-auto mb-3 animate-pulse"/>
                 <p className="text-sm text-gray-600">No active incidents in current window</p>
                 <p className="text-xs mt-2 text-gray-700 font-mono">Scanning latest 100 blocks · refreshes every 12s</p>
               </div>
@@ -376,14 +342,10 @@ export default function App() {
         {activeTab === "audit"     && <AuditTab     data={data} findings={allFnds}/>}
         {activeTab === "api"       && <APITab       data={data} contract={contract}/>}
 
-        <footer className="border-t pt-6 pb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs font-mono text-slate-500"
+        <div className="border-t pt-6 flex items-center justify-between text-xs font-mono text-slate-500"
           style={{ borderColor:"rgba(255,255,255,0.05)" }}>
-          <div className="flex flex-col gap-1">
-            <span className="text-slate-400">Mantle Intel Agent v6.0 · On-Chain Intelligence</span>
-            <span className="text-gray-700">Powered by 5-agent AI pipeline · IsolationForest + Z-Score + Multi-Confirm</span>
-            <span className="text-gray-700 hidden sm:block">Shortcuts: 1–8 tabs · R refresh</span>
-          </div>
-          <div className="flex items-center gap-5">
+          <span>Mantle Intel Agent v6.0 · On-Chain Intelligence · Mantle Ecosystem</span>
+          <div className="flex items-center gap-5 hidden sm:flex">
             <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-1 hover:text-white transition-colors">
               <GitBranch size={10}/> GitHub
@@ -393,7 +355,7 @@ export default function App() {
               <Shield size={10}/> Contract
             </a>
           </div>
-        </footer>
+        </div>
       </div>
     </div>
   );

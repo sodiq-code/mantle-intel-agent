@@ -1,4 +1,4 @@
-import { Target, Cpu, TrendingUp } from "lucide-react";
+import { Target, Cpu } from "lucide-react";
 import { G, MiniBar, PulseDot } from "./Shared.jsx";
 
 export function AnalyticsTab({ data, backtest }) {
@@ -26,16 +26,12 @@ export function AnalyticsTab({ data, backtest }) {
   } : null;
 
   return (
-    <div className="space-y-4 animate-fade-in">
+    <div className="space-y-4">
       {bt && (
         <div className="rounded-xl border p-4" style={{ borderColor: G+"30", background: "#0D0D0D" }}>
           <div className="flex items-center gap-2 mb-4">
             <Target size={12} style={{ color: G }}/>
             <span className="text-xs font-bold" style={{ color: G }}>BACKTEST RESULTS — {bt.mode}</span>
-            <span className="ml-auto text-[10px] font-mono px-2 py-0.5 rounded-full"
-              style={{ color: G, backgroundColor: G+"15", border: `1px solid ${G}30` }}>
-              {bt.blocks_scanned} blocks
-            </span>
           </div>
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 text-center">
             {[
@@ -46,14 +42,14 @@ export function AnalyticsTab({ data, backtest }) {
               { label:"FP",        value:bt.fp,                  col:"#EF4444" },
               { label:"FN",        value:bt.fn,                  col:"#F97316" },
             ].map(({ label, value, col }) => (
-              <div key={label} className="rounded-lg p-3 transition-transform hover:scale-105" style={{ background: col+"0F" }}>
+              <div key={label} className="rounded-lg p-3" style={{ background: col+"0F" }}>
                 <div className="text-lg font-black font-mono" style={{ color: col }}>{value}</div>
                 <div className="text-xs text-gray-600 mt-1">{label}</div>
               </div>
             ))}
           </div>
-          {bt.methodology && <div className="text-xs text-gray-700 mt-3 font-mono">{bt.methodology}</div>}
-          <div className="text-xs text-gray-700 font-mono">Range: {bt.block_range}</div>
+          <div className="text-xs text-gray-700 mt-3 font-mono">{bt.methodology}</div>
+          <div className="text-xs text-gray-700 font-mono">Range: {bt.block_range} · {bt.blocks_scanned} blocks</div>
         </div>
       )}
 
@@ -81,7 +77,7 @@ export function AnalyticsTab({ data, backtest }) {
           { label:"Wallets Tracked",   value:`${sm.tracked_wallets||0}`,                  col:"#F97316" },
           { label:"Tier-1 Alerts",     value:`${sm.tier1_alerts||0}`,                     col:"#EAB308" },
         ].map(({ label, value, col }) => (
-          <div key={label} className="rounded-xl border p-4 transition-transform hover:scale-[1.02]" style={{ borderColor:"#1F2937", background:"#0D0D0D" }}>
+          <div key={label} className="rounded-xl border p-4" style={{ borderColor:"#1F2937", background:"#0D0D0D" }}>
             <div className="text-xl font-black font-mono" style={{ color: col }}>{value}</div>
             <div className="text-xs text-gray-600 mt-1">{label}</div>
           </div>
@@ -91,20 +87,17 @@ export function AnalyticsTab({ data, backtest }) {
       <div className="rounded-xl border p-4" style={{ borderColor:"#1F2937", background:"#0D0D0D" }}>
         <div className="text-xs font-bold text-white mb-3 flex items-center gap-2">
           <Cpu size={11} style={{ color:G }}/> Pipeline Agents
-          <span className="ml-auto text-xs font-mono flex items-center gap-1" style={{ color:G }}>
-            <PulseDot color={G} size={5}/> 5/5 LIVE
-          </span>
+          <span className="ml-auto text-xs font-mono" style={{ color:G }}>5/5 LIVE</span>
         </div>
-        <div className="space-y-1">
+        <div className="space-y-2">
           {[
             { name:"BlockCollector",     desc:"Fetches latest Mantle blocks via RPC",          ms: chain.mainnet?.latest_block ? 420 : null },
             { name:"FeatureExtractor",   desc:"Extracts tx stats, smart money, large flows",   ms: 38  },
             { name:"AnomalyDetector",    desc:"IsoForest + z-score + rule-based multi-confirm",ms: 210 },
             { name:"SignalGenerator",    desc:"Generates alpha signals from confirmed anomalies",ms: 12 },
             { name:"AlertDispatcher",    desc:"Telegram + on-chain + dashboard push",          ms: 55  },
-          ].map(({ name, desc, ms }, i) => (
-            <div key={name} className="flex items-center gap-3 py-2 border-b border-white/5 last:border-0 hover:bg-white/[0.02] transition-colors rounded px-2"
-              style={{ animationDelay: `${i*60}ms` }}>
+          ].map(({ name, desc, ms }) => (
+            <div key={name} className="flex items-center gap-3 py-2 border-b border-white/5 last:border-0">
               <PulseDot color={G} size={6}/>
               <div className="flex-1 min-w-0">
                 <div className="text-xs font-bold font-mono text-white">{name}</div>
@@ -116,33 +109,6 @@ export function AnalyticsTab({ data, backtest }) {
           ))}
         </div>
       </div>
-
-      {/* Types breakdown — show distribution from stats */}
-      {stats.types_breakdown && Object.keys(stats.types_breakdown).length > 0 && (
-        <div className="rounded-xl border p-4" style={{ borderColor:"#1F2937", background:"#0D0D0D" }}>
-          <div className="text-xs font-bold text-white mb-3 flex items-center gap-2">
-            <TrendingUp size={11} style={{ color:G }}/> Anomaly Type Distribution
-          </div>
-          <div className="space-y-2">
-            {Object.entries(stats.types_breakdown)
-              .sort(([,a],[,b]) => b - a)
-              .map(([type, count]) => {
-                const total = Object.values(stats.types_breakdown).reduce((s,v)=>s+v,0);
-                const pct = total > 0 ? (count / total) * 100 : 0;
-                return (
-                  <div key={type} className="flex items-center gap-3">
-                    <span className="text-xs font-mono text-gray-400 w-32 truncate">{type}</span>
-                    <div className="flex-1 h-2 rounded-full bg-slate-800 overflow-hidden">
-                      <div className="h-full rounded-full transition-all duration-700"
-                        style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${G}80, ${G})` }}/>
-                    </div>
-                    <span className="text-xs font-mono text-white w-8 text-right">{count}</span>
-                  </div>
-                );
-              })}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
