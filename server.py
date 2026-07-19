@@ -344,6 +344,104 @@ async def dashboard(request: Request):
     })
 
 
+@app.get("/api/live-feed")
+@limiter.limit("30/minute")
+async def live_feed(request: Request):
+    """Live feed endpoint for the React dashboard.
+
+    Returns all data the dashboard needs in one call:
+    - active_incidents (from IncidentManager)
+    - latest_findings
+    - chain info (latest blocks)
+    - protocol_state
+    - smart_money_summary
+    - stats
+    - contract info
+
+    The dashboard polls this every 12 seconds for real-time updates.
+    """
+    pipeline = get_pipeline()
+    stats = pipeline.get_stats()
+
+    # Active incidents from IncidentManager
+    active_incidents = []
+    for key, inc in pipeline.incident_manager.active_incidents.items():
+        notification = pipeline.incident_manager._format_incident_notification(inc)
+        # Add findings for expansion in the UI
+        notification["findings"] = inc.get("findings", [])
+        notification["latest_time"] = inc.get("latest_time")
+        active_incidents.append(notification)
+
+    # Chain info
+    chain = {}
+    try:
+        if pipeline.collector._w3:
+            mainnet_block = await asyncio.to_thread(
+                pipeline.collector._w3.eth.block_number)
+            chain["mainnet"] = {"latest_block": mainnet_block}
+    except Exception:
+        pass
+    try:
+        if pipeline.audit._w3:
+            testnet_block = await asyncio.to_thread(
+                pipeline.audit._w3.eth.block_number)
+            chain["testnet"] = {"latest_block": testnet_block}
+    except Exception:
+        pass
+
+    # Protocol state from collector
+    protocol_state = {}
+    last_state = pipeline.collector.get_last_state()
+    if last_state:
+        protocol_state = last_state
+    # Add audit contract info
+    try:
+        if pipeline.audit._contract:
+            count = await asyncio.to_thread(
+                pipeline.audit._contract.functions.findingCount().call)
+            protocol_state["audit_contract"] = {"finding_count": count}
+    except Exception:
+        pass
+
+    # Smart money summary
+    sm_summary = pipeline.smart_money.summary()
+
+    # Recent blocks for analytics chart
+    recent_blocks = []
+    for b in pipeline.collector.get_cached_blocks()[-30:]:
+        recent_blocks.append({
+            "block_num": getattr(b, 'block_num', 0),
+            "tx_count": getattr(b, 'tx_count', 0),
+            "total_value_mnt": getattr(b, 'total_value_mnt', 0),
+        })
+
+    # Compute derived stats
+    all_findings = pipeline.get_latest_findings(100)
+    confidences = [f.get("confidence", 0) for f in all_findings if f.get("confidence")]
+    avg_confidence = sum(confidences) / max(len(confidences), 1)
+    high_conf_pct = int(len([c for c in confidences if c >= 0.85]) / max(len(confidences), 1) * 100)
+    avg_tx = sum(b.get("tx_count", 0) for b in recent_blocks) / max(len(recent_blocks), 1)
+
+    return JSONResponse(content={
+        "last_updated": datetime.now(tz=timezone.utc).isoformat(),
+        "stats": {
+            **stats,
+            "avg_confidence": avg_confidence,
+            "high_confidence_pct": high_conf_pct,
+            "avg_tx_per_block": round(avg_tx, 1),
+        },
+        "latest_findings": all_findings,
+        "active_incidents": active_incidents,
+        "chain": chain,
+        "protocol_state": protocol_state,
+        "smart_money_summary": sm_summary,
+        "recent_blocks": recent_blocks,
+        "demo_mode": pipeline.collector.demo_mode,
+        "contract_address": pipeline.audit.contract_address or "not_deployed",
+        "network": pipeline.audit.network,
+    })
+
+
 @app.get("/api/findings")
 @limiter.limit("30/minute")
 async def findings(request: Request, limit: int = 20):
@@ -423,11 +521,14 @@ async def run_cycle(request: Request, background_tasks: BackgroundTasks = None):
 
 @app.on_event("startup")
 async def startup():
-    """Start pipeline loop on server start.
+    """Start pipeline continuous loop on server start.
 
     Pipeline init is deferred to a background task so it doesn't
     block the server startup (the collector's _init_web3() makes
     synchronous RPC calls).
+
+    The pipeline now auto-runs continuously, polling Mantle mainnet
+    every POLL_INTERVAL seconds and writing findings to the dashboard.
     """
     global _pipeline_task
 
@@ -435,11 +536,13 @@ async def startup():
         try:
             # Initialise pipeline inside the task to avoid blocking startup
             pipeline = get_pipeline()
-            # Do NOT auto-start continuous loop — use /api/run-cycle to trigger manually
-            # This prevents the server from being killed during on-chain writes
+            poll_interval = int(os.getenv("POLL_INTERVAL", "30"))
             structlog.get_logger("server").info(
-                "pipeline_ready",
-                msg="Pipeline initialized. Use POST /api/run-cycle to trigger cycles manually.")
+                "pipeline_auto_start",
+                msg=f"Pipeline initialized. Auto-running continuous loop (every {poll_interval}s).",
+                poll_interval=poll_interval)
+            # Start continuous pipeline loop
+            await pipeline.run_continuous()
         except Exception as e:
             structlog.get_logger("server").error("pipeline_error", error=str(e))
 
