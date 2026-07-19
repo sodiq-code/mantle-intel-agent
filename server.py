@@ -435,7 +435,11 @@ async def startup():
         try:
             # Initialise pipeline inside the task to avoid blocking startup
             pipeline = get_pipeline()
-            await pipeline.run_continuous()
+            # Do NOT auto-start continuous loop — use /api/run-cycle to trigger manually
+            # This prevents the server from being killed during on-chain writes
+            structlog.get_logger("server").info(
+                "pipeline_ready",
+                msg="Pipeline initialized. Use POST /api/run-cycle to trigger cycles manually.")
         except Exception as e:
             structlog.get_logger("server").error("pipeline_error", error=str(e))
 

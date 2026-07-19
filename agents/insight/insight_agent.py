@@ -4,7 +4,7 @@ Multi-provider LLM with resilient fallback chain.
 
 v4.0 architecture (institutional-grade reliability):
   Tier 1: Local LLM via Ollama (always available, no tokens, no rate limits)
-  Tier 2: Groq API (free, 30 req/min, sub-second latency)
+  Tier 2: Groq API (free, ~500 tps, openai/gpt-oss-120b — newest flagship)
   Tier 3: OpenRouter (multi-provider fallback, free tier available)
   Tier 4: Enhanced rule-based templates (always works, deterministic)
 
@@ -65,8 +65,8 @@ class InsightAgent:
 
     Architecture (institutional-grade reliability):
       Tier 1: Local LLM via Ollama (always available, no tokens)
-      Tier 2: Groq API (free, fast, reliable) — uses moonshotai/kimi-k2-instruct
-              (llama-3.3-70b-versatile was DEPRECATED Aug 16, 2026)
+      Tier 2: Groq API (free, fast, reliable) — uses openai/gpt-oss-120b
+              (newest flagship, ~500 tps, replaces deprecated llama-3.3-70b-versatile)
       Tier 3: OpenRouter (multi-provider fallback)
       Tier 4: Enhanced rule-based templates (always works)
 
@@ -107,12 +107,12 @@ class InsightAgent:
                 "api_key": None,
             })
 
-        # Tier 2: Groq Production Tier (free, 30 req/min, future-proof models)
-        # NOTE: llama-3.3-70b-versatile was DEPRECATED Aug 16, 2026
-        # Use one of the current production models:
-        #   - moonshotai/kimi-k2-instruct (recommended — newest, most capable)
-        #   - llama-3.3-70b-specdec (direct replacement for versatile)
-        #   - llama-4-scout-17b-16e-instruct (multimodal, faster, smaller)
+        # Tier 2: Groq Production Tier (free, ~500 tps)
+        # Using openai/gpt-oss-120b — newest flagship (replaces deprecated llama-3.3-70b-versatile)
+        # Fallback alternatives:
+        #   - qwen/qwen3.6-27b (lightweight, very fast)
+        #   - moonshotai/kimi-k2-instruct (Kimi K2, capable)
+        #   - llama-4-scout-17b-16e-instruct (multimodal, smaller)
         #   - deepseek-r1-distill-llama-70b (reasoning-focused)
         groq_key = os.getenv("GROQ_API_KEY")
         if groq_key:

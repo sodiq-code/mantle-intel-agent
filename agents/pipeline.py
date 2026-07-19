@@ -133,13 +133,30 @@ class MantleIntelPipeline:
         clusters, sm_signals = self.smart_money.analyze(blocks)
 
         # Stage 4 & 5: Insight + Audit for each anomaly
+        # Limit on-chain writes to prevent event loop starvation
+        MAX_ONCHAIN_PER_CYCLE = 3
+        onchain_count = 0
         for finding in anomalies:
             try:
                 # Generate insight
                 insight_text = await self.insight.generate_insight(finding)
 
-                # Record on-chain
-                audit_record = await self.audit.record_finding(finding)
+                # Record on-chain (limit per cycle to prevent event loop blocking)
+                if onchain_count < MAX_ONCHAIN_PER_CYCLE:
+                    audit_record = await self.audit.record_finding(finding)
+                    onchain_count += 1
+                else:
+                    # Skip on-chain write for remaining findings in this cycle
+                    from agents.audit.audit_agent import AuditRecord
+                    audit_record = AuditRecord(
+                        finding_id=finding.finding_id,
+                        finding_hash=finding.sha256_hash(),
+                        anomaly_type=finding.anomaly_type,
+                        confidence=finding.confidence,
+                        block_height=finding.block_height,
+                        audit_status="deferred",
+                        error=f"On-chain write deferred (max {MAX_ONCHAIN_PER_CYCLE}/cycle)",
+                    )
 
                 # Build full finding record
                 dashboard_card = self.insight.format_dashboard_card(
@@ -172,6 +189,8 @@ class MantleIntelPipeline:
                 self.logger.error("finding_processing_failed",
                                   finding_id=finding.finding_id,
                                   error=str(e))
+            # Yield to event loop between findings to prevent starvation
+            await asyncio.sleep(0)
 
         # Save audit log
         self.audit.save_audit_log(AUDIT_LOG_PATH)

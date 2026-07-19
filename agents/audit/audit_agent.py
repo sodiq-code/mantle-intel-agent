@@ -308,9 +308,12 @@ class AuditAgent:
 
         Delegates synchronous web3 calls to a thread via asyncio.to_thread
         so the event loop is not blocked while waiting for the on-chain tx.
+        Includes a 90-second timeout to prevent hanging.
         """
-        return await asyncio.to_thread(
-            self._submit_to_chain_sync, finding, finding_hash)
+        return await asyncio.wait_for(
+            asyncio.to_thread(
+                self._submit_to_chain_sync, finding, finding_hash),
+            timeout=90.0)
 
     def _submit_to_chain_sync(self, finding, finding_hash: str) -> tuple[str, int]:
         """Synchronous on-chain submission (runs in a worker thread)."""
