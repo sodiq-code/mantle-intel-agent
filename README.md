@@ -48,7 +48,7 @@ CollectorAgent (Stage 1)
   ▼
 AnomalyAgent (Stage 2)
   │  Z-Score (3.5σ) · Isolation Forest (contamination=0.02, min_history=30)
-  │  Whale Pattern Matching · mETH Depeg (>50bps) · LP Imbalance (>30%)
+  │  Whale Pattern Matching · mETH Depeg (>50bps) · LP Imbalance (>15% effective)
   │  Cross-Protocol Correlation · Bridge Spike (3.5σ) · MEV · Smart Money
   │  Minimum filters: MIN_TX_SPIKE_COUNT=5, MIN_VALUE_SPIKE_USD=$1000
   │  CONFIDENCE_THRESHOLD = 0.80 (matches Solidity >= 80)
@@ -408,7 +408,7 @@ Current production thresholds in `agents/anomaly/anomaly_agent.py`:
 | `MIN_TX_SPIKE_COUNT` | 5 | Blocks with <5 txs cannot be spikes (new) |
 | `MIN_VALUE_SPIKE_USD` | $1,000 | Ignore value spikes below $1,000 (new) |
 | `METH_DEPEG_THRESHOLD` | 50bps | Alert if mETH/ETH deviates >0.5% |
-| `MOE_IMBALANCE_RATIO` | 0.30 | 30% reserve imbalance triggers LP alert |
+| `MOE_IMBALANCE_RATIO` | 0.30 | Effective trigger at 15% (code uses `MOE_IMBALANCE_RATIO / 2`); constant value 0.30 for severe cases |
 
 Per-type confidence base values vary by detection method (e.g., whale base = 0.68, smart_money base = 0.72, meth_depeg WARNING = 0.82 / CRITICAL = 0.96). These are initial scoring levels only — **every finding must also pass the global pipeline confidence threshold of 0.80** before being emitted and recorded on-chain. See [`docs/MODEL_CARD.md`](./docs/MODEL_CARD.md) for confidence bands.
 
