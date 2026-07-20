@@ -14,13 +14,13 @@
 | Contract | Address | Block | Purpose |
 |----------|---------|-------|---------|
 | **MantleIntelAudit** | `0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b` | 39851391 | Immutable anomaly audit trail — SHA256 tamper-evident hashes |
-| **MantleIntelAgentNFT** | `0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C` | 39815592 | ERC-8004 agent identity NFT |
+| **MantleIntelAgentNFT** | `0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C` | 39815592 | ERC-721 agent identity NFT |
 
 ---
 
-## ERC-8004 NFT Mint
+## ERC-721 agent NFT Mint
 
-The agent minted its on-chain identity as an ERC-8004 NFT before any findings were submitted, proving it is a registered autonomous agent — not a human manually submitting data.
+The agent minted its on-chain identity as an ERC-721 agent NFT before any findings were submitted, proving it is a registered autonomous agent — not a human manually submitting data.
 
 | Field | Value |
 |-------|-------|
@@ -160,7 +160,7 @@ Every push to `main` triggers:
 - **Block:** `96526450` (Mantle Mainnet)
 - **Timestamp:** `2026-06-11T~18:32 UTC` (block time ~2s)
 - **Anomaly Type:** `tx_spike` — transaction volume spike
-- **Confidence:** `90%` (Z-score threshold: 3.0σ)
+- **Confidence:** `90%` (Z-score threshold: 3.5σ)
 - **On-chain submission TX:** `0x99e1687a04e0adc61dd9572cc79f691609a830793778111d145fabe59052c829`
 - **What happened:** Mantle Intel Agent detected a statistically anomalous transaction count at this block — 13 transactions in a single block window vs. rolling mean of ~4.2 txs/block. This is a 3.1σ deviation. The agent classified it as a `tx_spike` and fired an **ALERT** tier signal within 6 seconds of block inclusion.
 - **Investment implication:** TX volume spikes of this magnitude on Mantle have historically preceded 15-40% TVL inflow within 2-4 hours (Merchant Moe + Lendle correlation, observed across Q1-Q2 2026 Mantle data).
@@ -172,7 +172,7 @@ Every push to `main` triggers:
 - **Confidence:** `71%`
 - **Value flagged:** `202.9 MNT` in a single block
 - **On-chain submission TX:** `0x270d4c9d2f2f886ec27553b382f39d05df50c50b3c8bb08a043ca97ded53edc7`
-- **What happened:** Agent detected a high-value transfer cluster. 202.9 MNT (~$400+ at time of detection) concentrated in a single block. Cross-referenced against 60+ labeled wallet database — no CEX/VC match (unlabeled smart money pattern).
+- **What happened:** Agent detected a high-value transfer cluster. 202.9 MNT (~$400+ at time of detection) concentrated in a single block. Cross-referenced against 55 labeled wallet database — no CEX/VC match (unlabeled smart money pattern).
 - **Signal tier:** `WATCH` → upgraded to `ALERT` when confirmed 3 blocks later by correlated Merchant Moe LP reserve shift.
 
 > **Note:** These are real detections from live Mantle mainnet data. The pipeline reads from mainnet RPC and records findings to the Sepolia testnet audit contract.

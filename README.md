@@ -28,7 +28,7 @@
 
 Mantle Intel Agent is a fully autonomous 5-agent Python pipeline that continuously monitors the Mantle L2 ecosystem and surfaces **professional-grade security and trading signals**:
 
-1. **Collects** — Polls Mantle mainnet RPC (default: 30-second cycle interval; collector internal poll: 6s). Pulls Pyth oracle prices, mETH contract state, Merchant Moe LP reserves, Lendle TVL, and bridge events. All web3.py `.call()` methods run via `asyncio.to_thread()` to prevent event-loop blocking. Zero centralized API keys required.
+1. **Collects** — Polls Mantle mainnet RPC (default: 30-second cycle interval). Pulls Pyth oracle prices, mETH contract state, Merchant Moe LP reserves, Lendle TVL, and bridge events. All web3.py `.call()` methods run via `asyncio.to_thread()` to prevent event-loop blocking. Zero centralized API keys required.
 2. **Detects** — Runs 10 anomaly detectors per block: Z-Score (3.5σ), Isolation Forest (contamination=0.02), whale pattern matching, mETH depeg, LP imbalance, cross-protocol correlation, bridge spikes (3.5σ threshold), MEV activity, smart money clustering, and multivariate signals. Minimum confidence threshold: **0.80** (matching Solidity contract `confidenceScore >= 80`).
 3. **Labels** — 55 Nansen-style wallet classifications (KNOWN_LABELS): CEX, VC, Mantle DeFi protocols, MEV bots, and known alpha wallets. Tier 1/2/3 labeling system with rule-based type grouping.
 4. **Manages Incidents** — Correlates related anomalies into a unified Incident ID. Composite incident grouping delivers 1 notification per event instead of 4 separate alerts. Tracks state across `OPENED`, `ESCALATED`, and `RESOLVED` to eliminate alert fatigue.
@@ -66,7 +66,7 @@ InsightAgent & IncidentManager (Stage 4)
 AuditAgent (Stage 5)
   │  SHA256(canonical 4-field JSON, sort_keys=True) → MantleIntelAudit.sol
   │  Via Encrypted Keystore (3-tier key resolution)
-  │  ERC-721 Agent Identity NFT (ERC-8004-inspired metadata extensions)
+  │  ERC-721 Agent Identity NFT (custom on-chain agent metadata)
   │  File rotation: daily gzip + 30-day cleanup (P2-27)
   │
   ├── Telegram Bot       /start · /status · /latest · /verify · /compare
@@ -410,7 +410,7 @@ Current production thresholds in `agents/anomaly/anomaly_agent.py`:
 | `METH_DEPEG_THRESHOLD` | 50bps | Alert if mETH/ETH deviates >0.5% |
 | `MOE_IMBALANCE_RATIO` | 0.30 | 30% reserve imbalance triggers LP alert |
 
-Per-type confidence base values vary by detection method (e.g., whale base ≈ 0.72, meth_depeg WARNING = 0.82 / CRITICAL = 0.96). These are initial scoring levels only — **every finding must also pass the global pipeline confidence threshold of 0.80** before being emitted and recorded on-chain. See [`docs/MODEL_CARD.md`](./docs/MODEL_CARD.md) for confidence bands.
+Per-type confidence base values vary by detection method (e.g., whale base = 0.68, smart_money base = 0.72, meth_depeg WARNING = 0.82 / CRITICAL = 0.96). These are initial scoring levels only — **every finding must also pass the global pipeline confidence threshold of 0.80** before being emitted and recorded on-chain. See [`docs/MODEL_CARD.md`](./docs/MODEL_CARD.md) for confidence bands.
 
 ---
 

@@ -19,7 +19,7 @@ Mantle Intel Agent is an **autonomous 5-agent AI pipeline** for on-chain anomaly
 | Component | Type | Purpose |
 |-----------|------|---------|
 | Isolation Forest | Unsupervised ML (scikit-learn) | Multivariate outlier detection |
-| Z-Score | Statistical | Univariate spike detection (3.0σ threshold) |
+| Z-Score | Statistical | Univariate spike detection (3.5σ threshold) |
 | Pattern Matching | Rule-based | Whale, smart money, depeg, imbalance detection |
 | LLM (optional) | Generative AI | Narrative report formatting only |
 
@@ -97,7 +97,7 @@ All user-influenced data is sanitised before inclusion in LLM prompts:
 |----------|-------|
 | Training method | Unsupervised (no labels required) |
 | Training data | Rolling window of last 500 blocks from Mantle mainnet |
-| Contamination parameter | 0.03 (3% expected anomaly rate) |
+| Contamination parameter | 0.02 (2% expected anomaly rate) |
 | Feature count | 7 (tx_count, total_value_mnt, unique_senders, large_transfer_count, meth_ratio, moe_reserve_ratio, lendle_tvl) |
 | Retraining | Automatic — model adapts as new blocks are processed |
 | No fine-tuning | The Isolation Forest is trained from scratch each cycle using the rolling window |
@@ -129,7 +129,7 @@ Evaluated on **395 real blocks** (96,526,081 → 96,526,580), no simulation, no 
 
 Wilson 95% CI: Precision [0.782, 1.000], Recall [0.697, 0.985]
 
-The single missed event (FN=1) was a sub-threshold `meth_depeg_risk` at z=1.94σ (below the 2.0σ cutoff). It resolved without incident — the conservative threshold prevented a false alarm.
+The single missed event (FN=1) was a sub-threshold `meth_depeg_risk` at z=1.94σ (below the 3.5σ cutoff). It resolved without incident — the conservative threshold prevented a false alarm.
 
 ### Confidence Calibration
 
@@ -149,8 +149,8 @@ The single missed event (FN=1) was a sub-threshold `meth_depeg_risk` at z=1.94σ
 | `whale_accumulation` | 0.72 | Pattern match |
 | `smart_money_inflow` | 0.75 | Pattern match |
 | `meth_depeg` | 0.65 | Oracle diff (lower = early warning) |
-| `oracle_manipulation` | 0.85 | Cross-source divergence |
-| `tx_spike` | 0.75 (3.0σ) | Z-Score |
+| `oracle_manipulation` | 0.85 | Cross-source divergence ⚠️ **unimplemented** — no detection code exists for this type |
+| `tx_spike` | 0.75 (3.5σ) | Z-Score |
 | `isolation_forest` | 0.75 | IF outlier (score < 0) |
 
 ### On-Chain Contract Threshold

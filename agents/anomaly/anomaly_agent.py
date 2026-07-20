@@ -396,7 +396,7 @@ class AnomalyAgent:
             X_scaled = scaler.fit_transform(X)
 
             clf = IsolationForest(
-                contamination=self.contamination,  # 0.03
+                contamination=self.contamination,  # 0.02
                 random_state=42,
                 n_estimators=150,
                 max_samples="auto",

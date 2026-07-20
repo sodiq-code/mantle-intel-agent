@@ -154,7 +154,7 @@ print(f\"False Positives: {data.get('false_positives', 'N/A')}\")
 
 ## Step 7: Verify Agent NFT (30s)
 
-The ERC-8004 agent identity NFT is minted on Mantle Sepolia.
+The ERC-721 with agent metadata agent identity NFT is minted on Mantle Sepolia.
 
 **NFT contract:** `0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C`
 **Minted at block:** 39815592

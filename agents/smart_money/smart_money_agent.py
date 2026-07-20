@@ -7,7 +7,7 @@ Clusters wallets by behavioral patterns to identify:
   - "Alpha wallets" — consistently early to new protocols
 
 v2.0 changes:
-  - 60+ labeled wallets (Nansen-style enrichment — no API key needed)
+  - 55 labeled wallets (Nansen-style enrichment — no API key needed)
   - compare_signals() method for /compare command
   - Wallet score / tier system (Tier 1–3)
   - Historical signal deque for comparison queries
@@ -27,7 +27,7 @@ SKLEARN_AVAILABLE = False
 
 
 # ── Nansen-style labeled wallet registry (no API key needed) ─────────────────
-# Extended from 14 → 60+ wallets covering Mantle ecosystem + major CEX/MEV
+# Extended from 14 → 55 wallets covering Mantle ecosystem + major CEX/MEV
 # Format: { address_lowercase: { label, type, tier, tags } }
 
 KNOWN_LABELS: dict[str, dict] = {
@@ -145,7 +145,7 @@ class SmartMoneyAgent:
     Clusters wallets by behavioral fingerprint and identifies
     smart money signals worth surfacing as alpha.
 
-    v2.0: 60+ labeled wallets (Nansen-style), /compare signal history,
+    v2.0: 55 labeled wallets (Nansen-style), /compare signal history,
           wallet tier system, historical signal deque.
     """
 

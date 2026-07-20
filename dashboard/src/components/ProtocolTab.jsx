@@ -98,7 +98,7 @@ export function ProtocolTab({ data }) {
         <div className="space-y-2">
           {[
             { name:"MantleIntelAudit",    addr:"0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b", note:`${auditCount} findings` },
-            { name:"MantleIntelAgentNFT", addr:"0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C", note:"ERC-8004 identity" },
+            { name:"MantleIntelAgentNFT", addr:"0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C", note:"ERC-721 agent identity" },
           ].map(({ name, addr, note }) => (
             <div key={name} className="flex items-center gap-3 text-xs font-mono py-1.5 border-b border-white/5 last:border-0">
               <span className="font-bold" style={{ color: G, minWidth: 160 }}>{name}</span>

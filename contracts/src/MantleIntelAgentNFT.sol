@@ -6,12 +6,12 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title MantleIntelAgentNFT
- * @notice ERC-8004 Agent Identity NFT for Mantle Intel Agent.
+ * @notice Agent Identity NFT (ERC-721 with on-chain agent metadata) for Mantle Intel Agent.
  *         Represents a registered autonomous AI agent on-chain.
  *         Each NFT encodes the agent's capabilities, audit contract,
  *         and verifiable identity — enabling trustless agent-to-agent composition.
  *
- * @dev ERC-8004 extends ERC-721 with agent-specific metadata:
+ * @dev Extends ERC-721 with custom agent identity metadata struct:
  *      - agentType: classifier (e.g. "anomaly_detector", "smart_money_tracker")
  *      - capabilities: bitmask of agent abilities
  *      - auditContract: address of the agent's on-chain audit log
@@ -21,7 +21,7 @@ contract MantleIntelAgentNFT is ERC721URIStorage, Ownable {
 
     uint256 public totalSupply;
 
-    // ── ERC-8004 Agent Metadata ──────────────────────────────────────────────
+    // ── Agent Identity Metadata ──────────────────────────────────────────────
     struct AgentIdentity {
         string  agentName;          // "Mantle Intel Agent v1.0"
         string  agentType;          // "multi_agent_pipeline"
@@ -47,7 +47,7 @@ contract MantleIntelAgentNFT is ERC721URIStorage, Ownable {
 
     constructor() ERC721("Mantle Intel Agent Identity", "MIAI") Ownable(msg.sender) {}
 
-    // ── ERC-8004 Core ────────────────────────────────────────────────────────
+    // ── Agent Identity Core ────────────────────────────────────────────────────────
 
     /**
      * @notice Mint an agent identity NFT.

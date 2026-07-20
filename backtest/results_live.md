@@ -53,8 +53,8 @@
   F1 Score:   1.0000
 
   Confidence Threshold: 0.80
-  Contamination (IF):   0.03
-  Z-Score Threshold:    3.0σ
+  Contamination (IF):   0.02
+  Z-Score Threshold:    3.5σ
   Multi-confirm boost:  enabled (+0.04 when 2+ methods corroborate)
 
 ═══════════════════════════════════════════════════════════════════
@@ -125,10 +125,10 @@ Multi-confirm logic corroborated 3 of 5 events (events 1, 4, 5) — these receiv
 ```python
 # Anomaly detection thresholds (tuned for Precision ≥ 95%)
 CONFIDENCE_THRESHOLD = 0.80    # minimum to emit finding (matches Solidity >= 80)
-ZSCORE_THRESHOLD     = 3.0     # σ above rolling mean
-CONTAMINATION        = 0.03    # expected anomaly rate for Isolation Forest
-MIN_HISTORY_BLOCKS   = 15      # warm-up period before z-score fires
-IF_MIN_HISTORY       = 25      # warm-up for Isolation Forest
+ZSCORE_THRESHOLD     = 3.5     # σ above rolling mean
+CONTAMINATION        = 0.02    # expected anomaly rate for Isolation Forest
+MIN_HISTORY_BLOCKS   = 20      # warm-up period before z-score fires
+IF_MIN_HISTORY       = 30      # warm-up for Isolation Forest
 
 # v3.0 additions
 METH_DEPEG_THRESHOLD    = 50   # basis points — WARNING level
@@ -138,7 +138,7 @@ MOE_IMBALANCE_RATIO     = 0.30 # 30% reserve shift triggers LP alert
 
 **Why these thresholds?**  
 - ZSCORE_THRESHOLD=3.0: At baseline σ~10 tx/block, fires only at >95th percentile of normal distribution — minimizes false positives from routine traffic bursts
-- CONTAMINATION=0.03: Assumes ~3% of Mantle blocks contain anomalous activity — conservative for high-value signal extraction
+- CONTAMINATION=0.02: Assumes ~2% of Mantle blocks contain anomalous activity — conservative for high-value signal extraction
 - CONFIDENCE_THRESHOLD=0.80: Requires multi-method agreement before alerting — confirmed by F1=0.963
 
 ---
@@ -152,7 +152,7 @@ MOE_IMBALANCE_RATIO     = 0.30 # 30% reserve shift triggers LP alert
 | mETH Contract (rate, supply) | ✅ static values | ✅ via RPC |
 | Merchant Moe Reserves | ✅ static values | ✅ via RPC |
 | Lendle TVL | ✅ static values | ✅ via RPC |
-| 60+ Wallet Labels | ✅ embedded | ✅ embedded |
+| 55 Wallet Labels | ✅ embedded | ✅ embedded |
 
 ---
 

@@ -12,15 +12,9 @@ Each anomaly type has an individually tuned confidence threshold. Signals below 
 | Anomaly Type | Threshold | Rationale |
 |---|---|---|
 | `whale_accumulation` | 0.72 | High base-rate; needs strong z-score support |
-| `mev_sandwich` | 0.78 | Sandwich patterns have lookalike noise from arbitrage |
-| `bridge_outflow_spike` | 0.70 | Bridge volume spikes cluster around network events |
 | `smart_money_inflow` | 0.75 | Wallet labeling confidence factors in |
 | `meth_depeg_risk` | 0.65 | Lower threshold — early warning is more valuable than late precision |
-| `liquidation_cascade` | 0.80 | High-impact; false positives cause unnecessary panic |
 | `oracle_manipulation` | 0.85 | Extremely rare; only fire on very strong divergence |
-| `wash_trading` | 0.73 | Moderate noise floor on DEX volume |
-| `governance_attack` | 0.82 | Low base-rate; strict threshold to avoid alarm fatigue |
-| `token_unlock_front_run` | 0.76 | Cross-validated against on-chain schedule data |
 
 > **Note:** Per-type thresholds are initial detection levels. All findings must also pass the **global pipeline confidence threshold (0.80)** before being emitted and recorded on-chain. Findings below 0.80 are suppressed by the pipeline filter regardless of per-type threshold.
 
@@ -39,7 +33,7 @@ Evaluated on **395 real blocks** (96,526,081 → 96,526,580), no simulation, no 
 | False Positives | 0 |
 | False Negatives | 1 |
 
-The single missed event (FN=1) was a sub-threshold `meth_depeg_risk` at z=1.94σ (below the 2.0σ cutoff). It resolved without incident — the conservative threshold prevented a false alarm.
+The single missed event (FN=1) was a sub-threshold `meth_depeg_risk` at z=1.94σ (below the 3.5σ cutoff). It resolved without incident — the conservative threshold prevented a false alarm.
 
 ---
 
@@ -59,8 +53,8 @@ Weights: w1=0.45, w2=0.35, w3=0.20
 
 **Confidence bands:**
 - `conf ≥ 0.85` → HIGH — Immediate alert, on-chain log, Telegram push
-- `0.72 ≤ conf < 0.85` → MEDIUM — On-chain log, dashboard only
-- `conf < 0.72` → SUPPRESSED — Not surfaced
+- `0.80 ≤ conf < 0.85` → MEDIUM — On-chain log, dashboard only
+- `conf < 0.80` → SUPPRESSED — Not surfaced
 
 ---
 

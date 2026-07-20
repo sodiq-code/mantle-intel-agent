@@ -12,11 +12,11 @@
 |-----------|--------|
 | 5-agent Python pipeline (Collector → Anomaly → SmartMoney → Insight → Audit) | ✅ Live |
 | Isolation Forest + Z-Score + Pattern Match anomaly detection | ✅ Live |
-| 60+ Nansen-style wallet labels | ✅ Live |
+| 55 Nansen-style wallet labels | ✅ Live |
 | mETH depeg detection via oracle | ✅ Live |
 | Merchant Moe + Lendle RPC polling | ✅ Live |
 | Pyth oracle price integration | ✅ Live |
-| MantleIntelAudit.sol on-chain audit log (ERC-8004) | ✅ Testnet |
+| MantleIntelAudit.sol on-chain audit log (ERC-721 with agent metadata) | ✅ Testnet |
 | Telegram bot + Discord webhook | ✅ Live |
 | React dashboard + public REST API | ✅ Live (Vercel) |
 | Backtest: F1=0.963, Precision=100%† | ✅ Verified |
@@ -136,7 +136,7 @@ Tier 4 — Enterprise (Custom pricing)
 ### Protocol Vision
 - **Signal Marketplace** — Analysts stake MNT to publish signals; quality tracked on-chain
 - **Truth-seeking mechanism** — Signals verified against realized outcomes (oracle-fed)
-- **Reputation NFT (ERC-8004 extension)** — Analyst reputation as transferable, composable identity
+- **Reputation NFT (ERC-721 with agent metadata extension)** — Analyst reputation as transferable, composable identity
 - **DAO governance** — MNT holders vote on signal categories, protocol coverage, fee split
 - **Subscriber NFT** — Access pass to signal feeds (tradeable, secondary market)
 
@@ -194,7 +194,7 @@ Tier 4 — Enterprise (Custom pricing)
 | Detection precision | 100%† | ≥95% | ≥90% | ≥88% (more signals) |
 | Alert latency | <30s | <5s | <2s | <500ms |
 | Protocol coverage | 8 | 15 | 25+ | 30+ |
-| Labeled wallets | 60+ | 500+ | 2,000+ | 5,000+ |
+| Labeled wallets | 55 | 500+ | 2,000+ | 5,000+ |
 | Paying subscribers | 0 | 10 | 50 | 150+ |
 | Monthly findings | ~500 | 5,000 | 20,000 | 100,000+ |
 

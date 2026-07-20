@@ -38,10 +38,10 @@
            ▼
 ┌──────────────────────┐
 │ Agent 3: Smart Money │
-│(smart_money_agent.py)│  ← 60+ labeled wallets (Nansen-style)
+│(smart_money_agent.py)│  ← 55 labeled wallets (Nansen-style)
 │                      │     • CEX wallet detection
-│  Clustering: DBSCAN  │     • VC/fund wallet tracking
-│  + KMeans            │     • Smart money inflow signals
+│  Clustering: Rule-based │     • VC/fund wallet tracking
+│  type grouping       │     • Smart money inflow signals
 │                      │     • Wallet tier system (1–3)
 │  Output: signals[]   │
 └──────────┬───────────┘
@@ -54,7 +54,7 @@
 │                      │    │  MantleIntelAudit.sol             │
 │  SHA256 tamper-proof │    │  0x7266cD152e08Ae7...     │
 │  Pre-commit sealing  │    │  → submitFinding(bytes32 hash)    │
-│  ERC-8004 NFT mint   │    │  → findingCount() = 20           │
+│  ERC-721 agent metadata NFT │    │  → findingCount() = 20           │
 │                      │    │  → getPublicFindings(offset,lim) │
 └──────────┬───────────┘    └──────────────────────────────────┘
            │
@@ -86,8 +86,8 @@ Collector Agent (12s poll)
     ▼
 Anomaly Agent
     │
-    │  Z-Score: (x - μ) / σ > 3.0σ threshold
-    │  Isolation Forest: contamination=0.03, min_history=25
+    │  Z-Score: (x - μ) / σ > 3.5σ threshold
+    │  Isolation Forest: contamination=0.02, min_history=30
     │  Confidence: 0.80 threshold, multi-method boost +0.04
     │
     │  AnomalyFinding { finding_id, anomaly_type, block_height,
@@ -96,7 +96,7 @@ Anomaly Agent
     ▼
 Smart Money Agent
     │
-    │  60+ labeled wallets → DBSCAN clustering → tier scoring
+    │  55 labeled wallets → rule-based type grouping → tier scoring
     │
     │  SmartMoneySignal { wallet, action, protocol, value_usd,
     │                     confidence, rationale }
@@ -122,7 +122,7 @@ contracts/
 │   ├── getPublicFindings(o, l)   # Paginated retrieval
 │   └── subscribe/unsubscribe     # Signal registry
 │
-├── MantleIntelAgentNFT.sol       # ERC-8004 autonomous agent NFT
+├── MantleIntelAgentNFT.sol       # ERC-721 agent identity NFT
 │   └── mint(agentId, uri)        # Proved at block 39815592
 ```
 
@@ -146,15 +146,15 @@ contracts/
 
 | Type | Method | Threshold |
 |------|--------|-----------|
-| `tx_spike` | Z-score | 3.0σ |
-| `value_spike` | Z-score | 3.0σ |
+| `tx_spike` | Z-score | 3.5σ |
+| `value_spike` | Z-score | 3.5σ |
 | `whale_accumulation` | Pattern match | 2+ large txs, ≥$100k |
 | `whale_distribution` | Pattern match | 2+ large txs, ≥$100k |
 | `smart_money_inflow` | Pattern match | 2+ unknown→protocol |
 | `meth_depeg` | Oracle diff | ≥50bps from peg |
 | `liquidity_imbalance` | Reserve ratio | ≥15% imbalance |
 | `cross_protocol` | Multi-protocol | 3+ protocols hit |
-| `bridge_spike` | Z-score | 3.0σ on bridge vol |
+| `bridge_spike` | Z-score | 3.5σ on bridge vol |
 | `isolation_forest` | IF outlier | score < 0 |
 
 ### Backtest Results (Live Mantle Mainnet Data, 395 blocks)
@@ -188,7 +188,7 @@ Wilson 95% CI for recall: [0.697, 0.985]
 | Blockchain | web3.py, Mantle RPC |
 | Contracts | Solidity 0.8.x, Hardhat/Foundry |
 | API | Vercel Edge Functions (Node.js) |
-| Dashboard | React 18, Vite, Recharts |
+| Dashboard | React 18, Vite, Lucide icons + custom SVG charts |
 | Alerts | python-telegram-bot |
 | Logging | structlog |
 

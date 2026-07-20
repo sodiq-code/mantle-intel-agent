@@ -1,7 +1,7 @@
 # Mantle Intel Agent — Investment Thesis
 ## For Mirana Ventures & Alpha/Data Track Judges
 
-> **TL;DR:** On-chain alpha delivery for Mantle Network — the first autonomous, real-time intelligence layer purpose-built for Mantle's DeFi ecosystem. Backtest: F1=0.963, Precision=100%†, Recall=92.9%. Live API, 5 on-chain audit logs, ERC-8004 NFT identity, Telegram/Discord alerts. Built to win the Alpha & Data Track.
+> **TL;DR:** On-chain alpha delivery for Mantle Network — the first autonomous, real-time intelligence layer purpose-built for Mantle's DeFi ecosystem. Backtest: F1=0.963, Precision=100%†, Recall=92.9%. Live API, 5 on-chain audit logs, ERC-721 with agent metadata NFT identity, Telegram/Discord alerts. Built to win the Alpha & Data Track.
 
 ---
 
@@ -22,15 +22,15 @@ Mantle's DeFi ecosystem — $500M+ TVL across Merchant Moe, Lendle, Agni Finance
 
 Mantle Intel Agent is a **5-agent AI pipeline** that continuously:
 
-1. **Collects** — Polls Mantle RPC + Pyth oracle + mETH contract + Merchant Moe reserves every 6 seconds
-2. **Detects** — Runs Isolation Forest (contamination=0.03) + Z-Score (3.0σ) + 8 pattern detectors on multi-dimensional block data
-3. **Classifies** — 60+ Nansen-style wallet labels (CEX, VC, DeFi protocols, MEV bots) — no API key needed
+1. **Collects** — Polls Mantle RPC + Pyth oracle + mETH contract + Merchant Moe reserves every 30 seconds
+2. **Detects** — Runs Isolation Forest (contamination=0.02) + Z-Score (3.5σ) + 8 pattern detectors on multi-dimensional block data
+3. **Classifies** — 55 Nansen-style wallet labels (CEX, VC, DeFi protocols, MEV bots) — no API key needed
 4. **Narrates** — Investment-grade signal reports with signal tier (WATCH / ALERT / IMMEDIATE ACTION) and lead-time estimates
 5. **Audits** — Every finding SHA256-hashed and permanently written to `MantleIntelAudit.sol` (immutable, on-chain)
 
 **What makes it Mantle-specific:**
 - mETH depeg detection: fires when mETH/ETH deviates >50bps from expected staking rate (Pyth + contract dual-source)
-- Merchant Moe reserve imbalance: LP ratio shift >30% triggers liquidity alert
+- Merchant Moe reserve imbalance: LP ratio shift >15% effective (MOE_IMBALANCE_RATIO / 2) triggers liquidity alert
 - Lendle TVL tracking: monitors total supply as borrowing demand proxy
 - Cross-protocol correlation: detects simultaneous multi-protocol activity (highest-conviction signal)
 
@@ -69,7 +69,7 @@ Wilson 95% CI: Precision [0.782, 1.000], Recall [0.697, 0.985]
 - **Live API:** `https://mantle-intel-agent.vercel.app/api/live-feed` — `demo_mode: false`, real Mantle mainnet blocks
 - **On-chain log:** 5 findings hashed + submitted to `MantleIntelAudit.sol` (0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b, Mantle Sepolia)
 - **Sourcify verified:** Contract source publicly verifiable
-- **NFT identity:** ERC-8004 agent identity minted (0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C)
+- **NFT identity:** ERC-721 with agent metadata agent identity minted (0xFAAcA6eE3b63b18C6bB39f77F48cdcc0043f792C)
 
 ### Why Users Would Pay
 - A fund managing $10M on Mantle: 1 avoided liquidation cascade = $50,000+ saved → $999/mo fee is **0.024% of protected capital**
@@ -123,7 +123,7 @@ Enterprise    →  Custom  — white-label, on-premise, dedicated support
 1. **mETH Protocol** — $400M+ TVL in liquid staking creates structural demand for LSD monitoring
 2. **Mantle Ecosystem Fund** — $200M+ in ecosystem grants = more protocols to track
 3. **DeFi Summer 2.0 on Mantle** — TVL 3x'd in 2025, creating more alpha opportunities
-4. **ERC-8004 adoption** — Agent NFT standard creates composable identity for autonomous agents
+4. **ERC-721 with agent metadata adoption** — Agent NFT standard creates composable identity for autonomous agents
 
 ### First-Mover Advantage
 - No purpose-built analytics tool exists for Mantle ecosystem today
