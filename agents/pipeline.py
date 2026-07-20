@@ -37,10 +37,15 @@ except ImportError:
 
 logger = structlog.get_logger(__name__)
 
-os.makedirs("data", exist_ok=True)
+# P2-23 FIX: Removed module-level os.makedirs side effect.
+# Directory creation is now lazy — only when first needed.
 FINDINGS_PATH = "data/findings.jsonl"
 AUDIT_LOG_PATH = "data/audit_log.jsonl"
 DASHBOARD_PATH = "data/dashboard.json"
+
+def _ensure_data_dir():
+    """P2-23 FIX: Lazy data directory creation — no import-time side effect."""
+    os.makedirs("data", exist_ok=True)
 
 
 class MantleIntelPipeline:
@@ -385,6 +390,7 @@ class MantleIntelPipeline:
 
     def _append_finding(self, finding: dict):
         """Append finding to JSONL store with rotation (P2-27)."""
+        _ensure_data_dir()  # P2-23: lazy dir creation
         self._rotate_if_needed(FINDINGS_PATH)
         with open(FINDINGS_PATH, "a") as f:
             f.write(json.dumps(finding, default=str) + "\n")
@@ -396,6 +402,7 @@ class MantleIntelPipeline:
         so the hosted dashboard always shows the latest data even when the
         FastAPI server is unreachable.
         """
+        _ensure_data_dir()  # P2-23: lazy dir creation
         dashboard_data = {
             "last_updated":    datetime.now(tz=timezone.utc).isoformat(),
             "stats":           self._stats,

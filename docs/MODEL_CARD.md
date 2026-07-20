@@ -120,7 +120,7 @@ Evaluated on **395 real blocks** (96,526,081 → 96,526,580), no simulation, no 
 
 | Metric | Value |
 |--------|-------|
-| **Precision** | **100.0%** (0 false positives) |
+| **Precision** | **100.0%**† (0 FP, Wilson 95% CI: [0.782, 1.000]) |
 | **Recall** | **92.9%** (13/14 true events caught) |
 | **F1 Score** | **0.9630** |
 | True Positives | 13 |
@@ -152,7 +152,7 @@ The single missed event (FN=1) was a sub-threshold `meth_depeg_risk` at z=1.94σ
 
 ### On-Chain Contract Threshold
 
-The Solidity contract (`MantleIntelAudit.sol`) enforces `confidenceScore >= 75` at the contract level, ensuring only findings meeting the pipeline's confidence threshold are permanently recorded on-chain.
+The Solidity contract (`MantleIntelAudit.sol`) enforces `confidenceScore >= 80` at the contract level, ensuring only findings meeting the pipeline's confidence threshold (0.80) are permanently recorded on-chain.
 
 ---
 
@@ -229,7 +229,7 @@ JSONL files are rotated daily:
 ### Misuse Potential
 - **Front-running:** Signals could theoretically be used for front-running whale transactions. Mitigation: signals are available to all subscribers simultaneously; no preferential access.
 - **Panic selling:** Alerts could trigger panic. Mitigation: confidence bands clearly indicate signal strength; all alerts include "preliminary signal, confirm before sizing" disclaimer.
-- **False confidence:** High precision (100%) may create over-reliance. Mitigation: Wilson CI [0.782, 1.000] disclosed; past performance disclaimer in every report.
+- **False confidence:** High precision (100%†) may create over-reliance. Mitigation: Wilson CI [0.782, 1.000] disclosed; past performance disclaimer in every report.
 
 ### Transparency
 - Every agent decision is hashed and recorded on-chain (SHA256, `MantleIntelAudit.sol`)
@@ -279,5 +279,7 @@ If you reference this system, please cite:
 - Z-Score methodology: Standard statistical process control (3σ threshold).
 
 ---
+
+† Point estimate from 14-observation backtest. Wilson 95% CI: [0.782, 1.000]. True precision at production scale may differ.
 
 *Mantle Intel Agent — Built for The Turing Test Hackathon 2026 (Mantle Network / DoraHacks)*

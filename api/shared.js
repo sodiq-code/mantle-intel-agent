@@ -1,3 +1,5 @@
+import { BACKTEST_RESULTS } from "./backtest_data.js";
+
 export const MANTLE_RPC       = "https://rpc.mantle.xyz";
 export const MANTLE_SEPOLIA   = "https://rpc.sepolia.mantle.xyz";
 export const CONTRACT_ADDR    = "0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b";
@@ -193,7 +195,7 @@ export async function detectAnomalies(features) {
         ])
       ];
 
-      const hash = await true_sha256(`${f.block_num}|${atype}|${f.tx_count}|${f.total_value_mnt}`);
+      const hash = await canonicalFindingHash(f.block_num, atype, confidence, f.tx_count);
 
       findings.push({
         id:            `${atype}_${f.block_num}`,
@@ -233,6 +235,36 @@ export async function detectAnomalies(features) {
   return findings;
 }
 
+/**
+ * P1-7 FIX: Canonical JSON SHA-256 — matches Python AnomalyFinding.sha256_hash().
+ *
+ * Both Python and JS now hash the same 4-field canonical JSON:
+ *   {"block":<int>,"confidence":<float_4dp>,"tx_count":<int>,"type":<str>}
+ *
+ * CRITICAL: Keys must be in alphabetical order (matching Python's sort_keys=True).
+ * JS JSON.stringify preserves insertion order, so we must explicitly sort.
+ *
+ * Previously JS used pipe-delimited strings ("block|type|count|val") which
+ * could NEVER match Python's json.dumps(sort_keys=True) over ALL fields.
+ */
+export async function canonicalFindingHash(block, anomalyType, confidence, txCount) {
+  // Build with alphabetically-sorted keys to match Python's sort_keys=True
+  const core = {};
+  core.block = block;
+  core.confidence = Math.round(confidence * 10000) / 10000;  // 4 decimal places
+  core.tx_count = txCount;
+  core.type = anomalyType;
+  const canonical = JSON.stringify(core);  // keys already in alphabetical order
+  const msgBuffer  = new TextEncoder().encode(canonical);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray  = Array.from(new Uint8Array(hashBuffer));
+  const hashHex    = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return "0x" + hashHex;
+}
+
+/**
+ * @deprecated Use canonicalFindingHash() instead. Kept for backward compat.
+ */
 export async function true_sha256(str) {
   const msgBuffer = new TextEncoder().encode(str);
   const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
@@ -450,18 +482,8 @@ export async function buildSnapshot(includeProtocolState = true) {
       gas_used:     f.gas_used,
       is_anomaly:   findings.some(x => x.block === f.block_num),
     })),
-    backtest: {
-      mode:           "LIVE — Real Mantle Mainnet Data",
-      precision_pct:  100.0,
-      recall_pct:     92.9,
-      f1_score:       0.9630,
-      blocks_scanned: 395,
-      block_range:    "96,526,081 → 96,526,580",
-      run_at:         "2026-06-11T13:11:23Z",
-      methodology:    "IsolationForest + z-score(|z|>2.8) + rule-based + multi-confirm(≥2/3)",
-      tp: 13, fp: 0, fn: 1,
-      note:           "Real on-chain data, no simulation, no seed",
-    },
+    // P1-8 FIX: Backtest data sourced from api/backtest_data.js (mirrors backtest/results_live.json)
+    backtest: BACKTEST_RESULTS,
     intel_feed: {
       enabled: true,
       endpoint: "/api/live-feed",

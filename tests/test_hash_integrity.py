@@ -68,12 +68,23 @@ class TestCoreHashIntegrity:
         assert f1.sha256_hash() == f2.sha256_hash()
 
     def test_hash_matches_independent_sha256(self):
-        """Judge can verify: take the JSON, SHA256 it, compare to on-chain hash."""
+        """P1-7 FIX: Judge can verify using canonical 4-field JSON format.
+
+        The hash is computed over {"block","confidence","tx_count","type"}
+        with sort_keys=True — matching Python, JS (api/shared.js), and
+        submit_findings_testnet.py.
+        """
         f = make_finding()
         agent_hash = f.sha256_hash()
 
-        # Independent verification (what a judge/auditor would do)
-        canonical_json = json.dumps(f.to_dict(), sort_keys=True, separators=(",", ":"))
+        # Independent verification using canonical 4-field format
+        core = {
+            "block":       f.block_height,
+            "confidence":  round(f.confidence, 4),
+            "tx_count":    f.raw_metrics.get("tx_count", 0),
+            "type":        f.anomaly_type,
+        }
+        canonical_json = json.dumps(core, sort_keys=True, separators=(",", ":"))
         independent_hash = hashlib.sha256(canonical_json.encode("utf-8")).hexdigest()
 
         assert agent_hash == independent_hash, (
@@ -107,26 +118,39 @@ class TestTamperEvidence:
         ("confidence",       0.50),
         ("block_height",     1),
         ("anomaly_type",     "tx_spike"),
-        ("description",      "Tampered description"),
-        ("finding_id",       "tampered-id"),
-        ("timestamp",        "2020-01-01T00:00:00Z"),
     ])
-    def test_field_change_changes_hash(self, field, new_value):
-        """Any field mutation must produce a different hash — tamper-evident."""
+    def test_core_field_change_changes_hash(self, field, new_value):
+        """P1-7 FIX: Core field mutations must produce different hashes."""
         original = make_finding()
         mutated = make_finding(**{field: new_value})
         assert original.sha256_hash() != mutated.sha256_hash(), (
-            f"CRITICAL: Changing '{field}' did not change hash — tamper-evidence broken"
+            f"CRITICAL: Changing core field '{field}' did not change hash"
         )
 
-    def test_raw_metrics_change_changes_hash(self):
+    @pytest.mark.parametrize("field,new_value", [
+        ("description",      "Tampered description"),
+        ("finding_id",       "tampered-id"),
+        ("timestamp",        "2020-01-01T00:00:00Z"),
+        ("investment_signal", "DIFFERENT SIGNAL"),
+    ])
+    def test_non_core_field_does_not_change_hash(self, field, new_value):
+        """P1-7 FIX: Non-core fields should NOT change the canonical hash.
+
+        The canonical 4-field format (block, confidence, tx_count, type) means
+        only changes to those fields affect the hash. This is by design — it
+        ensures Python, JS, and submit_findings_testnet.py all produce
+        identical hashes from the same core data.
+        """
+        original = make_finding()
+        mutated = make_finding(**{field: new_value})
+        assert original.sha256_hash() == mutated.sha256_hash(), (
+            f"Non-core field '{field}' should not affect canonical hash (P1-7)"
+        )
+
+    def test_raw_metrics_tx_count_change_changes_hash(self):
+        """tx_count is a core field — changing it MUST change the hash."""
         f1 = make_finding(raw_metrics={"tx_count": 100})
         f2 = make_finding(raw_metrics={"tx_count": 200})
-        assert f1.sha256_hash() != f2.sha256_hash()
-
-    def test_investment_signal_change_changes_hash(self):
-        f1 = make_finding(investment_signal="WATCH: monitor")
-        f2 = make_finding(investment_signal="IMMEDIATE ACTION: exit now")
         assert f1.sha256_hash() != f2.sha256_hash()
 
 
@@ -145,7 +169,7 @@ class TestPreCommitSealing:
     """
 
     def test_pre_commit_seal_verify_cycle(self):
-        """Full seal → commit → verify cycle must be consistent."""
+        """P1-7 FIX: Full seal → commit → verify cycle using canonical 4-field JSON."""
         # Step 1: Agent detects anomaly, computes pre-commit hash
         finding = make_finding()
         pre_commit_hash = finding.sha256_hash()
@@ -157,8 +181,14 @@ class TestPreCommitSealing:
             "anomaly_type": finding.anomaly_type,
         }
 
-        # Step 3: Later, full finding JSON is revealed
-        revealed_json = json.dumps(finding.to_dict(), sort_keys=True, separators=(",", ":"))
+        # Step 3: Later, core finding data is revealed
+        core = {
+            "block":       finding.block_height,
+            "confidence":  round(finding.confidence, 4),
+            "tx_count":    finding.raw_metrics.get("tx_count", 0),
+            "type":        finding.anomaly_type,
+        }
+        revealed_json = json.dumps(core, sort_keys=True, separators=(",", ":"))
 
         # Step 4: Anyone verifies by re-hashing the revealed JSON
         verification_hash = hashlib.sha256(revealed_json.encode("utf-8")).hexdigest()
@@ -168,13 +198,19 @@ class TestPreCommitSealing:
         )
 
     def test_tampered_finding_fails_verification(self):
-        """If the finding is modified after sealing, verification must fail."""
+        """If a core field is modified after sealing, verification must fail."""
         original = make_finding()
         pre_commit_hash = original.sha256_hash()
 
-        # Simulate tampering: change confidence after sealing
+        # Simulate tampering: change confidence (a core field) after sealing
         tampered = make_finding(confidence=0.50)
-        tampered_json = json.dumps(tampered.to_dict(), sort_keys=True, separators=(",", ":"))
+        tampered_core = {
+            "block":       tampered.block_height,
+            "confidence":  round(tampered.confidence, 4),
+            "tx_count":    tampered.raw_metrics.get("tx_count", 0),
+            "type":        tampered.anomaly_type,
+        }
+        tampered_json = json.dumps(tampered_core, sort_keys=True, separators=(",", ":"))
         tampered_hash = hashlib.sha256(tampered_json.encode("utf-8")).hexdigest()
 
         assert tampered_hash != pre_commit_hash, (

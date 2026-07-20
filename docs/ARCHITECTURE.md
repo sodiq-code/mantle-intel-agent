@@ -161,7 +161,7 @@ contracts/
 
 | Metric | Value |
 |--------|-------|
-| Precision | **100%** (0 false positives) |
+| Precision | **100%**† (0 FP, Wilson 95% CI: [0.782, 1.000]) |
 | Recall | **92.9%** (13/14 true events caught) |
 | F1 Score | **0.963** |
 | Blocks | 395 (96,526,081 → 96,526,580) |
@@ -174,6 +174,8 @@ The single FN was a sub-threshold meth_depeg_risk at z=1.94σ — conservative t
 
 Wilson 95% CI for precision: [0.782, 1.000] (n=14 observations)
 Wilson 95% CI for recall: [0.697, 0.985]
+
+† Point estimate from 14-observation backtest. Wilson 95% CI: [0.782, 1.000]. True precision at production scale may differ.
 
 ---
 

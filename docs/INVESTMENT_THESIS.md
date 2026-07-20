@@ -1,7 +1,7 @@
 # Mantle Intel Agent — Investment Thesis
 ## For Mirana Ventures & Alpha/Data Track Judges
 
-> **TL;DR:** On-chain alpha delivery for Mantle Network — the first autonomous, real-time intelligence layer purpose-built for Mantle's DeFi ecosystem. Backtest: F1=0.963, Precision=100%, Recall=92.9%. Live API, 5 on-chain audit logs, ERC-8004 NFT identity, Telegram/Discord alerts. Built to win the Alpha & Data Track.
+> **TL;DR:** On-chain alpha delivery for Mantle Network — the first autonomous, real-time intelligence layer purpose-built for Mantle's DeFi ecosystem. Backtest: F1=0.963, Precision=100%†, Recall=92.9%. Live API, 5 on-chain audit logs, ERC-8004 NFT identity, Telegram/Discord alerts. Built to win the Alpha & Data Track.
 
 ---
 
@@ -58,7 +58,7 @@ Mantle Intel Agent is a **5-agent AI pipeline** that continuously:
 ### Current Signal Quality (Backtest, June 2026)
 | Metric | Result |
 |--------|--------|
-| Precision | **100%** (0 false positives) |
+| Precision | **100%**† (0 FP, Wilson 95% CI: [0.782, 1.000]) |
 | Recall | **92.9%** (13/14 true events caught) |
 | F1 Score | **0.963** |
 | Methodology | 395 live mainnet blocks, 14 ground truth events, no simulation |
@@ -175,6 +175,8 @@ Enterprise    →  Custom  — white-label, on-premise, dedicated support
 | Smart contract exploit on audit contract | Audit contract is write-only; no funds held; minimal attack surface |
 
 ---
+
+† Point estimate from 14-observation backtest. Wilson 95% CI: [0.782, 1.000]. True precision at production scale may differ.
 
 *Mantle Intel Agent | Turing Test Hackathon 2026 | Alpha & Data Track (Mirana Ventures)*  
 *Live: https://mantle-intel-agent.vercel.app | GitHub: sodiq-code/mantle-intel-agent*  

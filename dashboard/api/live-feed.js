@@ -20,12 +20,14 @@ import {
   buildIncidents,
   buildTitle,
   buildInsight,
+  canonicalFindingHash,
   true_sha256,
   fetchAuditStats,
   fetchMethRatio,
   fetchMoeLiquidity,
   fetchLendleTvl,
   enforceAuthAndCors,
+  BACKTEST_RESULTS,
 } from "../../api/shared.js";
 
 async function buildSnapshot() {
@@ -114,19 +116,8 @@ async function buildSnapshot() {
       gas_used:     f.gas_used,
       is_anomaly:   findings.some(x => x.block === f.block_num),
     })),
-    // P1-8 fix: backtest data sourced from backtest/results_live.json (real data)
-    backtest: {
-      mode:           "LIVE — Real Mantle Mainnet Data",
-      precision_pct:  100.0,
-      recall_pct:     92.9,
-      f1_score:       0.9630,
-      blocks_scanned: 395,
-      block_range:    "96,526,081 → 96,526,580",
-      run_at:         "2026-06-11T13:11:23Z",
-      methodology:    "IsolationForest + z-score(|z|>2.8) + rule-based + multi-confirm(≥2/3)",
-      tp: 13, fp: 0, fn: 1,
-      note:           "Real on-chain data, no simulation, no seed — source: backtest/results_live.json",
-    },
+    // P1-8 FIX: Backtest data sourced from api/backtest_data.js (mirrors backtest/results_live.json)
+    backtest: BACKTEST_RESULTS,
     // P1-8 fix: finding_count from on-chain query, not hardcoded
     protocol_state: {
       meth: {

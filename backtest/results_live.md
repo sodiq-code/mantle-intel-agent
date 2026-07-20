@@ -18,7 +18,7 @@
 >
 > | Metric | Value |
 > |--------|-------|
-> | Precision | 100% (0 FP) |
+> | Precision | 100%* (0 FP) |
 > | Recall | 92.9% (13/14) |
 > | F1 | 0.963 |
 > | TP | 13 |
@@ -48,7 +48,7 @@
   FALSE POSITIVES:  0   (zero false alarms)
   FALSE NEGATIVES:  0   (zero missed events)
 
-  Precision:  100.00%
+  Precision:  100.00%*
   Recall:     100.00%
   F1 Score:   1.0000
 
@@ -109,12 +109,12 @@ Lead time = blocks between signal detection and anticipated market impact (based
 
 | Method | Findings Generated | TP | FP | Precision |
 |--------|------------------|----|----|-----------|
-| Z-Score (tx_count) | 1 | 1 | 0 | 100% |
-| Z-Score (value_mnt) | 1 | 1 | 0 | 100% |
-| Isolation Forest | 2 | 2 | 0 | 100% |
-| Pattern Match (whale) | 3 | 3 | 0 | 100% |
-| Pattern Match (smart money) | 1 | 1 | 0 | 100% |
-| **Multi-confirm (2+ methods)** | **3** | **3** | **0** | **100%** |
+| Z-Score (tx_count) | 1 | 1 | 0 | 100%* |
+| Z-Score (value_mnt) | 1 | 1 | 0 | 100%* |
+| Isolation Forest | 2 | 2 | 0 | 100%* |
+| Pattern Match (whale) | 3 | 3 | 0 | 100%* |
+| Pattern Match (smart money) | 1 | 1 | 0 | 100%* |
+| **Multi-confirm (2+ methods)** | **3** | **3** | **0** | **100%*** |
 
 Multi-confirm logic corroborated 3 of 5 events (events 1, 4, 5) — these received +0.04 confidence boost.
 
@@ -163,11 +163,11 @@ MOE_IMBALANCE_RATIO     = 0.30 # 30% reserve shift triggers LP alert
 git clone https://github.com/sodiq-code/mantle-intel-agent
 cd mantle-intel-agent && pip install -r requirements.txt
 
-# Run backtest (should reproduce F1=1.0000 exactly)
+# Run backtest (should reproduce F1=1.0000 exactly — seed=42 result)
 python backtest/backtest_live.py
 
 # Expected output:
-# Precision:  1.0000  (100.00%)
+# Precision:  1.0000  (100.00%*)
 # Recall:     1.0000  (100.00%)
 # F1:         1.0000
 # TP=5, FP=0, FN=0
@@ -192,5 +192,8 @@ curl "https://mantle-intel-agent.vercel.app/api/live-feed?format=json" | python3
 ```
 
 ---
+
+* Wilson 95% CI: [0.782, 1.000] — small sample (n=14); true precision may be lower.
+All `100%*` values above are point estimates from this single backtest run.
 
 *Mantle Intel Agent — Backtest Methodology Documentation*

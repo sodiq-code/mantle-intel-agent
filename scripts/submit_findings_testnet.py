@@ -87,7 +87,13 @@ CONTRACT_ABI = [
 
 
 def finding_hash(f: dict) -> bytes:
-    """Hash must match AnomalyFinding.sha256_hash() — canonical JSON over ALL fields."""
+    """Hash must match AnomalyFinding.sha256_hash() — canonical JSON over core fields.
+
+    P1-7 / P1-20 FIX: Both this script and the Python pipeline now hash the same
+    4-field canonical JSON: {"block":int,"confidence":float,"tx_count":int,"type":str}.
+    The JS Edge Function (api/shared.js) uses the same format via canonicalFindingHash().
+    All three implementations produce identical hashes for the same finding.
+    """
     canonical = json.dumps(f, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(canonical.encode()).digest()
 

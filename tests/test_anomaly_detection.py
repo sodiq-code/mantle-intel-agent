@@ -391,12 +391,19 @@ class TestHashIntegrity:
         return AnomalyFinding(**defaults)
 
     def test_hash_matches_manual_sha256(self):
-        """sha256_hash() must match manual SHA256 of canonical JSON."""
+        """P1-7 FIX: sha256_hash() now uses canonical 4-field JSON
+        (block, type, confidence, tx_count) matching JS and submit script."""
         f = self._make_finding()
         auto_hash = f.sha256_hash()
 
-        # Manually compute the same hash
-        canonical = json.dumps(f.to_dict(), sort_keys=True, separators=(",", ":"))
+        # Manually compute the same hash using the canonical 4-field format
+        core = {
+            "block":       f.block_height,
+            "type":        f.anomaly_type,
+            "confidence":  round(f.confidence, 4),
+            "tx_count":    f.raw_metrics.get("tx_count", 0),
+        }
+        canonical = json.dumps(core, sort_keys=True, separators=(",", ":"))
         manual_hash = hashlib.sha256(canonical.encode()).hexdigest()
 
         assert auto_hash == manual_hash, (
@@ -409,19 +416,32 @@ class TestHashIntegrity:
         hashes = [f.sha256_hash() for _ in range(10)]
         assert len(set(hashes)) == 1, "Hash is not deterministic across calls"
 
-    def test_all_fields_affect_hash(self):
-        """Changing any field must change the hash (no silent collisions)."""
+    def test_core_fields_affect_hash(self):
+        """P1-7 FIX: Core fields (block, type, confidence, tx_count) must affect hash."""
         base = self._make_finding()
-        fields_to_mutate = {
+        core_fields_to_mutate = {
             "confidence": 0.77,
             "block_height": 99999,
             "anomaly_type": "whale_accumulation",
-            "description": "Different description",
         }
-        for field, new_val in fields_to_mutate.items():
+        for field, new_val in core_fields_to_mutate.items():
             mutated = self._make_finding(**{field: new_val})
             assert mutated.sha256_hash() != base.sha256_hash(), (
-                f"Field '{field}' change did not affect hash"
+                f"Core field '{field}' change did not affect hash"
+            )
+
+    def test_non_core_fields_do_not_affect_hash(self):
+        """P1-7 FIX: Non-core fields should NOT affect the canonical hash."""
+        base = self._make_finding()
+        non_core_fields = {
+            "description": "Different description",
+            "finding_id": "different-id",
+            "method": "zscore",
+        }
+        for field, new_val in non_core_fields.items():
+            mutated = self._make_finding(**{field: new_val})
+            assert mutated.sha256_hash() == base.sha256_hash(), (
+                f"Non-core field '{field}' should not affect hash (P1-7 canonical format)"
             )
 
     def test_bytes32_encoding_valid_for_solidity(self):

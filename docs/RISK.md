@@ -30,7 +30,7 @@ Evaluated on **395 real blocks** (96,526,081 → 96,526,580), no simulation, no 
 
 | Metric | Value |
 |---|---|
-| **Precision** | **100.0%** (0 false positives) |
+| **Precision** | **100.0%**† (0 FP, Wilson 95% CI: [0.782, 1.000]) |
 | **Recall** | 92.9% (13/14 true events caught) |
 | **F1 Score** | **0.9630** |
 | True Positives | 13 |
@@ -90,7 +90,7 @@ The agent self-reports reduced confidence in these conditions:
 Mantle Intel Agent surfaces **probabilistic signals**, not financial advice.
 
 - All confidence scores carry inherent uncertainty
-- Past precision (100%) does not guarantee future performance
+- Past precision (100%†, Wilson 95% CI: [0.782, 1.000]) does not guarantee future performance
 - On-chain audit log provides tamper-evident record for accountability
 - Investors should apply their own position sizing and risk management
 

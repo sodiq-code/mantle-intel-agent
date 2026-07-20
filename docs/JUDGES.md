@@ -128,7 +128,7 @@ https://mantle-intel-agent.vercel.app
 
 ## Step 6: Verify Backtest Reproducibility (60s)
 
-The backtest results (Precision=100%, Recall=92.9%) are computed on real Mantle mainnet blocks and are deterministic.
+The backtest results (Precision=100%†, Recall=92.9%) are computed on real Mantle mainnet blocks and are deterministic.
 
 1. **Review the data:** `backtest/results_live.json` in the repo
 2. **Review the methodology:** `docs/RISK.md` Section 2
@@ -232,6 +232,8 @@ echo "=== Done ==="
 | Model Card | `docs/MODEL_CARD.md` |
 
 ---
+
+† Point estimate from 14-observation backtest. Wilson 95% CI: [0.782, 1.000]. True precision at production scale may differ.
 
 *Mantle Intel Agent — Built for The Turing Test Hackathon 2026 (Mantle Network)*  
 *All verification endpoints are public and require no API keys or authentication.*

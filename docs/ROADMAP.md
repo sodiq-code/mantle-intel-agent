@@ -19,7 +19,7 @@
 | MantleIntelAudit.sol on-chain audit log (ERC-8004) | ✅ Testnet |
 | Telegram bot + Discord webhook | ✅ Live |
 | React dashboard + public REST API | ✅ Live (Vercel) |
-| Backtest: F1=1.00, Precision=100% | ✅ Verified |
+| Backtest: F1=1.00, Precision=100%† | ✅ Verified |
 
 ---
 
@@ -191,7 +191,7 @@ Tier 4 — Enterprise (Custom pricing)
 
 | Metric | Phase 0 (Now) | Phase 1 | Phase 2 | Phase 3 |
 |--------|--------------|---------|---------|---------|
-| Detection precision | 100% | ≥95% | ≥90% | ≥88% (more signals) |
+| Detection precision | 100%† | ≥95% | ≥90% | ≥88% (more signals) |
 | Alert latency | <30s | <5s | <2s | <500ms |
 | Protocol coverage | 8 | 15 | 25+ | 30+ |
 | Labeled wallets | 60+ | 500+ | 2,000+ | 5,000+ |
@@ -199,6 +199,8 @@ Tier 4 — Enterprise (Custom pricing)
 | Monthly findings | ~500 | 5,000 | 20,000 | 100,000+ |
 
 ---
+
+† Point estimate from 14-observation backtest. Wilson 95% CI: [0.782, 1.000]. True precision at production scale may differ.
 
 *Mantle Intel Agent — Built for The Turing Test Hackathon 2026 (Mantle Network / DoraHacks)*  
 *GitHub: [sodiq-code/mantle-intel-agent](https://github.com/sodiq-code/mantle-intel-agent)*

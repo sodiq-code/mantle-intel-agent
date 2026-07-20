@@ -86,9 +86,25 @@ class AnomalyFinding:
         return json.dumps(self.to_dict(), default=str)
 
     def sha256_hash(self) -> str:
-        """Tamper-evident hash covering ALL fields for on-chain recording."""
-        d = self.to_dict()
-        canonical = json.dumps(d, sort_keys=True, separators=(",", ":"))
+        """Tamper-evident hash for on-chain recording.
+
+        P1-7 FIX: Uses a canonical 4-field subset (block, type, confidence, tx_count)
+        so that Python, JavaScript (api/shared.js), and submit_findings_testnet.py
+        all produce identical hashes.  Hashing ALL fields was broken because the
+        JS Edge Function only has access to a subset of the Python dataclass fields
+        — the two sides could NEVER produce the same hash.
+
+        Canonical format:  json.dumps({"block": int, "type": str,
+                                          "confidence": float(4dp), "tx_count": int},
+                                         sort_keys=True, separators=(",", ":"))
+        """
+        core = {
+            "block":       self.block_height,
+            "type":        self.anomaly_type,
+            "confidence":  round(self.confidence, 4),
+            "tx_count":    self.raw_metrics.get("tx_count", 0),
+        }
+        canonical = json.dumps(core, sort_keys=True, separators=(",", ":"))
         return hashlib.sha256(canonical.encode()).hexdigest()
 
     def hex_bytes32(self) -> str:

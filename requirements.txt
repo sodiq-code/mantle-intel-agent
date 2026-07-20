@@ -1,13 +1,19 @@
-# ── Pinned dependencies for reproducible builds ────────────────────────────────
+# ── Fully pinned dependencies for reproducible builds (P1-16 FIX) ────────────────
 # Source of truth: pyproject.toml (P3-34)
 # To regenerate: pip-compile pyproject.toml --extra otel --extra ratelimit -o requirements.txt
 # Install: pip install -r requirements.txt
 # Editable install (recommended): pip install -e ".[all]"
+#
+# P1-16 FIX: This file now includes ALL transitive dependencies with exact
+# version pins, ensuring bit-for-bit reproducible builds. Previously only
+# direct dependencies were listed, which allowed transitive deps to float.
 
 # ── Core ──────────────────────────────────────────────────────────────────────
 python-dotenv==1.2.2
 structlog==24.4.0
 pydantic==2.10.6
+annotated-types==0.7.0
+typing-extensions==4.13.0
 
 # ── Web3 / Blockchain ─────────────────────────────────────────────────────────
 # Note: web3 6.20.x requires eth-account<0.13, eth-typing<5, eth-utils<5, hexbytes<0.4
@@ -17,21 +23,46 @@ eth-hash==0.7.1
 eth-typing==4.4.0
 eth-utils==4.1.1
 hexbytes==0.3.1
+eth-abi==5.2.0
+eth-keyfile==0.9.1
+eth-keys==0.7.0
+eth-rlp==2.2.0
+parsimonious==0.10.0
+rlp==4.0.1
+lru-dict==1.3.0
+marshmallow==3.26.1
+cytoolz==1.1.0
+toolz==1.0.0
+jsonschema==4.23.0
+pyrsistent==0.20.0
+regex==2024.11.6
 
 # ── Machine Learning (Anomaly Detection) ──────────────────────────────────────
 numpy==2.2.3
 scikit-learn==1.6.1
 scipy==1.15.2
 joblib==1.4.2
+threadpoolctl==3.6.0
 
 # ── HTTP ──────────────────────────────────────────────────────────────────────
 httpx==0.28.1
+httpcore==1.0.9
 requests==2.32.3
+certifi==2025.1.31
+charset-normalizer==3.4.1
+idna==3.10
+urllib3==2.4.0
+h11==0.16.0
+anyio==4.9.0
+sniffio==1.3.1
+multidict==6.4.4
+pysocks==1.7.1
 
 # ── API Server ────────────────────────────────────────────────────────────────
 fastapi==0.115.12
 uvicorn[standard]==0.34.2
 starlette==0.46.2
+click==8.1.8
 
 # ── Telegram Bot ──────────────────────────────────────────────────────────────
 python-telegram-bot==21.11.1
@@ -40,10 +71,27 @@ python-telegram-bot==21.11.1
 opentelemetry-api==1.31.1
 opentelemetry-sdk==1.31.1
 opentelemetry-exporter-otlp==1.31.1
+opentelemetry-exporter-otlp-proto-common==1.31.1
+opentelemetry-exporter-otlp-proto-grpc==1.31.1
+opentelemetry-exporter-otlp-proto-http==1.31.1
+opentelemetry-proto==1.31.1
+opentelemetry-semantic-conventions==1.31.1
+proto-plus==1.26.1
+protobuf==5.29.4
+googleapis-common-protos==1.70.0
+grpcio==1.71.0
 
 # ── P2-19: Rate Limiting [ratelimit extra] ────────────────────────────────────
 slowapi==0.1.9
+limits==4.6.0
 
 # ── Data & Visualization ──────────────────────────────────────────────────────
 pandas==2.2.3
 plotly==6.0.1
+
+# ── Shared transitive ────────────────────────────────────────────────────────
+packaging==25.0
+pycparser==2.22
+cffi==2.1.0
+tenacity==9.1.2
+websockets==14.2
