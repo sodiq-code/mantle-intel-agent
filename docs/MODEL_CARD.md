@@ -62,7 +62,8 @@ The LLM is used **only for narrative report generation** — it does not influen
 | 1 | Ollama (local) | llama3.2:3b | Narrative formatting | Anomaly metadata only | Free |
 | 2 | Groq API | moonshotai/kimi-k2-instruct | Narrative formatting | Anomaly metadata only | Free tier |
 | 3 | OpenRouter | meta-llama/llama-3.2-3b-instruct:free | Narrative formatting | Anomaly metadata only | Free tier |
-| 4 | Templates (rule-based) | N/A | Fallback formatting | None (local) | Free |
+| 4 | DashScope (legacy) | Various | Narrative formatting | Anomaly metadata only | Free tier |
+| 5 | Templates (rule-based) | N/A | Fallback formatting | None (local) | Free |
 
 ### Data Sent to LLM Providers
 
@@ -137,21 +138,23 @@ The single missed event (FN=1) was a sub-threshold `meth_depeg_risk` at z=1.94σ
 |----------------|-------|--------|
 | HIGH | ≥ 0.85 | Immediate alert, on-chain log, Telegram push |
 | MEDIUM | 0.80 – 0.84 | On-chain log, dashboard only |
-| DETECTED-BUT-SUPPRESSED | 0.72 – 0.79 | Detected by per-type method, but below global 0.80 pipeline filter — not emitted |
-| SUPPRESSED | < 0.72 | Not surfaced |
+| DETECTED-BUT-SUPPRESSED | 0.50 – 0.79 | Detected by per-type method, but below global 0.80 pipeline filter — not emitted |
+| SUPPRESSED | < 0.50 | Not surfaced |
 
 ### Detection Thresholds by Anomaly Type
 
-> **Note:** These are per-method initial detection thresholds. All findings must also pass the **global pipeline confidence threshold of 0.80** before being emitted. A finding detected at 0.75 by a per-type method is boosted by multi-method corroboration (+0.04) and then filtered — only findings reaching ≥0.80 are recorded on-chain.
+> **Note:** These are formula base values — the initial scoring level before multi-method boosts. All findings must also pass the **global pipeline confidence threshold of 0.80** before being emitted. A finding scored at 0.72 by a per-type method may be boosted by multi-method corroboration (+0.04) and then filtered — only findings reaching ≥0.80 are recorded on-chain.
 
-| Anomaly Type | Threshold | Method |
+| Anomaly Type | Formula Base | Method |
 |-------------|-----------|--------|
-| `whale_accumulation` | 0.72 | Pattern match |
-| `smart_money_inflow` | 0.75 | Pattern match |
-| `meth_depeg` | 0.65 | Oracle diff (lower = early warning) |
-| `oracle_manipulation` | 0.85 | Cross-source divergence ⚠️ **unimplemented** — no detection code exists for this type |
-| `tx_spike` | 0.75 (3.5σ) | Z-Score |
-| `isolation_forest` | 0.75 | IF outlier (score < 0) |
+| `tx_spike` / `value_spike` | 0.55 | Z-Score: 0.55 + |z|/10 (capped 0.99) |
+| `whale_accumulation` | 0.68 | Pattern: 0.68 + n_transfers*0.02 + usd/10M (capped 0.98) |
+| `smart_money_inflow` | 0.72 | Pattern: 0.72 + n_wallets*0.04 (capped 0.96) |
+| `meth_depeg` WARNING | 0.82 | Oracle diff: fixed confidence for 50-100bps deviation |
+| `meth_depeg` CRITICAL | 0.96 | Oracle diff: fixed confidence for >100bps deviation |
+| `liquidity_imbalance` | 0.72 | Reserve: 0.72 + severity (capped 0.93) |
+| `cross_protocol` | 0.78 | Multi-protocol: 0.78 + n_protocols*0.03 (capped 0.97) |
+| `isolation_forest` | 0.50 | IF: 0.50 + norm*0.49 (capped 0.99) |
 
 ### On-Chain Contract Threshold
 
@@ -178,7 +181,7 @@ The Solidity contract (`MantleIntelAudit.sol`) enforces `confidenceScore >= 80` 
 |------------|--------|------------|
 | LLM may generate inaccurate claims | Reports could contain hallucinated protocol names or amounts | LLM output is supplementary; core data (confidence, type, block) is from deterministic pipeline |
 | LLM is prompt-only, no domain fine-tuning | May not understand Mantle-specific context deeply | System prompt constrains output format; templates ensure minimum quality |
-| LLM availability varies | Provider rate limits, outages | 4-tier fallback chain; worst case = rule-based templates (always available) |
+| LLM availability varies | Provider rate limits, outages | 5-tier fallback chain; worst case = rule-based templates (always available) |
 | LLM adds latency (~2-5s) | Finding delivery delayed | LLM formatting is async; finding hash recorded on-chain immediately, narrative added after |
 
 ### Data Dependency Limitations

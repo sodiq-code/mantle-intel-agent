@@ -9,14 +9,19 @@
 
 Each anomaly type has an individually tuned confidence threshold. Signals below threshold are suppressed — not surfaced — to preserve precision.
 
-| Anomaly Type | Threshold | Rationale |
+| Anomaly Type | Formula Base | Notes |
 |---|---|---|
-| `whale_accumulation` | 0.72 | High base-rate; needs strong z-score support |
-| `smart_money_inflow` | 0.75 | Wallet labeling confidence factors in |
-| `meth_depeg_risk` | 0.65 | Lower threshold — early warning is more valuable than late precision |
-| `oracle_manipulation` | 0.85 | Extremely rare; only fire on very strong divergence |
+| `tx_spike` / `value_spike` | 0.55 | Z-Score: 0.55 + |z|/10 (capped 0.99) |
+| `whale_accumulation` | 0.68 | Pattern: 0.68 + n_transfers*0.02 + usd/10M (capped 0.98) |
+| `smart_money_inflow` | 0.72 | Pattern: 0.72 + n_wallets*0.04 (capped 0.96) |
+| `meth_depeg` WARNING | 0.82 | Fixed: oracle deviation 50-100bps |
+| `meth_depeg` CRITICAL | 0.96 | Fixed: oracle deviation >100bps |
+| `liquidity_imbalance` | 0.72 | Reserve: 0.72 + severity (capped 0.93) |
+| `lp_imbalance` | 0.72 | LP: 0.72 + imbalance*0.5 (capped 0.93) |
+| `cross_protocol` | 0.78 | Multi-protocol: 0.78 + n_protocols*0.03 (capped 0.97) |
+| `isolation_forest` | 0.50 | IF: 0.50 + norm*0.49 (capped 0.99) |
 
-> **Note:** Per-type thresholds are initial detection levels. All findings must also pass the **global pipeline confidence threshold (0.80)** before being emitted and recorded on-chain. Findings below 0.80 are suppressed by the pipeline filter regardless of per-type threshold.
+> **Note:** These are formula base values — the initial scoring level before multi-method boosts. All findings must also pass the **global pipeline confidence threshold (0.80)** before being emitted and recorded on-chain. Findings below 0.80 are suppressed by the pipeline filter regardless of per-type base.
 
 ---
 
