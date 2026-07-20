@@ -502,8 +502,10 @@ Name specific Mantle protocols: Merchant Moe, Lendle, Agni Finance, mETH, Fusion
                 ev.append(
                     f"MNT transfer value ({m['value_mnt']:,.0f}) exceeded baseline ({m['mean_val_mnt']:,.0f})")
         elif finding.method == "isolation_forest":
+            if_score = m.get("anomaly_score")
+            score_str = f" (score: {if_score:.3f})" if if_score else ""
             ev.append(
-                "Multivariate outlier detected (tx volume + value + wallet diversity)")
+                f"Multivariate outlier detected{score_str} (tx volume + value + wallet diversity)")
         elif finding.method == "pattern_match":
             if finding.anomaly_type == "smart_money_inflow":
                 ev.append(
@@ -512,18 +514,21 @@ Name specific Mantle protocols: Merchant Moe, Lendle, Agni Finance, mETH, Fusion
                 ev.append(
                     f"{m.get('transfer_count', 2)} large institutional transfers detected")
         elif finding.method == "meth_oracle":
-            ev.append(f"Oracle price deviation of {m.get('depeg_bps', 0)} bps")
+            bps = m.get('depeg_bps', 0)
+            ev.append(f"mETH/ETH oracle deviation: {bps} bps ({bps/100:.2f}% from peg)")
         elif finding.method == "reserve_analysis":
+            imbalance = m.get("imbalance_ratio", 0)
+            imb_str = f" (ratio: {imbalance:.2f})" if imbalance else ""
             ev.append(
-                f"Liquidity pool reserve shifted by {m.get('r0_delta_pct', 0)}%")
+                f"Liquidity pool reserve shifted by {m.get('r0_delta_pct', 0)}%{imb_str}")
         elif finding.method == "cross_protocol":
             ev.append(
-                f"Simultaneous deployment across {m.get('protocols_hit', 3)} protocols")
+                f"Simultaneous activity across {m.get('protocols_hit', 3)} protocols (cross-protocol correlation)")
 
         # Z-score context
         z = m.get("zscore")
         if z and abs(z) >= 3.0:
-            ev.append(f"Statistically significant spike (z={abs(z):.2f}σ)")
+            ev.append(f"Statistically significant spike (z={abs(z):.2f}σ, threshold: 3.5σ)")
 
         if not ev:
             ev.append("Baseline Anomaly")

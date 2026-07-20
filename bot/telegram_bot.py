@@ -70,7 +70,7 @@ INCIDENT_TEMPLATE = """
 <b>Detection Confidence:</b> <b>{conf}%</b> (Anomaly Detection)
 <b>Blocks:</b> <code>{start}</code> to <code>{latest}</code> (Duration: {dur} blocks)
 <b>Timestamp (UTC):</b> <code>{timestamp}</code>
-<b>Occurrences:</b> {occ}
+<b>Signals:</b> {occ}
 
 <b>Evidence:</b>
 {evidence}
@@ -179,7 +179,8 @@ class MantleIntelBot:
         # Composite: show all signals in the label
         if is_composite:
             labels = [anomaly_label(t) for t in anomaly_types]
-            type_label = " + ".join(labels[:3])
+            short_labels = [l.replace("Accumulation", "Accum.").replace("Distribution", "Distrib.").replace("Anomaly", "").strip() for l in labels]
+            type_label = "Composite Anomaly: " + " + ".join(short_labels[:3])
             if len(anomaly_types) > 3:
                 type_label += f" +{len(anomaly_types) - 3} more"
             icon = "🔥"  # composite icon

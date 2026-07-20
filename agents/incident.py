@@ -97,6 +97,11 @@ class IncidentManager:
         # Update primary type label to show it's composite
         if len(incident["anomaly_types"]) > 1:
             incident["type"] = "composite"
+            # Update insight_sample to reflect composite nature
+            new_insight = dashboard_card.get("insight", "")
+            if new_insight:
+                incident["insight_sample"] = self._build_composite_insight(
+                    incident, anomaly_type, new_insight)
 
         incident["latest_block"] = current_block
         incident["occurrences"] += 1
@@ -161,6 +166,30 @@ class IncidentManager:
             del self.active_incidents[key]
 
         return resolved_notifications
+
+    def _build_composite_insight(self, incident: dict,
+                               new_type: str, new_insight: str) -> str:
+        """Build a composite insight summary when multiple signals merge."""
+        existing = incident.get("insight_sample", "")
+        # Extract the short anomaly label
+        type_label = new_type.replace("_", " ").title()
+        
+        # If this is the first merge (becoming composite), prepend composite header
+        if not existing.startswith("Composite"):
+            # First merge — restructure: existing insight + new signal
+            parts = [f"Composite on-chain anomaly detected. "
+                     f"Multiple signals fired:"]
+            # Add first signal type
+            first_type = list(incident.get("anomaly_types", set()))[0] if incident.get("anomaly_types") else "anomaly"
+            first_label = first_type.replace("_", " ").title()
+            parts.append(f"• {first_label}")
+            parts.append(f"• {type_label}")
+            return "\n".join(parts)
+        else:
+            # Subsequent merge — just append the new signal type
+            if f"• {type_label}" not in existing:
+                existing += f"\n• {type_label}"
+            return existing
 
     def _extract_zscore(self, dashboard_card: dict) -> float | None:
         metrics = dashboard_card.get("raw_metrics", {})

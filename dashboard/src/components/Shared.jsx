@@ -199,7 +199,7 @@ export function IncidentCard({ incident, isNew }) {
           </div>
           
           <div className="text-white font-medium mb-2 text-sm leading-snug">
-            {incident.occurrences} occurrence{incident.occurrences !== 1 ? 's' : ''} detected over {dur} block{dur !== 1 ? 's' : ''}.
+            {incident.occurrences} signal{incident.occurrences !== 1 ? 's' : ''} detected over {dur} block{dur !== 1 ? 's' : ''}.
           </div>
           
           <div className="flex items-center gap-4 text-xs font-mono text-slate-400">

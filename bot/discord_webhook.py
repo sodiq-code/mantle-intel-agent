@@ -156,7 +156,8 @@ class DiscordWebhook:
         if is_composite:
             labels = [label_map.get(t, t.replace("_", " ").title())
                       for t in anomaly_types]
-            title = " + ".join(labels[:3])  # max 3 in title
+            short_labels = [l.replace("Accumulation", "Accum.").replace("Distribution", "Distrib.") for l in labels]
+            title = "Composite Anomaly: " + " + ".join(short_labels[:3])
             if len(anomaly_types) > 3:
                 title += f" +{len(anomaly_types) - 3} more"
         else:
@@ -198,7 +199,7 @@ class DiscordWebhook:
              "value": f"`{start:,}` to `{latest:,}` "
                       f"(Duration: {dur} blocks)",
              "inline": False},
-            {"name": "Occurrences", "value": str(occ), "inline": True},
+            {"name": "Signals", "value": str(occ), "inline": True},
             {"name": "Timestamp (UTC)",
              "value": f"`{timestamp}`", "inline": True},
         ]

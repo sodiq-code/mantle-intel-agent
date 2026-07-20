@@ -42,7 +42,7 @@ INCIDENT_TEMPLATE = """
 **Detection Confidence:** **{conf}%** (Anomaly Detection)
 **Blocks:** `{start}` to `{latest}` (Duration: {dur} blocks)
 **Timestamp (UTC):** `{timestamp}`
-**Occurrences:** {occ}
+**Signals:** {occ}
 
 **Evidence:**
 {evidence}
@@ -74,6 +74,11 @@ def anomaly_icon(anomaly_type: str) -> str:
         "tx_spike":             "📈",
         "value_spike":          "💰",
         "multivariate_anomaly": "🔍",
+        "liquidity_imbalance":  "💧",
+        "meth_depeg":           "⚡",
+        "cross_protocol_anomaly": "🌐",
+        "lp_imbalance":         "🫧",
+        "composite":            "🔥",
     }
     return icons.get(anomaly_type, "⚡")
 
@@ -86,6 +91,11 @@ def anomaly_label(anomaly_type: str) -> str:
         "tx_spike":             "TX Volume Spike",
         "value_spike":          "Value Spike",
         "multivariate_anomaly": "Multivariate Anomaly",
+        "liquidity_imbalance":  "Liquidity Imbalance",
+        "meth_depeg":           "mETH Depeg",
+        "cross_protocol_anomaly": "Cross-Protocol Anomaly",
+        "lp_imbalance":         "LP Imbalance",
+        "composite":            "Composite Anomaly",
     }
     return labels.get(anomaly_type, anomaly_type.replace("_", " ").title())
 
@@ -133,6 +143,8 @@ class MantleIntelDiscordBot:
     def _make_embed(self, incident: dict) -> "discord.Embed":
         """Build a Discord embed for an incident."""
         atype   = incident.get("type", "anomaly")
+        is_composite = incident.get("is_composite", False)
+        anomaly_types = incident.get("anomaly_types", [atype])
         state   = incident.get("state", "🟡 Incident")
         start   = incident.get("start_block", 0)
         latest  = incident.get("latest_block", 0)
@@ -149,6 +161,10 @@ class MantleIntelDiscordBot:
             "tx_spike":             0x22C55E,
             "value_spike":          0xEAB308,
             "multivariate_anomaly": 0xEF4444,
+            "liquidity_imbalance":  0x06B6D4,
+            "meth_depeg":           0xF43F5E,
+            "cross_protocol_anomaly": 0xEC4899,
+            "lp_imbalance":         0x14B8A6,
         }
         color = color_map.get(atype, 0x6B7280)
         if "Critical" in state:
@@ -162,9 +178,21 @@ class MantleIntelDiscordBot:
         else:
             evidence_str = "✓ Baseline Anomaly"
 
+        # Composite: show all signals in the label
+        if is_composite:
+            labels = [anomaly_label(t) for t in anomaly_types]
+            short_labels = [l.replace("Accumulation", "Accum.").replace("Distribution", "Distrib.").replace("Anomaly", "").strip() for l in labels]
+            type_label = "Composite Anomaly: " + " + ".join(short_labels[:3])
+            if len(anomaly_types) > 3:
+                type_label += f" +{len(anomaly_types) - 3} more"
+            icon = "🔥"
+        else:
+            type_label = anomaly_label(atype)
+            icon = anomaly_icon(atype)
+
         desc = INCIDENT_TEMPLATE.format(
-            icon=anomaly_icon(atype),
-            anomaly_type_label=anomaly_label(atype),
+            icon=icon,
+            anomaly_type_label=type_label,
             insight=insight[:1800],
             incident_id=incident.get("incident_id", "N/A"),
             state=state,
