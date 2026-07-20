@@ -268,15 +268,22 @@ class MantleIntelPipeline:
             # Yield to event loop between findings to prevent starvation
             await asyncio.sleep(0)
 
-        # ── Send ONE composite notification per incident ──────────────────────
+        # ── Send ONE composite notification per correlated event ──────────────
         # After all findings in this cycle are processed, send the final
         # composite state of each incident as a single notification.
+        #
+        # COMPOSITE SUPPRESSION: If multiple incidents cover the same block
+        # range and one is composite, ONLY send the composite. Individual
+        # detector alerts are internal evidence — not user-facing notifications.
+        # This prevents the "4 alerts for 1 event" problem.
+        _to_notify = self._select_notifications(_cycle_incident_ids)
+        for notification in _to_notify:
+            await self._notify_incident(notification)
+
+        # Mark all cycle incidents as notified (even suppressed ones)
         for inc_id in _cycle_incident_ids:
             for key, inc in self.incident_manager.active_incidents.items():
                 if inc["id"] == inc_id:
-                    notification = self.incident_manager._format_incident_notification(inc)
-                    await self._notify_incident(notification)
-                    # Mark as notified so next cycle doesn't re-notify
                     inc["last_notified_state"] = inc["state"]
                     inc["last_notified_occurrences"] = inc["occurrences"]
                     break
@@ -311,6 +318,155 @@ class MantleIntelPipeline:
             span.end()
 
         return new_findings
+
+    def _select_notifications(self, cycle_incident_ids: set) -> list[dict]:
+        """Select which incidents to notify, applying composite suppression.
+
+        Rules:
+        1. Group incidents by block proximity (same event = same group).
+        2. If a group has a composite incident, ONLY send the composite.
+        3. If a group has only individual incidents, merge them into a
+           synthetic composite and send that.
+        4. Isolated incidents (no proximate neighbors) are sent as-is.
+
+        This prevents the "4 alerts for 1 event" problem where a composite
+        alert AND its constituent detector alerts are all sent.
+        """
+        # Collect incident objects for this cycle
+        cycle_incidents = []
+        for inc_id in cycle_incident_ids:
+            for key, inc in self.incident_manager.active_incidents.items():
+                if inc["id"] == inc_id:
+                    cycle_incidents.append(inc)
+                    break
+
+        if not cycle_incidents:
+            return []
+
+        # Group incidents by block proximity
+        groups = self._group_by_proximity(cycle_incidents)
+
+        notifications = []
+        for group in groups:
+            if len(group) == 1:
+                # Single incident — send as-is
+                inc = group[0]
+                notifications.append(
+                    self.incident_manager._format_incident_notification(inc))
+            else:
+                # Multiple incidents in same block range — apply suppression
+                composite_inc = None
+                individual_incs = []
+                for inc in group:
+                    if len(inc.get("anomaly_types", set())) > 1:
+                        composite_inc = inc
+                    else:
+                        individual_incs.append(inc)
+
+                if composite_inc:
+                    # Send ONLY the composite — suppress individuals
+                    # But absorb their evidence into the composite first
+                    for ind in individual_incs:
+                        for atype in ind.get("anomaly_types", set()):
+                            composite_inc["anomaly_types"].add(atype)
+                        for r in ind.get("reasons", set()):
+                            composite_inc["reasons"].add(r)
+                        for f in ind.get("findings", []):
+                            composite_inc["findings"].append(f)
+                        composite_inc["occurrences"] += ind["occurrences"]
+                    # Re-derive type as composite
+                    composite_inc["type"] = "composite"
+                    # Rebuild insight to include all signal types
+                    composite_inc["insight_sample"] = \
+                        self.incident_manager._build_composite_insight(
+                            composite_inc, "", "")
+                    notifications.append(
+                        self.incident_manager._format_incident_notification(
+                            composite_inc))
+                else:
+                    # No composite exists — merge individuals into one
+                    # synthetic composite notification
+                    merged = self._merge_into_composite(group)
+                    notifications.append(
+                        self.incident_manager._format_incident_notification(
+                            merged))
+
+        return notifications
+
+    def _group_by_proximity(self, incidents: list[dict]) -> list[list[dict]]:
+        """Group incidents whose block ranges overlap or are within proximity."""
+        if not incidents:
+            return []
+
+        groups = []
+        used = set()
+
+        for i, inc_a in enumerate(incidents):
+            if i in used:
+                continue
+            group = [inc_a]
+            used.add(i)
+            for j, inc_b in enumerate(incidents):
+                if j in used:
+                    continue
+                # Check if inc_b is within proximity of any member of the group
+                for member in group:
+                    if abs(inc_b["latest_block"] - member["latest_block"]) \
+                            <= self.incident_manager.BLOCK_PROXIMITY_THRESHOLD:
+                        group.append(inc_b)
+                        used.add(j)
+                        break
+            groups.append(group)
+
+        return groups
+
+    def _merge_into_composite(self, incidents: list[dict]) -> dict:
+        """Merge multiple individual incidents into a single composite dict."""
+        all_types = set()
+        all_reasons = set()
+        all_findings = []
+        total_occurrences = 0
+        peak_conf = 0
+        peak_zs = None
+        start_block = float('inf')
+        latest_block = 0
+
+        for inc in incidents:
+            all_types.update(inc.get("anomaly_types", set()))
+            all_reasons.update(inc.get("reasons", set()))
+            all_findings.extend(inc.get("findings", []))
+            total_occurrences += inc["occurrences"]
+            if inc["peak_confidence"] > peak_conf:
+                peak_conf = inc["peak_confidence"]
+            zs = inc.get("peak_zscore")
+            if zs and (not peak_zs or zs > peak_zs):
+                peak_zs = zs
+            if inc["start_block"] < start_block:
+                start_block = inc["start_block"]
+            if inc["latest_block"] > latest_block:
+                latest_block = inc["latest_block"]
+
+        merged = {
+            "id": min(inc["id"] for inc in incidents),
+            "type": "composite",
+            "anomaly_types": all_types,
+            "start_block": start_block,
+            "latest_block": latest_block,
+            "occurrences": total_occurrences,
+            "peak_confidence": peak_conf,
+            "peak_zscore": peak_zs,
+            "state": incidents[0]["state"],
+            "findings": all_findings,
+            "insight_sample": self.incident_manager._build_composite_insight(
+                {"anomaly_types": all_types, "insight_sample": ""},
+                "", ""),
+            "reasons": all_reasons,
+            "start_time": min(
+                (inc["start_time"] for inc in incidents), default="N/A"),
+            "latest_time": max(
+                (inc["latest_time"] for inc in incidents), default="N/A"),
+        }
+        return merged
 
     async def _notify_incident(self, incident: dict):
         """Push an incident update to the configured bots (Discord + Telegram)."""

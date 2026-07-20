@@ -178,22 +178,21 @@ class MantleIntelDiscordBot:
         else:
             evidence_str = "✓ Baseline Anomaly"
 
-        # Composite: show all signals in the label
+        # Composite: generic title + signals listed in body (not title)
         if is_composite:
             labels = [anomaly_label(t) for t in anomaly_types]
-            short_labels = [l.replace("Accumulation", "Accum.").replace("Distribution", "Distrib.").replace("Anomaly", "").strip() for l in labels]
-            type_label = "Composite Anomaly: " + " + ".join(short_labels[:3])
-            if len(anomaly_types) > 3:
-                type_label += f" +{len(anomaly_types) - 3} more"
+            type_label = "Composite On-Chain Anomaly"
             icon = "🔥"
+            signals_line = f"**Signals:** {', '.join(labels)}\n"
         else:
             type_label = anomaly_label(atype)
             icon = anomaly_icon(atype)
+            signals_line = ""
 
         desc = INCIDENT_TEMPLATE.format(
             icon=icon,
             anomaly_type_label=type_label,
-            insight=insight[:1800],
+            insight=signals_line + insight[:1600],
             incident_id=incident.get("incident_id", "N/A"),
             state=state,
             start=f"{start:,}",
@@ -207,6 +206,7 @@ class MantleIntelDiscordBot:
         )
 
         embed = discord.Embed(
+            title=type_label,
             description=desc,
             color=color,
         )

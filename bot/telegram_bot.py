@@ -176,13 +176,10 @@ class MantleIntelBot:
         else:
             evidence_str = "✓ Baseline Anomaly"
 
-        # Composite: show all signals in the label
+        # Composite: generic title + signals listed in body (not title)
         if is_composite:
             labels = [anomaly_label(t) for t in anomaly_types]
-            short_labels = [l.replace("Accumulation", "Accum.").replace("Distribution", "Distrib.").replace("Anomaly", "").strip() for l in labels]
-            type_label = "Composite Anomaly: " + " + ".join(short_labels[:3])
-            if len(anomaly_types) > 3:
-                type_label += f" +{len(anomaly_types) - 3} more"
+            type_label = "Composite On-Chain Anomaly"
             icon = "🔥"  # composite icon
             signals_line = f"<b>Signals:</b> {', '.join(labels)}\n"
         else:

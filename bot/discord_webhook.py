@@ -152,14 +152,11 @@ class DiscordWebhook:
             "✅ Incident Resolved":  3066993,   # Green
         }
 
-        # Composite: show all anomaly types in one title
+        # Composite: generic title + signals listed in body (not title)
         if is_composite:
             labels = [label_map.get(t, t.replace("_", " ").title())
                       for t in anomaly_types]
-            short_labels = [l.replace("Accumulation", "Accum.").replace("Distribution", "Distrib.") for l in labels]
-            title = "Composite Anomaly: " + " + ".join(short_labels[:3])
-            if len(anomaly_types) > 3:
-                title += f" +{len(anomaly_types) - 3} more"
+            title = "Composite On-Chain Anomaly"
         else:
             title = label_map.get(atype, atype.replace("_", " ").title())
 

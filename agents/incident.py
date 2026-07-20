@@ -31,9 +31,14 @@ class IncidentManager:
         Process a new finding. Returns an Incident update dict if a bot notification
         should be sent, otherwise returns None.
 
-        v2: Findings within BLOCK_PROXIMITY_THRESHOLD blocks of each other
+        v3: Findings within BLOCK_PROXIMITY_THRESHOLD blocks of each other
         are grouped into the same incident regardless of anomaly type.
         So tx_spike + value_spike + multivariate on the same block = 1 incident.
+
+        DEDUPLICATION: If the same anomaly_type already exists in a proximate
+        incident, the finding is absorbed as evidence (not a separate signal)
+        to prevent duplicate incidents like two multivariate_anomaly for the
+        same block.
         """
         anomaly_type = dashboard_card.get("type", "unknown")
         finding_block = dashboard_card.get("block", current_block)
@@ -89,22 +94,33 @@ class IncidentManager:
 
     def _merge_finding(self, incident: dict, dashboard_card: dict,
                        current_block: int) -> dict | None:
-        """Merge a new finding into an existing incident."""
+        """Merge a new finding into an existing incident.
+
+        DEDUPLICATION: If the same anomaly_type already exists in the incident,
+        the finding is still recorded as evidence but does NOT increment the
+        signal count. This prevents two multivariate_anomaly findings from
+        showing as "2 signals" when they're the same detector firing twice.
+        """
         anomaly_type = dashboard_card.get("type", "unknown")
+        is_duplicate_type = anomaly_type in incident["anomaly_types"]
 
         # Add this anomaly type to the set
+        type_is_new = anomaly_type not in incident["anomaly_types"]
         incident["anomaly_types"].add(anomaly_type)
         # Update primary type label to show it's composite
         if len(incident["anomaly_types"]) > 1:
             incident["type"] = "composite"
             # Update insight_sample to reflect composite nature
             new_insight = dashboard_card.get("insight", "")
-            if new_insight:
+            if new_insight and type_is_new:
                 incident["insight_sample"] = self._build_composite_insight(
                     incident, anomaly_type, new_insight)
 
         incident["latest_block"] = current_block
-        incident["occurrences"] += 1
+        # Only increment signal count for NEW anomaly types
+        # Duplicate-type findings are evidence, not additional signals
+        if not is_duplicate_type:
+            incident["occurrences"] += 1
         incident["findings"].append(dashboard_card)
         incident["latest_time"] = dashboard_card.get(
             "timestamp", incident["latest_time"])
@@ -171,25 +187,25 @@ class IncidentManager:
                                new_type: str, new_insight: str) -> str:
         """Build a composite insight summary when multiple signals merge."""
         existing = incident.get("insight_sample", "")
-        # Extract the short anomaly label
-        type_label = new_type.replace("_", " ").title()
-        
-        # If this is the first merge (becoming composite), prepend composite header
-        if not existing.startswith("Composite"):
-            # First merge — restructure: existing insight + new signal
-            parts = [f"Composite on-chain anomaly detected. "
-                     f"Multiple signals fired:"]
-            # Add first signal type
-            first_type = list(incident.get("anomaly_types", set()))[0] if incident.get("anomaly_types") else "anomaly"
-            first_label = first_type.replace("_", " ").title()
-            parts.append(f"• {first_label}")
-            parts.append(f"• {type_label}")
-            return "\n".join(parts)
-        else:
-            # Subsequent merge — just append the new signal type
-            if f"• {type_label}" not in existing:
-                existing += f"\n• {type_label}"
-            return existing
+
+        # Collect all anomaly type labels
+        all_types = incident.get("anomaly_types", set())
+        type_labels = sorted(
+            t.replace("_", " ").title() for t in all_types if t)
+
+        # Always rebuild from scratch using the full set of types
+        # This ensures consistency regardless of merge order
+        parts = ["Composite on-chain anomaly detected. Multiple signals fired:"]
+        for label in type_labels:
+            parts.append(f"• {label}")
+
+        # Append any additional insight text if meaningful
+        if new_insight and len(new_insight) > 50:
+            # Truncate long insights to keep composite concise
+            parts.append(new_insight[:200] + "..." if len(new_insight) > 200
+                         else new_insight)
+
+        return "\n".join(parts)
 
     def _extract_zscore(self, dashboard_card: dict) -> float | None:
         metrics = dashboard_card.get("raw_metrics", {})
