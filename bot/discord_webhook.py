@@ -165,15 +165,17 @@ class DiscordWebhook:
         start = incident.get("start_block", 0)
         latest = incident.get("latest_block", 0)
         dur = incident.get("duration_blocks", 1)
-        occ = incident.get("occurrences", 1)
+        signal_type_count = incident.get("signal_type_count", 1)
         insight = incident.get("insight_sample", "")
         fhash = incident.get("latest_hash", "")
         timestamp = incident.get("timestamp", "N/A")
-        detectors = incident.get("detectors", [])
 
-        detectors_str = (
-            "\n".join(f"✓ {d}" for d in detectors)
-            if detectors else "✓ Baseline Anomaly"
+        # Use deduplicated, impact-sorted evidence
+        evidence_list = incident.get("evidence", [])
+        evidence_count = len(evidence_list) or len(incident.get("detectors", []))
+        evidence_str = (
+            "\n".join(f"✓ {e}" for e in evidence_list)
+            if evidence_list else "✓ Baseline Anomaly"
         )
 
         incident_id = incident.get('incident_id', 'N/A')
@@ -195,13 +197,14 @@ class DiscordWebhook:
              "value": f"`{start:,}` to `{latest:,}` "
                       f"(Duration: {dur} blocks)",
              "inline": False},
-            {"name": "Signals", "value": str(occ), "inline": True},
+            {"name": "Signal Types", "value": str(signal_type_count), "inline": True},
+            {"name": "Evidence Items", "value": str(evidence_count), "inline": True},
             {"name": "Timestamp (UTC)",
              "value": f"`{timestamp}`", "inline": True},
         ]
 
         fields.append(
-            {"name": "Evidence", "value": detectors_str, "inline": False})
+            {"name": "Evidence", "value": evidence_str, "inline": False})
 
         if fhash:
             fields.append({

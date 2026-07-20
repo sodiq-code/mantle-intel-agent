@@ -41,7 +41,7 @@ INCIDENT_TEMPLATE = """
 **Detection Confidence:** **{conf}%** (Anomaly Detection)
 **Blocks:** `{start}` to `{latest}` (Duration: {dur} blocks)
 **Timestamp (UTC):** `{timestamp}`
-**Signals:** {occ}
+**Signal Types:** {signal_type_count} | **Evidence Items:** {evidence_count}
 
 **Evidence:**
 {evidence}
@@ -148,7 +148,7 @@ class MantleIntelDiscordBot:
         start   = incident.get("start_block", 0)
         latest  = incident.get("latest_block", 0)
         dur     = incident.get("duration_blocks", 1)
-        occ     = incident.get("occurrences", 1)
+        signal_type_count = incident.get("signal_type_count", 1)
         conf    = incident.get("peak_confidence", 0)
         fhash   = incident.get("latest_hash", "")
         insight = incident.get("insight_sample", "")
@@ -171,9 +171,11 @@ class MantleIntelDiscordBot:
         elif "Resolved" in state:
             color = 0x22C55E
 
-        detectors_list = incident.get("detectors", [])
-        if detectors_list:
-            evidence_str = "\n".join(f"✓ {d}" for d in detectors_list)
+        # Use deduplicated, impact-sorted evidence
+        evidence_list = incident.get("evidence", [])
+        evidence_count = len(evidence_list) or len(incident.get("detectors", []))
+        if evidence_list:
+            evidence_str = "\n".join(f"✓ {e}" for e in evidence_list)
         else:
             evidence_str = "✓ Baseline Anomaly"
 
@@ -197,7 +199,8 @@ class MantleIntelDiscordBot:
             start=f"{start:,}",
             latest=f"{latest:,}",
             dur=dur,
-            occ=occ,
+            signal_type_count=signal_type_count,
+            evidence_count=evidence_count,
             conf=conf,
             timestamp=incident.get("timestamp", "N/A"),
             evidence=evidence_str,

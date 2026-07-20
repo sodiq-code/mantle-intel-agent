@@ -13,9 +13,17 @@ class IncidentManager:
     State tracker to aggregate anomaly findings into ongoing incidents
     to prevent alert storms on bots.
 
-    v2: Groups findings by block proximity instead of anomaly type.
-    Multiple anomaly types on the same block = ONE incident with all signals.
-    Users see ONE notification per event, not 4.
+    v4: Signal Types vs Evidence Items distinction.
+    - signal_type_count = len(anomaly_types) → distinct detectors that fired
+    - evidence = deduplicated, impact-sorted summary (no repeated triggers)
+    - occurrences = total findings (internal, drives state escalation)
+
+    Composite Confidence Aggregation Rule:
+    - For composite incidents, confidence = max(detector confidences).
+      Rationale: each detector independently validates the anomaly;
+      their agreement strengthens the signal but the most confident
+      detector sets the ceiling.
+    - Escalation: occurrences ≥ 3 → Escalated, ≥ 5 → Critical.
     """
 
     # How close in blocks do two findings need to be to belong to the same incident?
@@ -210,14 +218,147 @@ class IncidentManager:
             return None
         return metrics.get("zscore")
 
+    def _summarize_evidence(self, incident: dict) -> list[str]:
+        """Build deduplicated, impact-sorted evidence from incident findings.
+
+        Instead of listing every raw evidence string (which produces
+        duplicates when the same detector fires multiple times), this
+        method processes the raw findings to extract peak metrics per
+        detector type and sorts by impact.
+
+        Impact order: Z-score → value → liquidity → multivariate → tx count
+        """
+        findings = incident.get("findings", [])
+        if not findings:
+            return ["Baseline Anomaly"]
+
+        peak_zscore = 0.0
+        peak_tx_count = 0
+        baseline_tx = 0
+        peak_value = 0
+        baseline_value = 0
+        has_liquidity = False
+        liquidity_pct = 0
+        has_multivariate = False
+        has_smart_money = False
+        sm_detail = ""
+        has_whale = False
+        whale_detail = ""
+        has_depeg = False
+        depeg_bps = 0
+
+        for f in findings:
+            m = f.get("raw_metrics", {}) or {}
+
+            # Track peak Z-score across ALL findings
+            z = m.get("zscore")
+            if z and abs(z) >= 3.0 and abs(z) > peak_zscore:
+                peak_zscore = abs(z)
+
+            atype = f.get("type", "")
+            if atype == "tx_spike":
+                tx = m.get("tx_count", 0)
+                if tx > peak_tx_count:
+                    peak_tx_count = tx
+                    baseline_tx = int(m.get("mean_tx", 1))
+
+            elif atype == "value_spike":
+                val = m.get("value_mnt", 0)
+                if val > peak_value:
+                    peak_value = val
+                    baseline_value = int(m.get("mean_val_mnt", 1))
+
+            elif atype == "liquidity_imbalance":
+                has_liquidity = True
+                delta = abs(m.get("r0_delta_pct", 0))
+                if delta > liquidity_pct:
+                    liquidity_pct = delta
+
+            elif atype == "multivariate_anomaly":
+                has_multivariate = True
+
+            elif atype == "smart_money_inflow":
+                has_smart_money = True
+                wc = m.get("wallet_count", 0)
+                if wc:
+                    sm_detail = f"{wc} unlabeled wallets accumulated positions"
+
+            elif atype in ("whale_accumulation", "whale_distribution"):
+                has_whale = True
+                tc = m.get("transfer_count", 0)
+                if tc:
+                    whale_detail = f"{tc} large transfers detected"
+
+            elif atype == "meth_depeg":
+                has_depeg = True
+                bps = m.get("depeg_bps", 0)
+                if abs(bps) > abs(depeg_bps):
+                    depeg_bps = bps
+
+        # Build evidence sorted by impact
+        evidence = []
+
+        # 1. Peak Z-score (strongest statistical signal)
+        if peak_zscore > 0:
+            evidence.append(
+                f"Peak anomaly strength: z = {peak_zscore:.2f}σ")
+
+        # 2. Value spike (largest financial impact)
+        if peak_value > 0:
+            evidence.append(
+                f"MNT transfer value peaked at {peak_value:,.0f} "
+                f"(baseline: {baseline_value:,.0f})")
+
+        # 3. Liquidity imbalance (protocol risk)
+        if has_liquidity:
+            evidence.append(f"Liquidity reserve deviation: {liquidity_pct}%")
+
+        # 4. Multivariate confirmation (corroborating signal)
+        if has_multivariate:
+            evidence.append(
+                "Multivariate anomaly confirmed "
+                "(tx volume + value + wallet diversity)")
+
+        # 5. Transaction volume (operational signal)
+        if peak_tx_count > 0:
+            evidence.append(
+                f"Transaction volume peaked at {peak_tx_count} "
+                f"vs baseline {baseline_tx}")
+
+        # 6. Smart money (intelligence signal)
+        if has_smart_money:
+            evidence.append(sm_detail or "Smart money inflow detected")
+
+        # 7. Whale activity
+        if has_whale:
+            evidence.append(whale_detail or "Large whale activity detected")
+
+        # 8. mETH depeg
+        if has_depeg:
+            evidence.append(
+                f"mETH/ETH oracle deviation: {abs(depeg_bps)} bps "
+                f"({abs(depeg_bps) / 100:.2f}% from peg)")
+
+        if not evidence:
+            evidence = ["Baseline Anomaly"]
+
+        return evidence
+
     def _format_incident_notification(self, incident: dict) -> dict:
         """
         Returns an object designed to be consumed by the Bot layer.
         For composite incidents, shows all anomaly types involved.
+
+        v4: Distinguishes signal_type_count (distinct detectors) from
+        occurrences (total findings, internal). Evidence is deduplicated
+        and impact-sorted via _summarize_evidence().
         """
         duration = (incident["latest_block"] - incident["start_block"]) + 1
         anomaly_types = incident.get("anomaly_types", {incident["type"]})
         is_composite = len(anomaly_types) > 1
+
+        # Build deduplicated, impact-sorted evidence
+        evidence = self._summarize_evidence(incident)
 
         return {
             "incident_id": incident["id"],
@@ -229,10 +370,12 @@ class IncidentManager:
             "latest_block": incident["latest_block"],
             "duration_blocks": duration,
             "occurrences": incident["occurrences"],
+            "signal_type_count": len(anomaly_types),
             "peak_confidence": incident["peak_confidence"],
             "peak_zscore": incident["peak_zscore"],
             "insight_sample": incident["insight_sample"],
             "latest_hash": incident["findings"][-1].get("hash") if incident["findings"] else None,
             "timestamp": incident["latest_time"],
+            "evidence": evidence,
             "detectors": list(incident.get("reasons", []))
         }

@@ -67,7 +67,7 @@ INCIDENT_TEMPLATE = """
 <b>Detection Confidence:</b> <b>{conf}%</b> (Anomaly Detection)
 <b>Blocks:</b> <code>{start}</code> to <code>{latest}</code> (Duration: {dur} blocks)
 <b>Timestamp (UTC):</b> <code>{timestamp}</code>
-<b>Signals:</b> {occ}
+<b>Signal Types:</b> {signal_type_count} | <b>Evidence Items:</b> {evidence_count}
 
 <b>Evidence:</b>
 {evidence}
@@ -160,16 +160,18 @@ class MantleIntelBot:
         start   = incident.get("start_block", 0)
         latest  = incident.get("latest_block", 0)
         dur     = incident.get("duration_blocks", 1)
-        occ     = incident.get("occurrences", 1)
+        signal_type_count = incident.get("signal_type_count", 1)
         conf    = incident.get("peak_confidence", 0)
         fhash   = incident.get("latest_hash", "")
         insight = incident.get("insight_sample", "")
 
         insight_trimmed = insight[:800] + "..." if len(insight) > 800 else insight
 
-        detectors_list = incident.get("detectors", [])
-        if detectors_list:
-            evidence_str = "\n".join(f"✓ {d}" for d in detectors_list)
+        # Use deduplicated, impact-sorted evidence
+        evidence_list = incident.get("evidence", [])
+        evidence_count = len(evidence_list) or len(incident.get("detectors", []))
+        if evidence_list:
+            evidence_str = "\n".join(f"✓ {e}" for e in evidence_list)
         else:
             evidence_str = "✓ Baseline Anomaly"
 
@@ -196,7 +198,8 @@ class MantleIntelBot:
             start=f"{start:,}",
             latest=f"{latest:,}",
             dur=dur,
-            occ=occ,
+            signal_type_count=signal_type_count,
+            evidence_count=evidence_count,
             conf=conf,
             timestamp=incident.get("timestamp", "N/A"),
             evidence=evidence_str,
