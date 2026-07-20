@@ -28,18 +28,18 @@
 
 Mantle Intel Agent is a fully autonomous 5-agent Python pipeline that continuously monitors the Mantle L2 ecosystem and surfaces **professional-grade security and trading signals**:
 
-1. **Collects** — Polls Mantle mainnet RPC every 6 seconds. Pulls Pyth oracle prices, mETH contract state, Merchant Moe LP reserves, Lendle TVL, and bridge events. All web3.py `.call()` methods run via `asyncio.to_thread()` to prevent event-loop blocking. Zero centralized API keys required.
+1. **Collects** — Polls Mantle mainnet RPC (default: 30-second cycle interval; collector internal poll: 6s). Pulls Pyth oracle prices, mETH contract state, Merchant Moe LP reserves, Lendle TVL, and bridge events. All web3.py `.call()` methods run via `asyncio.to_thread()` to prevent event-loop blocking. Zero centralized API keys required.
 2. **Detects** — Runs 10 anomaly detectors per block: Z-Score (3.5σ), Isolation Forest (contamination=0.02), whale pattern matching, mETH depeg, LP imbalance, cross-protocol correlation, bridge spikes (3.5σ threshold), MEV activity, smart money clustering, and multivariate signals. Minimum confidence threshold: **0.80** (matching Solidity contract `confidenceScore >= 80`).
-3. **Labels** — 60+ Nansen-style wallet classifications: CEX, VC, Mantle DeFi protocols, MEV bots, and known alpha wallets. Tier 1/2/3 labeling system with DBSCAN + KMeans clustering.
+3. **Labels** — 55 Nansen-style wallet classifications (KNOWN_LABELS): CEX, VC, Mantle DeFi protocols, MEV bots, and known alpha wallets. Tier 1/2/3 labeling system with rule-based type grouping.
 4. **Manages Incidents** — Correlates related anomalies into a unified Incident ID. Composite incident grouping delivers 1 notification per event instead of 4 separate alerts. Tracks state across `OPENED`, `ESCALATED`, and `RESOLVED` to eliminate alert fatigue.
 5. **Records** — Every finding is SHA256-hashed over canonical 4-field JSON (`block`, `confidence`, `tx_count`, `type`) with `sort_keys=True`, producing identical hashes across Python, JavaScript, and Solidity. Submitted on-chain to `MantleIntelAudit.sol` using an encrypted keystore (3-tier key resolution: explicit key → keystore → env var with deprecation warning).
-6. **Alerts** — Telegram bot (connected to live pipeline) and Discord webhook (httpx-based) utilizing evidence-based reporting structures (✓) and Anomaly Confidence scores. Sub-30 second latency. LLM-powered narrative generation via 4-tier fallback: Ollama local → Groq API (`moonshotai/kimi-k2-instruct`) → OpenRouter → deterministic templates (always available, zero quality degradation for core detection).
+6. **Alerts** — Telegram bot (connected to live pipeline) and Discord webhook (httpx-based) utilizing evidence-based reporting structures (✓) and Anomaly Confidence scores. Sub-30 second latency. LLM-powered narrative generation via 5-tier fallback: Ollama local → Groq API (`moonshotai/kimi-k2-instruct`) → OpenRouter → DashScope (legacy) → deterministic templates (always available, zero quality degradation for core detection).
 
 ---
 
 ## Architecture
 
-> **Security Note:** The on-chain pipeline relies entirely on a locally encrypted `keystore.json` file. Plaintext private keys are never exposed in environment variables. The `AGENT_PRIVATE_KEY` env var is deprecated and logs a warning if used.
+> **Security Note:** The on-chain pipeline prefers a locally encrypted `keystore.json` file. The `AGENT_PRIVATE_KEY` env var is deprecated (logs a warning) but still supported as a fallback for CI environments. See 3-tier key resolution in `agents/audit/audit_agent.py`.
 
 ```text
 CollectorAgent (Stage 1)
@@ -54,8 +54,8 @@ AnomalyAgent (Stage 2)
   │  CONFIDENCE_THRESHOLD = 0.80 (matches Solidity >= 80)
   ▼
 SmartMoneyAgent (Stage 3)
-  │  60+ Nansen-style wallet labels · Tier 1/2/3 system
-  │  DBSCAN clustering + KMeans
+  │  55 Nansen-style wallet labels · Tier 1/2/3 system
+  │  Rule-based type grouping
   ▼
 InsightAgent & IncidentManager (Stage 4)
   │  Evidence-backed Incident Reports · Composite grouping (1 notification/event)
@@ -66,12 +66,12 @@ InsightAgent & IncidentManager (Stage 4)
 AuditAgent (Stage 5)
   │  SHA256(canonical 4-field JSON, sort_keys=True) → MantleIntelAudit.sol
   │  Via Encrypted Keystore (3-tier key resolution)
-  │  ERC-8004 NFT identity
+  │  ERC-721 Agent Identity NFT (ERC-8004-inspired metadata extensions)
   │  File rotation: daily gzip + 30-day cleanup (P2-27)
   │
-  ├── Telegram Bot       /start · /compare · /verify · /status
+  ├── Telegram Bot       /start · /status · /latest · /verify · /compare
   ├── Discord Webhook    Rich incident reporting (httpx)
-  ├── React Dashboard    Live Findings UI (syncs with onchain_submissions.json)
+  ├── React Dashboard    Live Findings UI (syncs with dashboard.json)
   ├── REST API           /api/live-feed · /api/health · /api/analytics/summary
   └── OpenTelemetry      Tracing with OTLP/Console exporters (P2-16)
 ```
@@ -111,7 +111,7 @@ Every signal the system fires is permanently recorded with tamper-evident hashin
 
 1. `AuditAgent` computes `SHA256(canonical 4-field JSON: {block, confidence, tx_count, type}, sort_keys=True)` — identical hash format across Python, JavaScript, and Solidity.
 2. Automatically pushes to `MantleIntelAudit.sol` using the encrypted keystore. The Solidity contract enforces `confidenceScore >= 80`, matching the pipeline's `CONFIDENCE_THRESHOLD = 0.80`.
-3. Dashboard synchronizes real-time off-chain data with the immutable `onchain_submissions.json` log.
+3. Dashboard synchronizes real-time off-chain data via `data/dashboard.json` (synced to `dashboard/public/dashboard.json` for Vercel static deployment).
 4. Each entry links directly to its Mantlescan transaction. Finding hashes are independently verifiable via `verifyFinding(bytes32)`.
 
 **Verify independently:**
@@ -410,7 +410,7 @@ Current production thresholds in `agents/anomaly/anomaly_agent.py`:
 | `METH_DEPEG_THRESHOLD` | 50bps | Alert if mETH/ETH deviates >0.5% |
 | `MOE_IMBALANCE_RATIO` | 0.30 | 30% reserve imbalance triggers LP alert |
 
-All per-type detection thresholds (whale=0.72, smart_money=0.75, meth_depeg=0.65, etc.) are initial detection levels only. **Every finding must also pass the global pipeline confidence threshold of 0.80** before being emitted and recorded on-chain. See [`docs/MODEL_CARD.md`](./docs/MODEL_CARD.md) for confidence bands.
+Per-type confidence base values vary by detection method (e.g., whale base ≈ 0.72, meth_depeg WARNING = 0.82 / CRITICAL = 0.96). These are initial scoring levels only — **every finding must also pass the global pipeline confidence threshold of 0.80** before being emitted and recorded on-chain. See [`docs/MODEL_CARD.md`](./docs/MODEL_CARD.md) for confidence bands.
 
 ---
 
@@ -439,11 +439,11 @@ All per-type detection thresholds (whale=0.72, smart_money=0.75, meth_depeg=0.65
 | Agent pipeline | Python 3.11+, asyncio |
 | ML | scikit-learn (IsolationForest), scipy (z-score), numpy |
 | Blockchain | web3.py, Mantle RPC |
-| Contracts | Solidity 0.8.20, Hardhat |
+| Contracts | Solidity ^0.8.20 (compiler 0.8.24), Hardhat |
 | API | FastAPI + uvicorn, Vercel Edge Functions (Node.js) |
-| Dashboard | React 18, Vite, Tailwind CSS, Recharts |
+| Dashboard | React 18, Vite, Tailwind CSS, Lucide icons (custom SVG charts) |
 | Alerts | python-telegram-bot, httpx (Discord webhook) |
-| LLM | Ollama → Groq (kimi-k2-instruct) → OpenRouter → Templates (4-tier fallback) |
+| LLM | Ollama → Groq (kimi-k2-instruct) → OpenRouter → DashScope (legacy) → Templates (5-tier fallback) |
 | Observability | structlog + OpenTelemetry (OTLP/Console) |
 | Rate Limiting | slowapi |
 | Packaging | pyproject.toml (PEP 621), pip-tools |
