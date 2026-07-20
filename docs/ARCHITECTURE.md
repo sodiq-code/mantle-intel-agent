@@ -31,7 +31,7 @@
 │  + Z-score + Pattern │     • Whale pattern matching
 │                      │     • mETH depeg detection
 │  Output: findings[]  │     • Merchant Moe LP imbalance
-│  Confidence ≥ 0.75   │     • Cross-protocol correlation
+│  Confidence ≥ 0.80   │     • Cross-protocol correlation
 └──────────┬───────────┘
            │
            │ AnomalyFinding[]
@@ -88,7 +88,7 @@ Anomaly Agent
     │
     │  Z-Score: (x - μ) / σ > 3.0σ threshold
     │  Isolation Forest: contamination=0.03, min_history=25
-    │  Confidence: 0.75 threshold, multi-method boost +0.04
+    │  Confidence: 0.80 threshold, multi-method boost +0.04
     │
     │  AnomalyFinding { finding_id, anomaly_type, block_height,
     │                   confidence, description, raw_metrics,
@@ -103,7 +103,7 @@ Smart Money Agent
     ▼
 Audit Agent
     │
-    │  SHA256(to_dict(), sort_keys=True) → bytes32 → submitFinding()
+    │  SHA256(canonical 4-field JSON, sort_keys=True) → bytes32 → submitFinding()
     │  MantleIntelAudit.sol (Mantle Sepolia)
     │  20 findings confirmed on-chain
     ▼
@@ -196,8 +196,8 @@ Wilson 95% CI for recall: [0.697, 0.985]
 
 ## Security Properties
 
-- **Tamper-evident hashing**: Every finding hashed with SHA256 over ALL fields (not just 5). Any field change = different hash.
-- **Pre-commit sealing**: Hash computed before submission. Post-submission mutation detectable.
+- **Tamper-evident hashing**: Every finding hashed with SHA256 over canonical 4-field JSON (`block`, `confidence`, `tx_count`, `type`). Any core field change = different hash. Hashes are identical across Python, JS, and Solidity.
+- **Pre-commit sealing**: Hash computed before submission. Post-submission mutation of core fields detectable.
 - **On-chain immutability**: Hashes stored in Mantle Sepolia — censorship-resistant audit trail.
 - **Deterministic pipeline**: seed=42 backtest produces identical results across runs.
 

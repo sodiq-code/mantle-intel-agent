@@ -236,7 +236,7 @@ class AnomalyAgent:
                 f.raw_metrics["confirming_methods"] = list(set(methods))
             boosted.append(f)
 
-        # Filter by confidence threshold (0.75)
+        # Filter by confidence threshold (0.80)
         filtered = [f for f in boosted if f.confidence >= CONFIDENCE_THRESHOLD]
         self.logger.info("anomalies_detected",
                          total=len(candidates),

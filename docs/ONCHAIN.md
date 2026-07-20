@@ -63,7 +63,7 @@ cast call 0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b \
 
 ## Tamper-Evidence Verification
 
-Every finding has a SHA256 hash that commits ALL fields: `finding_id`, `anomaly_type`, `confidence`, `block_height`, `timestamp`, `description`, `raw_metrics`, `investment_signal`. If any field changes, the hash changes.
+Every finding has a SHA256 hash that commits 4 core fields: `block`, `confidence`, `tx_count`, `anomaly_type`. If any core field changes, the hash changes. This canonical 4-field format ensures Python, JavaScript, and Solidity all produce identical hashes for the same finding.
 
 **Verify independently:**
 
@@ -71,18 +71,15 @@ Every finding has a SHA256 hash that commits ALL fields: `finding_id`, `anomaly_
 import hashlib, json
 
 # Example finding (read from chain, then verify locally)
-finding = {
-    "finding_id": "mantle-anomaly-...",
-    "anomaly_type": "whale_accumulation",
-    "confidence": 0.89,
-    "block_height": 71234567,
-    "timestamp": "2026-06-12T...",
-    "description": "...",
-    "raw_metrics": {...},
-    "investment_signal": {...}
+# P1-7: Hash uses canonical 4-field JSON — same format across Python, JS, Solidity
+core = {
+    "block":       96526450,          # block_height
+    "confidence":  round(0.90, 4),    # confidence (4 decimal places)
+    "tx_count":    13,                # raw_metrics.tx_count
+    "type":        "tx_spike",        # anomaly_type
 }
 
-canonical = json.dumps(finding, sort_keys=True, separators=(",",":"))
+canonical = json.dumps(core, sort_keys=True, separators=(",",":"))
 sha256 = hashlib.sha256(canonical.encode()).hexdigest()
 # Compare with hash stored on-chain — must match exactly
 ```
@@ -120,7 +117,7 @@ curl "https://mantle-intel-agent.vercel.app/api/protocol-state" | python3 -m jso
 
 # Backtest endpoint
 curl "https://mantle-intel-agent.vercel.app/api/backtest" | python3 -m json.tool
-# Expected: precision: 1.0, recall: 1.0, f1: 1.0
+# Expected: precision: 1.0, recall: 0.929, f1: 0.963
 ```
 
 ---

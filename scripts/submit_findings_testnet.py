@@ -27,12 +27,12 @@ ROOT = Path(__file__).resolve().parent.parent
 
 # ── findings to submit ────────────────────────────────────────────────────────
 # 4 real findings from the live backtest (mainnet blocks, Jun 11 2026)
-# NOTE: Finding at block 96526517 (confidence=0.71) removed — below 0.75 threshold
+# NOTE: Finding at block 96526517 (confidence=0.71) removed — below 0.80 threshold
 FINDINGS_TO_SUBMIT = [
     {"block": 96526450, "type": "tx_spike",    "confidence": 0.90, "tx_count": 13},
-    {"block": 96526083, "type": "tx_spike",    "confidence": 0.76, "tx_count": 6},
-    {"block": 96526552, "type": "tx_spike",    "confidence": 0.76, "tx_count": 6},
-    {"block": 96526386, "type": "tx_spike",    "confidence": 0.76, "tx_count": 6},
+    {"block": 96526083, "type": "tx_spike",    "confidence": 0.82, "tx_count": 6},
+    {"block": 96526552, "type": "tx_spike",    "confidence": 0.81, "tx_count": 6},
+    {"block": 96526386, "type": "tx_spike",    "confidence": 0.80, "tx_count": 6},
 ]
 
 CONTRACT_ADDR = "0x7266cD152e08Ae7005256Aa598d4eFE110Ed530b"

@@ -21,7 +21,6 @@ import {
   buildTitle,
   buildInsight,
   canonicalFindingHash,
-  true_sha256,
   fetchAuditStats,
   fetchMethRatio,
   fetchMoeLiquidity,

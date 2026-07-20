@@ -22,6 +22,8 @@ Each anomaly type has an individually tuned confidence threshold. Signals below 
 | `governance_attack` | 0.82 | Low base-rate; strict threshold to avoid alarm fatigue |
 | `token_unlock_front_run` | 0.76 | Cross-validated against on-chain schedule data |
 
+> **Note:** Per-type thresholds are initial detection levels. All findings must also pass the **global pipeline confidence threshold (0.80)** before being emitted and recorded on-chain. Findings below 0.80 are suppressed by the pipeline filter regardless of per-type threshold.
+
 ---
 
 ## 2. Backtest Performance (Live Mantle Mainnet Data)

@@ -1,9 +1,9 @@
 /**
- * P2-22: Solidity Test Suite for MantleIntelAudit.sol
+ * P2-25: Solidity Test Suite for MantleIntelAudit.sol
  *
  * Tests cover:
- *   1. recordFinding() succeeds with valid params (confidence=75)
- *   2. recordFinding() reverts with confidence < 75 (P2-23 fix)
+ *   1. recordFinding() succeeds with valid params (confidence=80)
+ *   2. recordFinding() reverts with confidence < 80 (P2-25 fix: matches pipeline 0.80)
  *   3. recordFinding() reverts on duplicate hash
  *   4. recordFinding() reverts on empty anomaly type
  *   5. verifyFinding() returns correct data after recording
@@ -41,10 +41,10 @@ describe("MantleIntelAudit", function () {
 
   // ── Test 1: recordFinding() succeeds with valid params ────────────────────
 
-  it("should record a finding with valid params and confidence=75", async function () {
+  it("should record a finding with valid params and confidence=80", async function () {
     const findingHash = hashString("test-finding-1");
     const anomalyType = "whale_accumulation";
-    const confidence = 75;  // P2-23: minimum threshold
+    const confidence = 80;  // P2-25: minimum threshold (matches pipeline 0.80)
     const blockHeight = 1000;
 
     await expect(
@@ -60,22 +60,22 @@ describe("MantleIntelAudit", function () {
     expect(await audit.findingCount()).to.equal(1);
   });
 
-  // ── Test 2: recordFinding() reverts with confidence < 75 (P2-23) ──────────
+  // ── Test 2: recordFinding() reverts with confidence < 80 (P2-25) ──────────
 
-  it("should revert when confidence is below 75 (P2-23 threshold)", async function () {
+  it("should revert when confidence is below 80 (P2-25 threshold)", async function () {
     const findingHash = hashString("test-finding-low-confidence");
 
-    // Test confidence = 50 (old threshold, should now fail)
+    // Test confidence = 50 (well below threshold)
     await expect(
       audit.connect(authorized).recordFinding(
         findingHash, "whale_accumulation", 50, 1000
       )
     ).to.be.revertedWith("Confidence too low");
 
-    // Test confidence = 74 (just below threshold)
+    // Test confidence = 79 (just below threshold — was valid at old 75 threshold)
     await expect(
       audit.connect(authorized).recordFinding(
-        findingHash, "whale_accumulation", 74, 1000
+        findingHash, "whale_accumulation", 79, 1000
       )
     ).to.be.revertedWith("Confidence too low");
 

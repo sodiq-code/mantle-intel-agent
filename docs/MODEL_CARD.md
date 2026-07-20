@@ -136,10 +136,13 @@ The single missed event (FN=1) was a sub-threshold `meth_depeg_risk` at z=1.94σ
 | Confidence Band | Range | Action |
 |----------------|-------|--------|
 | HIGH | ≥ 0.85 | Immediate alert, on-chain log, Telegram push |
-| MEDIUM | 0.72 – 0.84 | On-chain log, dashboard only |
+| MEDIUM | 0.80 – 0.84 | On-chain log, dashboard only |
+| DETECTED-BUT-SUPPRESSED | 0.72 – 0.79 | Detected by per-type method, but below global 0.80 pipeline filter — not emitted |
 | SUPPRESSED | < 0.72 | Not surfaced |
 
 ### Detection Thresholds by Anomaly Type
+
+> **Note:** These are per-method initial detection thresholds. All findings must also pass the **global pipeline confidence threshold of 0.80** before being emitted. A finding detected at 0.75 by a per-type method is boosted by multi-method corroboration (+0.04) and then filtered — only findings reaching ≥0.80 are recorded on-chain.
 
 | Anomaly Type | Threshold | Method |
 |-------------|-----------|--------|

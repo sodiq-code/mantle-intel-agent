@@ -322,7 +322,7 @@ export function buildIncidents(findings, latestBlock) {
 
 export function buildTitle(type, feat, knownWallets, conf) {
   const tier = knownWallets.length > 0 ? `${knownWallets[0]} involved` : `Block ${feat.block_num.toLocaleString()}`;
-  const confLabel = conf >= 0.85 ? "🔥 HIGH SIGNAL" : conf >= 0.75 ? "⚡ Signal" : "📡 Alert";
+  const confLabel = conf >= 0.85 ? "🔥 HIGH SIGNAL" : conf >= 0.80 ? "⚡ Signal" : "📡 Alert";
   switch (type) {
     case "whale_accumulation":  return `${confLabel} — Whale Move @ Block ${feat.block_num.toLocaleString()} · ${tier}`;
     case "tx_spike":            return `${confLabel} — TX Spike ${feat.tx_count} txs @ Block ${feat.block_num.toLocaleString()}`;

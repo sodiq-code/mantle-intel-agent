@@ -52,7 +52,7 @@
   Recall:     100.00%
   F1 Score:   1.0000
 
-  Confidence Threshold: 0.75
+  Confidence Threshold: 0.80
   Contamination (IF):   0.03
   Z-Score Threshold:    3.0σ
   Multi-confirm boost:  enabled (+0.04 when 2+ methods corroborate)
@@ -124,7 +124,7 @@ Multi-confirm logic corroborated 3 of 5 events (events 1, 4, 5) — these receiv
 
 ```python
 # Anomaly detection thresholds (tuned for Precision ≥ 95%)
-CONFIDENCE_THRESHOLD = 0.75    # minimum to emit finding
+CONFIDENCE_THRESHOLD = 0.80    # minimum to emit finding (matches Solidity >= 80)
 ZSCORE_THRESHOLD     = 3.0     # σ above rolling mean
 CONTAMINATION        = 0.03    # expected anomaly rate for Isolation Forest
 MIN_HISTORY_BLOCKS   = 15      # warm-up period before z-score fires
@@ -139,7 +139,7 @@ MOE_IMBALANCE_RATIO     = 0.30 # 30% reserve shift triggers LP alert
 **Why these thresholds?**  
 - ZSCORE_THRESHOLD=3.0: At baseline σ~10 tx/block, fires only at >95th percentile of normal distribution — minimizes false positives from routine traffic bursts
 - CONTAMINATION=0.03: Assumes ~3% of Mantle blocks contain anomalous activity — conservative for high-value signal extraction
-- CONFIDENCE_THRESHOLD=0.75: Requires multi-method agreement before alerting — confirmed by F1=1.00
+- CONFIDENCE_THRESHOLD=0.80: Requires multi-method agreement before alerting — confirmed by F1=0.963
 
 ---
 
@@ -163,7 +163,8 @@ MOE_IMBALANCE_RATIO     = 0.30 # 30% reserve shift triggers LP alert
 git clone https://github.com/sodiq-code/mantle-intel-agent
 cd mantle-intel-agent && pip install -r requirements.txt
 
-# Run backtest (should reproduce F1=1.0000 exactly — seed=42 result)
+# Run backtest (reproduces the seed=42 5-event result: F1=1.0000)
+# Note: The extended 395-block backtest (F1=0.963) is in the header above.
 python backtest/backtest_live.py
 
 # Expected output:

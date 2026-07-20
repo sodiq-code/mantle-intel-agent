@@ -19,7 +19,7 @@
 | MantleIntelAudit.sol on-chain audit log (ERC-8004) | ✅ Testnet |
 | Telegram bot + Discord webhook | ✅ Live |
 | React dashboard + public REST API | ✅ Live (Vercel) |
-| Backtest: F1=1.00, Precision=100%† | ✅ Verified |
+| Backtest: F1=0.963, Precision=100%† | ✅ Verified |
 
 ---
 
