@@ -375,18 +375,21 @@ The pipeline includes institutional-grade hardening features:
 
 | Feature | Description | Reference |
 |---------|-------------|-----------|
-| **Encrypted Keystore** | 3-tier key resolution: explicit → keystore → env var (deprecated) | `agents/audit/audit_agent.py` |
+| **Slither Security Audit** | Automated Slither v0.11.5 static analysis — **0 Critical, 0 High** findings (1 low false positive, 2 informational). Contract verified on Sourcify. | [`docs/SECURITY.md`](./docs/SECURITY.md) |
+| **EIP-2335 Encrypted Keystore** | Private key encrypted at rest via `eth_account.encrypt()`. 3-tier resolution: explicit key → keystore (`KEYSTORE_PATH` + `KEYSTORE_PASSWORD`) → `AGENT_PRIVATE_KEY` env var (deprecated, logs warning) | `agents/audit/audit_agent.py`, `scripts/generate_keystore.py` |
+| **Cross-Language Hash Consistency** | Python `sha256_hash()` and JS `canonicalFindingHash()` both hash identical canonical 4-field JSON `{block, confidence, tx_count, type}` with `sort_keys=True` — producing matching hashes across Python, JavaScript, and Solidity | `agents/anomaly/anomaly_agent.py`, `api/shared.js` |
 | **Circuit Breaker** | 5 consecutive failures → circuit open with 5x backoff | `agents/pipeline.py` |
 | **Rate Limiting** | 30/min GET, 5/min POST via slowapi (graceful NoOp fallback) | `server.py` |
 | **Prompt Injection Protection** | Truncation + pattern stripping + hex field removal for LLM prompts | `agents/insight/insight_agent.py` |
 | **Path Traversal Protection** | `is_relative_to()` check in SPA handler | `server.py` |
 | **File Rotation** | Daily gzip rotation + 30-day cleanup for JSONL logs | `agents/pipeline.py`, `agents/audit/audit_agent.py` |
 | **Real Health Check** | RPC + contract + pipeline status verification | `server.py:/api/health` |
-| **OpenTelemetry Tracing** | OTLP exporter (configurable) + Console fallback | `agents/tracing.py` |
+| **OpenTelemetry Tracing** | OTLP exporter (configurable via `OTEL_EXPORTER_OTLP_ENDPOINT`) + Console fallback | `agents/tracing.py` |
 | **API Key Middleware** | Production: 503 if not configured. Development: allow with warning | `server.py` |
-| **Pinned Dependencies** | All transitive deps pinned with exact versions in requirements.txt | `requirements.txt`, `requirements.in` |
+| **Dependency Versioning** | Flexible constraints with upper bounds in `requirements.txt`; fully-pinned transitive deps reverted due to CI `ResolutionImpossible` conflicts (see commit `56d851e`) | `requirements.txt`, `pyproject.toml` |
 | **Anonymous Analytics** | Privacy-first: no cookies, no fingerprinting, no PII. IPs SHA256-hashed and discarded | `server.py:/api/analytics/summary` |
-| **Multi-Sig Roadmap** | Gnosis Safe 2-of-3 upgrade path documented for mainnet | [`docs/MULTISIG.md`](./docs/MULTISIG.md) |
+| **Multi-Sig Roadmap** | Gnosis Safe 2-of-3 upgrade path documented for mainnet (Phase 0: EOA + keystore → Phase 1: Safe on mainnet → Phase 2: Gelato Relay → Phase 3: 3-of-5 DAO governance) | [`docs/MULTISIG.md`](./docs/MULTISIG.md) |
+| **SLSA Supply Chain Roadmap** | Level 1 ✅ (documented build). Level 2 🎯 (GitHub Actions + cosign). Level 3–4 📋 planned | [`docs/SECURITY.md`](./docs/SECURITY.md) |
 
 ---
 
