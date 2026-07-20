@@ -153,9 +153,10 @@ class DiscordWebhook:
         }
 
         # Composite: generic title + signals listed in body (not title)
+        signal_labels = []
         if is_composite:
-            labels = [label_map.get(t, t.replace("_", " ").title())
-                      for t in anomaly_types]
+            signal_labels = [label_map.get(t, t.replace("_", " ").title())
+                             for t in anomaly_types]
             title = "Composite On-Chain Anomaly"
         else:
             title = label_map.get(atype, atype.replace("_", " ").title())
@@ -179,9 +180,7 @@ class DiscordWebhook:
 
         # For composite: list all anomaly types detected
         signals_line = ""
-        if is_composite:
-            signal_labels = [label_map.get(t, t.replace("_", " ").title())
-                             for t in anomaly_types]
+        if is_composite and signal_labels:
             signals_line = f"**Signals Detected:** {', '.join(signal_labels)}\n"
 
         desc = (

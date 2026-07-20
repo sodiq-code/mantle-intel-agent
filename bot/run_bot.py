@@ -19,9 +19,8 @@ if env_path.exists():
             k, v = line.split("=", 1)
             os.environ.setdefault(k.strip(), v.strip())
 
-from telegram import Update, Bot
+from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
-from telegram.constants import ParseMode
 
 from config import CONTRACT_ADDRESS
 

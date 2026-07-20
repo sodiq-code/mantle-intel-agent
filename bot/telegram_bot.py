@@ -6,7 +6,6 @@ Auto-pushes alerts when new findings are emitted by pipeline.
 from __future__ import annotations
 
 import asyncio
-import json
 import os
 import sys
 from typing import Optional
@@ -23,8 +22,6 @@ except ImportError:
     TELEGRAM_AVAILABLE = False
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-
-from config import CONTRACT_ADDRESS
 
 
 WELCOME_MSG = """
@@ -187,10 +184,13 @@ class MantleIntelBot:
             icon = anomaly_icon(atype)
             signals_line = ""
 
+        # Prepend signals line to insight for composite alerts
+        full_insight = signals_line + insight_trimmed if signals_line else insight_trimmed
+
         return INCIDENT_TEMPLATE.format(
             icon=icon,
             anomaly_type_label=type_label,
-            insight=insight_trimmed,
+            insight=full_insight,
             incident_id=incident.get("incident_id", "N/A"),
             state=state,
             start=f"{start:,}",

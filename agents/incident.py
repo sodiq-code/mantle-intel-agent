@@ -96,16 +96,16 @@ class IncidentManager:
                        current_block: int) -> dict | None:
         """Merge a new finding into an existing incident.
 
-        DEDUPLICATION: If the same anomaly_type already exists in the incident,
-        the finding is still recorded as evidence but does NOT increment the
-        signal count. This prevents two multivariate_anomaly findings from
-        showing as "2 signals" when they're the same detector firing twice.
+        DEDUPLICATION: The anomaly_types set naturally deduplicates —
+        adding an existing type is a no-op. Occurrences always increment
+        because they track total findings (driving state escalation),
+        while anomaly_types tracks distinct signal types (driving the
+        composite label and signals list).
         """
         anomaly_type = dashboard_card.get("type", "unknown")
-        is_duplicate_type = anomaly_type in incident["anomaly_types"]
-
-        # Add this anomaly type to the set
         type_is_new = anomaly_type not in incident["anomaly_types"]
+
+        # Add this anomaly type to the set (no-op if already present)
         incident["anomaly_types"].add(anomaly_type)
         # Update primary type label to show it's composite
         if len(incident["anomaly_types"]) > 1:
@@ -117,10 +117,9 @@ class IncidentManager:
                     incident, anomaly_type, new_insight)
 
         incident["latest_block"] = current_block
-        # Only increment signal count for NEW anomaly types
-        # Duplicate-type findings are evidence, not additional signals
-        if not is_duplicate_type:
-            incident["occurrences"] += 1
+        # Always increment — occurrences drives state escalation
+        # (anomaly_types set handles dedup for signal labels)
+        incident["occurrences"] += 1
         incident["findings"].append(dashboard_card)
         incident["latest_time"] = dashboard_card.get(
             "timestamp", incident["latest_time"])
@@ -183,11 +182,9 @@ class IncidentManager:
 
         return resolved_notifications
 
-    def _build_composite_insight(self, incident: dict,
-                               new_type: str, new_insight: str) -> str:
+    def _build_composite_insight(self, incident: dict, new_type: str,
+                                 new_insight: str) -> str:
         """Build a composite insight summary when multiple signals merge."""
-        existing = incident.get("insight_sample", "")
-
         # Collect all anomaly type labels
         all_types = incident.get("anomaly_types", set())
         type_labels = sorted(
@@ -201,9 +198,9 @@ class IncidentManager:
 
         # Append any additional insight text if meaningful
         if new_insight and len(new_insight) > 50:
-            # Truncate long insights to keep composite concise
-            parts.append(new_insight[:200] + "..." if len(new_insight) > 200
-                         else new_insight)
+            truncated = (new_insight[:200] + "..."
+                         if len(new_insight) > 200 else new_insight)
+            parts.append(truncated)
 
         return "\n".join(parts)
 
