@@ -157,14 +157,17 @@ export default function App() {
   ];
 
   const FILTERS = [
-    { key:"all",                 label:"All"          },
-    { key:"whale_accumulation",  label:"Whale"        },
-    { key:"smart_money_inflow",  label:"Smart Money"  },
-    { key:"tx_spike",            label:"TX Spike"     },
-    { key:"value_spike",         label:"Value"        },
-    { key:"multivariate_anomaly",label:"Multivariate" },
-    { key:"mev_sandwich",        label:"MEV"          },
-    { key:"bridge_outflow_spike",label:"Bridge"       },
+    { key:"all",                  label:"All"             },
+    { key:"whale_accumulation",   label:"Whale"           },
+    { key:"whale_distribution",   label:"Whale Distrib."  },
+    { key:"smart_money_inflow",   label:"Smart Money"     },
+    { key:"tx_spike",             label:"TX Spike"        },
+    { key:"value_spike",          label:"Value"           },
+    { key:"multivariate_anomaly", label:"Multivariate"    },
+    { key:"meth_depeg",           label:"mETH Depeg"      },
+    { key:"cross_protocol_anomaly",label:"Cross-Protocol" },
+    { key:"liquidity_imbalance",  label:"Liquidity"       },
+    { key:"lp_imbalance",         label:"LP Imbalance"    },
   ];
 
   return (

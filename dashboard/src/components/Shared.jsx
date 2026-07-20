@@ -14,9 +14,7 @@ export const ANOMALY_CFG = {
   meth_depeg:            { color:"#F43F5E", label:"mETH Depeg",        tier:"IMMEDIATE"},
   cross_protocol_anomaly:{ color:"#EC4899", label:"Cross-Protocol",    tier:"IMMEDIATE"},
   liquidity_imbalance:   { color:"#06B6D4", label:"Liquidity Imbal.",  tier:"WATCH"    },
-  mev_sandwich:          { color:"#8B5CF6", label:"MEV Sandwich",      tier:"ALERT"    },
-  bridge_outflow_spike:  { color:"#F97316", label:"Bridge Outflow",    tier:"ALERT"    },
-  gas_anomaly:           { color:"#6B7280", label:"Gas Anomaly",       tier:"WATCH"    },
+  lp_imbalance:          { color:"#14B8A6", label:"LP Imbalance",      tier:"ALERT"    },
 };
 export const DEF_CFG = { color:"#6B7280", label:"Anomaly", tier:"WATCH" };
 export const cfg = (type) => ANOMALY_CFG[type] || DEF_CFG;
