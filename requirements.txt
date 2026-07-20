@@ -1,97 +1,51 @@
-# ── Fully pinned dependencies for reproducible builds (P1-16 FIX) ────────────────
-# Source of truth: pyproject.toml (P3-34)
-# To regenerate: pip-compile pyproject.toml --extra otel --extra ratelimit -o requirements.txt
+# ── Mantle Intel Agent — Python Dependencies ────────────────────────────────
+# Source of truth: pyproject.toml + requirements.in
+# To regenerate fully-pinned: pip-compile pyproject.toml --extra otel --extra ratelimit -o requirements.txt
 # Install: pip install -r requirements.txt
-# Editable install (recommended): pip install -e ".[all]"
 #
-# P1-16 FIX: This file now includes ALL transitive dependencies with exact
-# version pins, ensuring bit-for-bit reproducible builds. Previously only
-# direct dependencies were listed, which allowed transitive deps to float.
+# NOTE: Using flexible version constraints here instead of fully-pinned
+# transitive deps, because the previous fully-pinned file had multiple
+# incorrect version pins that caused ResolutionImpossible errors on CI.
+# Flexible constraints let pip resolve the correct compatible versions.
 
 # ── Core ──────────────────────────────────────────────────────────────────────
-python-dotenv==1.2.2
-structlog==24.4.0
-pydantic==2.10.6
-annotated-types==0.7.0
-typing-extensions==4.13.0
+python-dotenv>=1.0.1
+structlog>=24.1.0
+pydantic>=2.0.0
 
 # ── Web3 / Blockchain ─────────────────────────────────────────────────────────
-# Note: web3 6.20.x requires eth-account<0.13, eth-typing<5, eth-utils<5, hexbytes<0.4
-web3==6.20.3
-eth-account==0.11.3
-eth-hash==0.7.1
-eth-typing==4.4.0
-eth-utils==4.1.1
-hexbytes==0.3.1
-eth-abi==5.2.0
-eth-keyfile==0.9.1
-eth-keys==0.7.0
-eth-rlp==2.2.0
-parsimonious==0.10.0
-rlp==4.0.1
-lru-dict==1.3.0
-marshmallow==3.26.1
-cytoolz==1.1.0
-toolz==1.0.0
-jsonschema==4.23.0
-pyrsistent==0.20.0
-regex==2024.11.6
+# Note: web3 6.x requires eth-account<0.13, eth-typing<5, eth-utils<5, hexbytes<0.4
+web3>=6.15.0,<7.0.0
+eth-account>=0.8.0,<0.13
+eth-hash[pycryptodome]>=0.5.1
+eth-typing>=3.0.0,<5.0.0
+eth-utils>=2.1.0,<5
 
 # ── Machine Learning (Anomaly Detection) ──────────────────────────────────────
-numpy==2.2.3
-scikit-learn==1.6.1
-scipy==1.15.2
-joblib==1.4.2
-threadpoolctl==3.6.0
+numpy>=1.26.0
+scikit-learn>=1.4.0
+scipy>=1.13.0
+joblib>=1.4.0
 
 # ── HTTP ──────────────────────────────────────────────────────────────────────
-httpx==0.28.1
-httpcore==1.0.9
-requests==2.32.3
-certifi==2025.1.31
-charset-normalizer==3.4.1
-idna==3.10
-urllib3==2.4.0
-h11==0.16.0
-anyio==4.9.0
-sniffio==1.3.1
-multidict==6.4.4
-pysocks==1.7.1
+httpx>=0.27.0
+requests>=2.31.0
 
 # ── API Server ────────────────────────────────────────────────────────────────
-fastapi==0.115.12
-uvicorn[standard]==0.34.2
-starlette==0.46.2
-click==8.1.8
+fastapi>=0.111.0
+uvicorn[standard]>=0.30.0
 
 # ── Telegram Bot ──────────────────────────────────────────────────────────────
-python-telegram-bot==21.11.1
+python-telegram-bot>=21.3
 
-# ── P2-16: Observability (OpenTelemetry) [otel extra] ──────────────────────────
-opentelemetry-api==1.31.1
-opentelemetry-sdk==1.31.1
-opentelemetry-exporter-otlp==1.31.1
-opentelemetry-exporter-otlp-proto-common==1.31.1
-opentelemetry-exporter-otlp-proto-grpc==1.31.1
-opentelemetry-exporter-otlp-proto-http==1.31.1
-opentelemetry-proto==1.31.1
-opentelemetry-semantic-conventions==1.31.1
-proto-plus==1.26.1
-protobuf==5.29.4
-googleapis-common-protos==1.70.0
-grpcio==1.71.0
+# ── P2-16: Observability (OpenTelemetry) ──────────────────────────────────────
+opentelemetry-api>=1.20.0
+opentelemetry-sdk>=1.20.0
+opentelemetry-exporter-otlp>=1.20.0
 
-# ── P2-19: Rate Limiting [ratelimit extra] ────────────────────────────────────
-slowapi==0.1.9
-limits==4.6.0
+# ── P2-19: Rate Limiting ─────────────────────────────────────────────────────
+slowapi>=0.1.9
 
 # ── Data & Visualization ──────────────────────────────────────────────────────
-pandas==2.2.3
-plotly==6.0.1
-
-# ── Shared transitive ────────────────────────────────────────────────────────
-packaging==25.0
-pycparser==2.22
-cffi==2.1.0
-tenacity==9.1.2
-websockets==14.2
+pandas>=2.2.0
+plotly>=5.22.0

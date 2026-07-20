@@ -43,6 +43,7 @@ FINDINGS_PATH = "data/findings.jsonl"
 AUDIT_LOG_PATH = "data/audit_log.jsonl"
 DASHBOARD_PATH = "data/dashboard.json"
 
+
 def _ensure_data_dir():
     """P2-23 FIX: Lazy data directory creation — no import-time side effect."""
     os.makedirs("data", exist_ok=True)
@@ -120,7 +121,7 @@ class MantleIntelPipeline:
 
         try:
             with open(FINDINGS_PATH) as f:
-                lines = [l.strip() for l in f if l.strip()]
+                lines = [line.strip() for line in f if line.strip()]
 
             if not lines:
                 return
