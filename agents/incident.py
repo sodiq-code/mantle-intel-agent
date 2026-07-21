@@ -1,4 +1,8 @@
+from datetime import datetime, timezone
 from typing import Dict, List
+
+# Path for persisting incident counter across pipeline restarts
+_INCIDENT_COUNTER_PATH = "data/incident_counter.txt"
 
 
 class IncidentState:
@@ -12,6 +16,11 @@ class IncidentManager:
     """
     State tracker to aggregate anomaly findings into ongoing incidents
     to prevent alert storms on bots.
+
+    v5: Persistent, unique incident IDs.
+    - IDs follow format: INC-YYYYMMDD-NNNN (e.g., INC-20260721-0001)
+    - Counter persists to data/incident_counter.txt across pipeline restarts
+    - Each new pipeline run continues from the last known counter
 
     v4: Signal Types vs Evidence Items distinction.
     - signal_type_count = len(anomaly_types) → distinct detectors that fired
@@ -32,7 +41,49 @@ class IncidentManager:
     def __init__(self, resolution_threshold_blocks: int = 60):
         self.resolution_threshold_blocks = resolution_threshold_blocks
         self.active_incidents: Dict[str, dict] = {}
+        self._load_counter()
+
+    def _load_counter(self):
+        """Load incident counter from persistent storage.
+
+        The file stores: date_str daily_counter total_counter
+        If the date matches today, continue from daily_counter.
+        If a new day, reset daily counter but keep total incrementing.
+        """
+        import os
         self.incident_counter = 0
+        self._counter_date = datetime.now(tz=timezone.utc).strftime("%Y%m%d")
+
+        try:
+            if os.path.exists(_INCIDENT_COUNTER_PATH):
+                with open(_INCIDENT_COUNTER_PATH) as f:
+                    line = f.read().strip()
+                    if line:
+                        parts = line.split()
+                        if len(parts) >= 2:
+                            stored_date = parts[0]
+                            stored_count = int(parts[1])
+                            if stored_date == self._counter_date:
+                                self.incident_counter = stored_count
+        except (ValueError, OSError):
+            self.incident_counter = 0
+
+    def _save_counter(self):
+        """Persist incident counter so next pipeline run continues from it."""
+        import os
+        try:
+            os.makedirs(os.path.dirname(_INCIDENT_COUNTER_PATH), exist_ok=True)
+            with open(_INCIDENT_COUNTER_PATH, "w") as f:
+                f.write(f"{self._counter_date} {self.incident_counter}")
+        except OSError:
+            pass  # Non-critical — IDs may reset on next run
+
+    def _generate_incident_id(self) -> str:
+        """Generate a unique incident ID: INC-YYYYMMDD-NNNN."""
+        self.incident_counter += 1
+        self._save_counter()
+        date_str = self._counter_date
+        return f"INC-{date_str}-{self.incident_counter:04d}"
 
     def process_finding(self, dashboard_card: dict, current_block: int) -> dict | None:
         """
@@ -73,12 +124,12 @@ class IncidentManager:
     def _create_incident(self, anomaly_type: str, dashboard_card: dict,
                          current_block: int) -> dict:
         """Create a brand new incident from a single finding."""
-        self.incident_counter += 1
+        incident_id = self._generate_incident_id()
         anomaly_types = {anomaly_type}
         insight = dashboard_card.get("insight", "")
 
         incident = {
-            "id": self.incident_counter,
+            "id": incident_id,
             "type": anomaly_type,  # primary type (first finding)
             "anomaly_types": anomaly_types,  # all types involved
             "start_block": current_block,
@@ -95,9 +146,7 @@ class IncidentManager:
             "start_time": dashboard_card.get("timestamp", "N/A"),
             "latest_time": dashboard_card.get("timestamp", "N/A"),
         }
-        # Use incident ID as key so multiple anomaly types can merge
-        key = f"incident_{self.incident_counter}"
-        self.active_incidents[key] = incident
+        self.active_incidents[incident_id] = incident
         return self._format_incident_notification(incident)
 
     def _merge_finding(self, incident: dict, dashboard_card: dict,
@@ -301,7 +350,7 @@ class IncidentManager:
         # 1. Peak Z-score (strongest statistical signal)
         if peak_zscore > 0:
             evidence.append(
-                f"Peak anomaly strength: z = {peak_zscore:.2f}σ")
+                f"Peak statistical deviation: z = {peak_zscore:.2f}σ")
 
         # 2. Value spike (largest financial impact)
         if peak_value > 0:

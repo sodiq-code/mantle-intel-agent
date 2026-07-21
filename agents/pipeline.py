@@ -447,7 +447,7 @@ class MantleIntelPipeline:
                 latest_block = inc["latest_block"]
 
         merged = {
-            "id": min(inc["id"] for inc in incidents),
+            "id": sorted(inc["id"] for inc in incidents)[0],  # earliest ID
             "type": "composite",
             "anomaly_types": all_types,
             "start_block": start_block,

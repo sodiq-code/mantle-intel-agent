@@ -633,8 +633,16 @@ class AnomalyAgent:
 
     def _merchant_moe_imbalance_detection(self, protocol_state: dict, block_num: int = 0) -> list[AnomalyFinding]:
         """
-        v3.0: Detect Merchant Moe pool reserve imbalance.
-        Severe LP ratio shift indicates large swap or liquidity removal.
+        v4.0: Detect Merchant Moe pool reserve imbalance.
+        Two detection paths:
+          A) Ratio imbalance: pool reserves are significantly asymmetric
+             (e.g., one side much larger than the other).
+          B) Historical drift: reserves have shifted from their rolling
+             average over recent snapshots.
+
+        v4 fix: Path A no longer reuses current reserves as "avg" in the
+        description, which previously produced "current=avg" while also
+        claiming a percentage shift — an internal contradiction.
         """
         findings = []
         # Accept both key conventions
@@ -651,15 +659,20 @@ class AnomalyAgent:
         # 0 = perfect balance, 0.5 = fully one-sided
         imbalance = abs(0.5 - ratio)
 
-        # Initialise delta vars (used below regardless of path taken)
-        avg_r0, avg_r1, r0_delta, r1_delta = r0, r1, 0.0, 0.0
+        # Track detection mode for accurate description
+        is_ratio_imbalance = False
+        avg_r0, avg_r1 = r0, r1
+        r0_delta, r1_delta = 0.0, 0.0
 
         if imbalance >= MOE_IMBALANCE_RATIO / 2:
-            # Direct ratio imbalance is significant — fire immediately
+            # Path A: Direct ratio imbalance is significant — fire immediately
+            is_ratio_imbalance = True
             r0_delta = imbalance
             r1_delta = imbalance
+            # avg values stay as r0/r1 — we don't have historical data
+            # The description will explain this is a ratio imbalance, not drift
         else:
-            # Need historical drift check
+            # Path B: Need historical drift check
             if len(self._protocol_state_history) < 3:
                 return findings
             hist = self._protocol_state_history[:-1]
@@ -680,9 +693,44 @@ class AnomalyAgent:
             "mnt_price_usd", protocol_state.get("pyth_mnt_usd", 0.85))
         pool_usd = (r0 * mnt_price) + (r1 *
                                        protocol_state.get("pyth_prices", {}).get("ETH/USD", 3500.0))
-        direction = "removing" if r0 < avg_r0 else "adding"
 
         ts = datetime.fromtimestamp(time.time(), tz=timezone.utc).isoformat()
+
+        # Build accurate description based on detection path
+        if is_ratio_imbalance:
+            # Path A: ratio imbalance — describe what we actually measured
+            description = (
+                f"Merchant Moe WETH/MNT pool reserve ratio imbalance detected. "
+                f"Pool is asymmetric: one side holds {max(r0, r1):,.1f} vs "
+                f"{min(r0, r1):,.1f} (ratio imbalance: {imbalance*100:.1f}% "
+                f"from 50/50 equilibrium). "
+                f"Total pool value ~${pool_usd:,.0f}. "
+                f"Possible causes include liquidity provision or removal, "
+                f"large swaps, arbitrage, or other reserve-changing activity. "
+                f"Source: Mantle RPC direct contract read."
+            )
+            investment_signal = (
+                f"Merchant Moe pool ratio imbalance {imbalance*100:.1f}% "
+                f"from equilibrium (${pool_usd:,.0f} pool). "
+                f"Asymmetric reserves may indicate recent large swaps or LP changes."
+            )
+        else:
+            # Path B: historical drift — can meaningfully compare current vs avg
+            direction = "removing" if r0 < avg_r0 else "adding"
+            description = (
+                f"Merchant Moe WETH/MNT pool reserve drift detected. "
+                f"MNT reserve shifted {r0_delta*100:.1f}% from rolling average "
+                f"(current: {r0:,.1f} MNT vs avg {avg_r0:,.1f}). "
+                f"Total pool value ~${pool_usd:,.0f}. "
+                f"Possible causes include liquidity provision or removal, "
+                f"large swaps, arbitrage, or other reserve-changing activity. "
+                f"Source: Mantle RPC direct contract read."
+            )
+            investment_signal = (
+                f"Merchant Moe pool drift {r0_delta*100:.1f}% "
+                f"from ${pool_usd:,.0f} pool avg. "
+                f"{'Reduced depth = higher slippage; expect price impact on large MNT trades.' if direction == 'removing' else 'Increased depth = lower slippage; favorable for large entries.'}"
+            )
 
         findings.append(AnomalyFinding(
             finding_id=f"moe_imbalance_{block_num}_{int(time.time())}",
@@ -690,13 +738,7 @@ class AnomalyAgent:
             block_height=block_num,
             timestamp=ts,
             confidence=round(confidence, 4),
-            description=(
-                f"Merchant Moe WETH/MNT pool reserve imbalance detected. "
-                f"MNT reserve shifted {r0_delta*100:.1f}% from 30-snapshot average "
-                f"(current: {r0:,.1f} MNT vs avg {avg_r0:,.1f}). "
-                f"Total pool value ~${pool_usd:,.0f}. LP may be {direction} liquidity. "
-                f"Source: Mantle RPC direct contract read."
-            ),
+            description=description,
             raw_metrics={
                 "reserve0_mnt":     round(r0, 2),
                 "reserve1_weth":    round(r1, 4),
@@ -704,11 +746,10 @@ class AnomalyAgent:
                 "r0_delta_pct":     round(r0_delta * 100, 2),
                 "r1_delta_pct":     round(r1_delta * 100, 2),
                 "pool_usd":         round(pool_usd, 2),
+                "imbalance_ratio":  round(imbalance, 4),
+                "is_ratio_imbalance": is_ratio_imbalance,
             },
-            investment_signal=(
-                f"Merchant Moe pool imbalance {r0_delta*100:.1f}% — LP {direction} liquidity from ${pool_usd:,.0f} pool. "
-                f"{'Reduced depth = higher slippage; expect price impact on large MNT trades.' if direction == 'removing' else 'Increased depth = lower slippage; favorable for large entries.'}"
-            ),
+            investment_signal=investment_signal,
             affected_protocols=["Merchant Moe", "Agni Finance", "FusionX"],
             method="reserve_analysis",
         ))

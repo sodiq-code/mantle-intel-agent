@@ -52,7 +52,7 @@ INSIGHT_TEMPLATE = {
     "value_spike": "Significant value transfer on Mantle. High concentration of capital movement. 🔍 Action: Monitor for additional anomalous blocks, large wallet movements, bridge inflows/outflows, or protocol announcements.",
     "multivariate_anomaly": "Multivariate anomaly triggered across multiple metrics. Complex on-chain event. 🔍 Action: Monitor for additional anomalous blocks, large wallet movements, bridge inflows/outflows, or protocol announcements.",
     "meth_depeg": "⚡ mETH DEPEG ALERT — Mantle Ecosystem\n\n{description}\n\n📍 Observation: mETH deviating {depeg_pct:.2f}% from ETH peg. At ${at_risk_usd:,.0f} total supply, sustained depeg risks cascading Lendle liquidations.\n🎯 Signal Tier: HIGH-PRIORITY INVESTIGATION",
-    "liquidity_imbalance": "💧 LIQUIDITY IMBALANCE — Merchant Moe / Mantle DEX\n\n{description}\n\n📍 Observation: Merchant Moe WETH/MNT pool reserve shifted {r0_delta_pct:.1f}% from baseline (pool value ~${pool_usd:,.0f}).\n🔍 Action: Monitor for arbitrage stabilization",
+    "liquidity_imbalance": "💧 LIQUIDITY IMBALANCE — Merchant Moe / Mantle DEX\n\n{description}\n\n📍 Observation: Merchant Moe WETH/MNT pool reserve deviation detected (pool value ~${pool_usd:,.0f}). Possible causes include liquidity provision or removal, large swaps, arbitrage, or other reserve-changing activity.\n🔍 Action: Monitor for arbitrage stabilization and follow-on reserve changes",
     "cross_protocol_anomaly": "🌐 CROSS-PROTOCOL COORDINATION — Mantle Block {block_height}\n\n{description}\n\n📍 Observation: Simultaneous deployment of ${total_usd:,.0f} across {protocols_hit} Mantle protocols in a single block.\n🎯 Signal Tier: HIGH-PRIORITY INVESTIGATION",
 }
 
@@ -446,7 +446,6 @@ Name specific Mantle protocols: Merchant Moe, Lendle, Agni Finance, mETH, Fusion
                 depeg_bps=m.get("depeg_bps", 0),
                 depeg_pct=m.get("depeg_pct", 0.0),
                 at_risk_usd=m.get("at_risk_usd", 0),
-                r0_delta_pct=m.get("r0_delta_pct", 0.0),
                 pool_usd=m.get("pool_usd", 0),
                 investment_signal=getattr(
                     finding, "investment_signal", "Monitor for follow-on activity."),
