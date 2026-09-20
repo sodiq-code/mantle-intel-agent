@@ -1,309 +1,13 @@
 {
-  "last_updated": "2026-09-19T23:16:52.196048+00:00",
+  "last_updated": "2026-09-20T01:18:42.625845+00:00",
   "stats": {
     "cycles_run": 0,
-    "blocks_processed": 37383,
-    "findings_total": 34,
+    "blocks_processed": 40859,
+    "findings_total": 39,
     "started_at": null,
     "last_cycle_success": null
   },
   "latest_findings": [
-    {
-      "id": "iforest_100846858_1789824093",
-      "type": "multivariate_anomaly",
-      "block": 100846858,
-      "timestamp": "2026-09-19T13:20:28+00:00",
-      "confidence": 0.99,
-      "confidence_pct": 99,
-      "hash": "5a110441c1978bf528249b4b6c9e00f3ef55855b0576d59ca37590970ea2070e",
-      "hex_hash": "0x5a110441c1978bf528249b4b6c9e00f3ef55855b0576d59ca37590970ea2070e",
-      "insight": "Multivariate anomaly triggered across multiple metrics. Complex on-chain event. \ud83d\udd0d Action: Monitor for additional anomalous blocks, large wallet movements, bridge inflows/outflows, or protocol announcements.",
-      "insight_provider": "template",
-      "raw_metrics": {
-        "isolation_score": -0.7604,
-        "contamination": 0.02,
-        "tx_count": 3,
-        "total_value_mnt": 4225.85,
-        "large_tx_count": 1,
-        "multi_confirm": true,
-        "confirming_methods": [
-          "zscore",
-          "isolation_forest"
-        ]
-      },
-      "method": "isolation_forest",
-      "transfers": [
-        {
-          "tx_hash": "0x6b1ea55b8e0b9e97bacb1d09b6d7164dcba1f409c25e3673ae5471452a6dd6ad",
-          "from": "0x4a67e97e770de93952b8596f04c13ada0ab9a69c",
-          "to": "0xfd0b9a4bb75af8b96dcc0f06c3e3687fdf8a7b11",
-          "value_mnt": 4225.85,
-          "value_usd": 3591.97,
-          "label_from": "unknown",
-          "label_to": "unknown",
-          "block": 100846858,
-          "is_contract": false
-        }
-      ],
-      "investment_signal": "Multi-dimensional outlier across tx volume, value, and wallet dimensions \u2014 warrants immediate position review.",
-      "lead_time_blocks": 0,
-      "lead_time_hours": 0.0,
-      "affected_protocols": [],
-      "signal_tier": "HIGH-PRIORITY INVESTIGATION",
-      "reasons": [
-        "Multivariate outlier detected (tx volume + value + wallet diversity)"
-      ],
-      "audit": {
-        "status": "recorded",
-        "tx_hash": "0x11471a60b634819f5c16cc7bc5588dbb458e116cbf0fa1db00f7113cb043143b",
-        "on_chain_id": null,
-        "explorer": "https://sepolia.mantlescan.xyz/tx/0x11471a60b634819f5c16cc7bc5588dbb458e116cbf0fa1db00f7113cb043143b",
-        "demo_mode": false
-      },
-      "smart_money": {
-        "clusters": 0,
-        "signals": []
-      }
-    },
-    {
-      "id": "moe_imbalance_100846866_1789824093",
-      "type": "liquidity_imbalance",
-      "block": 100846866,
-      "timestamp": "2026-09-19T13:21:33.439877+00:00",
-      "confidence": 0.93,
-      "confidence_pct": 93,
-      "hash": "ef696128fa2a08f6ec64050fca00899eb7bf2801c0c8132915b8bfc16ef5f3ca",
-      "hex_hash": "0xef696128fa2a08f6ec64050fca00899eb7bf2801c0c8132915b8bfc16ef5f3ca",
-      "insight": "\ud83d\udca7 LIQUIDITY IMBALANCE \u2014 Merchant Moe / Mantle DEX\n\nMerchant Moe WETH/MNT pool reserve ratio imbalance detected. Pool is asymmetric: one side holds 2,500,000.0 vs 250.0 (ratio imbalance: 50.0% from 50/50 equilibrium). Total pool value ~$3,000,000. Possible causes include liquidity provision or removal, large swaps, arbitrage, or other reserve-changing activity. Source: Mantle RPC direct contract read.\n\n\ud83d\udccd Observation: Merchant Moe WETH/MNT pool reserve deviation detected (pool value ~$3,000,000). Possible causes include liquidity provision or removal, large swaps, arbitrage, or other reserve-changing activity.\n\ud83d\udd0d Action: Monitor for arbitrage stabilization and follow-on reserve changes",
-      "insight_provider": "template",
-      "raw_metrics": {
-        "reserve0_mnt": 2500000.0,
-        "reserve1_weth": 250.0,
-        "avg_reserve0_mnt": 2500000.0,
-        "r0_delta_pct": 49.99,
-        "r1_delta_pct": 49.99,
-        "pool_usd": 3000000.0,
-        "imbalance_ratio": 0.4999,
-        "is_ratio_imbalance": true
-      },
-      "method": "reserve_analysis",
-      "transfers": [],
-      "investment_signal": "Merchant Moe pool ratio imbalance 50.0% from equilibrium ($3,000,000 pool). Asymmetric reserves may indicate recent large swaps or LP changes.",
-      "lead_time_blocks": 0,
-      "lead_time_hours": 0.0,
-      "affected_protocols": [
-        "Merchant Moe",
-        "Agni Finance",
-        "FusionX"
-      ],
-      "signal_tier": "ANOMALY DETECTED - Awaiting confirmation",
-      "reasons": [
-        "Liquidity pool reserve shifted by 49.99% (ratio: 0.50)"
-      ],
-      "audit": {
-        "status": "deferred",
-        "tx_hash": null,
-        "on_chain_id": null,
-        "explorer": "",
-        "demo_mode": false
-      },
-      "smart_money": {
-        "clusters": 0,
-        "signals": []
-      }
-    },
-    {
-      "id": "zscore_tx_100852661_1789835829",
-      "type": "tx_spike",
-      "block": 100852661,
-      "timestamp": "2026-09-19T16:33:54+00:00",
-      "confidence": 0.99,
-      "confidence_pct": 99,
-      "hash": "e7c7d43b543db08cb4c1399cbea4228b2deb4a0a3647eabc1ef50216b14a7e35",
-      "hex_hash": "0xe7c7d43b543db08cb4c1399cbea4228b2deb4a0a3647eabc1ef50216b14a7e35",
-      "insight": "Transaction volume spike on Mantle. Detected activity is statistically unusual. Possible explanations include protocol activity, coordinated transactions, bridge activity, or large wallet movements. \ud83d\udd0d Action: Monitor for additional anomalous blocks.",
-      "insight_provider": "template",
-      "raw_metrics": {
-        "tx_count": 5,
-        "mean_tx": 1.36,
-        "zscore": 5.2221,
-        "threshold": 3.5,
-        "multi_confirm": true,
-        "confirming_methods": [
-          "isolation_forest",
-          "zscore"
-        ]
-      },
-      "method": "zscore",
-      "transfers": [],
-      "investment_signal": "Elevated on-chain activity (5 txs, z=5.2\u03c3) may indicate protocol catalyst \u2014 monitor for follow-on price action.",
-      "lead_time_blocks": 0,
-      "lead_time_hours": 0.0,
-      "affected_protocols": [],
-      "signal_tier": "ANOMALY DETECTED - Awaiting confirmation",
-      "reasons": [
-        "Transaction count (5) exceeded recent baseline (1)",
-        "Statistically significant spike (z=5.22\u03c3, threshold: 3.5\u03c3)"
-      ],
-      "audit": {
-        "status": "recorded",
-        "tx_hash": "0xa900655b44c3501ece34b727be7883a369a97d77b9b2b703ef85abff17039c04",
-        "on_chain_id": null,
-        "explorer": "https://sepolia.mantlescan.xyz/tx/0xa900655b44c3501ece34b727be7883a369a97d77b9b2b703ef85abff17039c04",
-        "demo_mode": false
-      },
-      "smart_money": {
-        "clusters": 0,
-        "signals": []
-      }
-    },
-    {
-      "id": "zscore_val_100852716_1789835829",
-      "type": "value_spike",
-      "block": 100852716,
-      "timestamp": "2026-09-19T16:35:44+00:00",
-      "confidence": 0.99,
-      "confidence_pct": 99,
-      "hash": "238e03642a0117ae195a662deb75bb3c2a596da103f172dd4bd639ed5bd805f7",
-      "hex_hash": "0x238e03642a0117ae195a662deb75bb3c2a596da103f172dd4bd639ed5bd805f7",
-      "insight": "Significant value transfer on Mantle. High concentration of capital movement. \ud83d\udd0d Action: Monitor for additional anomalous blocks, large wallet movements, bridge inflows/outflows, or protocol announcements.",
-      "insight_provider": "template",
-      "raw_metrics": {
-        "value_mnt": 4882.8985,
-        "mean_val_mnt": 49.59,
-        "zscore": 9.9969,
-        "threshold": 3.5,
-        "multi_confirm": true,
-        "confirming_methods": [
-          "isolation_forest",
-          "zscore"
-        ]
-      },
-      "method": "zscore",
-      "transfers": [],
-      "investment_signal": "$4,150 USD concentrated in single block \u2014 large position entry/exit underway.",
-      "lead_time_blocks": 0,
-      "lead_time_hours": 0.0,
-      "affected_protocols": [],
-      "signal_tier": "ANOMALY DETECTED - Awaiting confirmation",
-      "reasons": [
-        "MNT transfer value (4,883) exceeded baseline (50)",
-        "Statistically significant spike (z=10.00\u03c3, threshold: 3.5\u03c3)"
-      ],
-      "audit": {
-        "status": "recorded",
-        "tx_hash": "0x97845d8f9a63b7a1477e68266fe1f710bb1f0a319d929f9cf20d623e9502cf24",
-        "on_chain_id": null,
-        "explorer": "https://sepolia.mantlescan.xyz/tx/0x97845d8f9a63b7a1477e68266fe1f710bb1f0a319d929f9cf20d623e9502cf24",
-        "demo_mode": false
-      },
-      "smart_money": {
-        "clusters": 0,
-        "signals": []
-      }
-    },
-    {
-      "id": "iforest_100852661_1789835829",
-      "type": "multivariate_anomaly",
-      "block": 100852661,
-      "timestamp": "2026-09-19T16:33:54+00:00",
-      "confidence": 0.9717,
-      "confidence_pct": 97,
-      "hash": "c36c32d2c87aeb25cd909247de4e5283dc88b2090bbd13061cc0e8663fc4917c",
-      "hex_hash": "0xc36c32d2c87aeb25cd909247de4e5283dc88b2090bbd13061cc0e8663fc4917c",
-      "insight": "Multivariate anomaly triggered across multiple metrics. Complex on-chain event. \ud83d\udd0d Action: Monitor for additional anomalous blocks, large wallet movements, bridge inflows/outflows, or protocol announcements.",
-      "insight_provider": "template",
-      "raw_metrics": {
-        "isolation_score": -0.740548,
-        "contamination": 0.02,
-        "tx_count": 5,
-        "total_value_mnt": 0.0,
-        "large_tx_count": 0,
-        "multi_confirm": true,
-        "confirming_methods": [
-          "isolation_forest",
-          "zscore"
-        ]
-      },
-      "method": "isolation_forest",
-      "transfers": [],
-      "investment_signal": "Multi-dimensional outlier across tx volume, value, and wallet dimensions \u2014 warrants immediate position review.",
-      "lead_time_blocks": 0,
-      "lead_time_hours": 0.0,
-      "affected_protocols": [],
-      "signal_tier": "HIGH-PRIORITY INVESTIGATION",
-      "reasons": [
-        "Multivariate outlier detected (tx volume + value + wallet diversity)"
-      ],
-      "audit": {
-        "status": "recorded",
-        "tx_hash": "0xcdb83ab192e00fa1c2762102a1a972a1f5a9e0b4781b9a44d03ace2b369cac9e",
-        "on_chain_id": null,
-        "explorer": "https://sepolia.mantlescan.xyz/tx/0xcdb83ab192e00fa1c2762102a1a972a1f5a9e0b4781b9a44d03ace2b369cac9e",
-        "demo_mode": false
-      },
-      "smart_money": {
-        "clusters": 0,
-        "signals": []
-      }
-    },
-    {
-      "id": "iforest_100852716_1789835829",
-      "type": "multivariate_anomaly",
-      "block": 100852716,
-      "timestamp": "2026-09-19T16:35:44+00:00",
-      "confidence": 0.99,
-      "confidence_pct": 99,
-      "hash": "6284e12afddf2e5672a2fbe7a807f537dd6405e04d0abfc12090f0de79aa1191",
-      "hex_hash": "0x6284e12afddf2e5672a2fbe7a807f537dd6405e04d0abfc12090f0de79aa1191",
-      "insight": "Multivariate anomaly triggered across multiple metrics. Complex on-chain event. \ud83d\udd0d Action: Monitor for additional anomalous blocks, large wallet movements, bridge inflows/outflows, or protocol announcements.",
-      "insight_provider": "template",
-      "raw_metrics": {
-        "isolation_score": -0.828669,
-        "contamination": 0.02,
-        "tx_count": 2,
-        "total_value_mnt": 4882.8985,
-        "large_tx_count": 1,
-        "multi_confirm": true,
-        "confirming_methods": [
-          "isolation_forest",
-          "zscore"
-        ]
-      },
-      "method": "isolation_forest",
-      "transfers": [
-        {
-          "tx_hash": "0x68adbefdbe43cc35664cd787dd1cfa942383c755f794f477d64f6a2026e41653",
-          "from": "0x0000004eba872864a71b957180eb17dff71bb8f1",
-          "to": "0x7647b72b4c89446f7d86bb7a30fd51b6d91577aa",
-          "value_mnt": 4882.8985,
-          "value_usd": 4150.46,
-          "label_from": "unknown",
-          "label_to": "unknown",
-          "block": 100852716,
-          "is_contract": false
-        }
-      ],
-      "investment_signal": "Multi-dimensional outlier across tx volume, value, and wallet dimensions \u2014 warrants immediate position review.",
-      "lead_time_blocks": 0,
-      "lead_time_hours": 0.0,
-      "affected_protocols": [],
-      "signal_tier": "HIGH-PRIORITY INVESTIGATION",
-      "reasons": [
-        "Multivariate outlier detected (tx volume + value + wallet diversity)"
-      ],
-      "audit": {
-        "status": "recorded",
-        "tx_hash": "0x3f4ef3543096149cebd907e3ce58878b739695fa301d791bdad4af5675cfaa1b",
-        "on_chain_id": null,
-        "explorer": "https://sepolia.mantlescan.xyz/tx/0x3f4ef3543096149cebd907e3ce58878b739695fa301d791bdad4af5675cfaa1b",
-        "demo_mode": false
-      },
-      "smart_money": {
-        "clusters": 0,
-        "signals": []
-      }
-    },
     {
       "id": "moe_imbalance_100852739_1789835829",
       "type": "liquidity_imbalance",
@@ -945,10 +649,279 @@
         "clusters": 0,
         "signals": []
       }
+    },
+    {
+      "id": "zscore_tx_100868301_1789867093",
+      "type": "tx_spike",
+      "block": 100868301,
+      "timestamp": "2026-09-20T01:15:14+00:00",
+      "confidence": 0.9818,
+      "confidence_pct": 98,
+      "hash": "7dc5df19cda19da3de0aa53dade3374d11b6145b79329f06891b2c4bbb2ec5a5",
+      "hex_hash": "0x7dc5df19cda19da3de0aa53dade3374d11b6145b79329f06891b2c4bbb2ec5a5",
+      "insight": "Transaction volume spike on Mantle. Detected activity is statistically unusual. Possible explanations include protocol activity, coordinated transactions, bridge activity, or large wallet movements. \ud83d\udd0d Action: Monitor for additional anomalous blocks.",
+      "insight_provider": "template",
+      "raw_metrics": {
+        "tx_count": 5,
+        "mean_tx": 1.44,
+        "zscore": 4.3177,
+        "threshold": 3.5
+      },
+      "method": "zscore",
+      "transfers": [],
+      "investment_signal": "Elevated on-chain activity (5 txs, z=4.3\u03c3) may indicate protocol catalyst \u2014 monitor for follow-on price action.",
+      "lead_time_blocks": 0,
+      "lead_time_hours": 0.0,
+      "affected_protocols": [],
+      "signal_tier": "ANOMALY DETECTED - Awaiting confirmation",
+      "reasons": [
+        "Transaction count (5) exceeded recent baseline (1)",
+        "Statistically significant spike (z=4.32\u03c3, threshold: 3.5\u03c3)"
+      ],
+      "audit": {
+        "status": "recorded",
+        "tx_hash": "0xf5e0eb1213574e08c3ced1b8b941a97be3d63441fa79bee52fbe838fd76c90b2",
+        "on_chain_id": null,
+        "explorer": "https://sepolia.mantlescan.xyz/tx/0xf5e0eb1213574e08c3ced1b8b941a97be3d63441fa79bee52fbe838fd76c90b2",
+        "demo_mode": false
+      },
+      "smart_money": {
+        "clusters": 0,
+        "signals": []
+      }
+    },
+    {
+      "id": "zscore_val_100868323_1789867093",
+      "type": "value_spike",
+      "block": 100868323,
+      "timestamp": "2026-09-20T01:15:58+00:00",
+      "confidence": 0.99,
+      "confidence_pct": 99,
+      "hash": "da4231f150bfeac5d320a0b81a7c40f2649b89983053b3b1f01bb36c8c1db8d2",
+      "hex_hash": "0xda4231f150bfeac5d320a0b81a7c40f2649b89983053b3b1f01bb36c8c1db8d2",
+      "insight": "Significant value transfer on Mantle. High concentration of capital movement. \ud83d\udd0d Action: Monitor for additional anomalous blocks, large wallet movements, bridge inflows/outflows, or protocol announcements.",
+      "insight_provider": "template",
+      "raw_metrics": {
+        "value_mnt": 4986.6559,
+        "mean_val_mnt": 59.28,
+        "zscore": 9.804,
+        "threshold": 3.5,
+        "multi_confirm": true,
+        "confirming_methods": [
+          "zscore",
+          "isolation_forest"
+        ]
+      },
+      "method": "zscore",
+      "transfers": [],
+      "investment_signal": "$4,239 USD concentrated in single block \u2014 large position entry/exit underway.",
+      "lead_time_blocks": 0,
+      "lead_time_hours": 0.0,
+      "affected_protocols": [],
+      "signal_tier": "ANOMALY DETECTED - Awaiting confirmation",
+      "reasons": [
+        "MNT transfer value (4,987) exceeded baseline (59)",
+        "Statistically significant spike (z=9.80\u03c3, threshold: 3.5\u03c3)"
+      ],
+      "audit": {
+        "status": "recorded",
+        "tx_hash": "0x8bb6895b55357e6d4339ea626956dcc599c8f80bc2c61f806d4d8dbb81eba718",
+        "on_chain_id": null,
+        "explorer": "https://sepolia.mantlescan.xyz/tx/0x8bb6895b55357e6d4339ea626956dcc599c8f80bc2c61f806d4d8dbb81eba718",
+        "demo_mode": false
+      },
+      "smart_money": {
+        "clusters": 0,
+        "signals": []
+      }
+    },
+    {
+      "id": "zscore_tx_100868355_1789867093",
+      "type": "tx_spike",
+      "block": 100868355,
+      "timestamp": "2026-09-20T01:17:02+00:00",
+      "confidence": 0.99,
+      "confidence_pct": 99,
+      "hash": "c4f36e60a2c7ff1d40c5d3f9492328b0a8bd4e5fd8bcf8986ec088316c528ac0",
+      "hex_hash": "0xc4f36e60a2c7ff1d40c5d3f9492328b0a8bd4e5fd8bcf8986ec088316c528ac0",
+      "insight": "Transaction volume spike on Mantle. Detected activity is statistically unusual. Possible explanations include protocol activity, coordinated transactions, bridge activity, or large wallet movements. \ud83d\udd0d Action: Monitor for additional anomalous blocks.",
+      "insight_provider": "template",
+      "raw_metrics": {
+        "tx_count": 6,
+        "mean_tx": 1.44,
+        "zscore": 5.529,
+        "threshold": 3.5
+      },
+      "method": "zscore",
+      "transfers": [],
+      "investment_signal": "Elevated on-chain activity (6 txs, z=5.5\u03c3) may indicate protocol catalyst \u2014 monitor for follow-on price action.",
+      "lead_time_blocks": 0,
+      "lead_time_hours": 0.0,
+      "affected_protocols": [],
+      "signal_tier": "ANOMALY DETECTED - Awaiting confirmation",
+      "reasons": [
+        "Transaction count (6) exceeded recent baseline (1)",
+        "Statistically significant spike (z=5.53\u03c3, threshold: 3.5\u03c3)"
+      ],
+      "audit": {
+        "status": "recorded",
+        "tx_hash": "0x8045f86042396fe3c34225d6419ee449dd8544339c185b3affbbaf4ae8bac047",
+        "on_chain_id": null,
+        "explorer": "https://sepolia.mantlescan.xyz/tx/0x8045f86042396fe3c34225d6419ee449dd8544339c185b3affbbaf4ae8bac047",
+        "demo_mode": false
+      },
+      "smart_money": {
+        "clusters": 0,
+        "signals": []
+      }
+    },
+    {
+      "id": "iforest_100868296_1789867093",
+      "type": "multivariate_anomaly",
+      "block": 100868296,
+      "timestamp": "2026-09-20T01:15:04+00:00",
+      "confidence": 0.9277,
+      "confidence_pct": 92,
+      "hash": "ce985d087b5aebc4e01f7ef12dcb93e3c328c039afbbacbac310f673c6cf6f0f",
+      "hex_hash": "0xce985d087b5aebc4e01f7ef12dcb93e3c328c039afbbacbac310f673c6cf6f0f",
+      "insight": "Multivariate anomaly triggered across multiple metrics. Complex on-chain event. \ud83d\udd0d Action: Monitor for additional anomalous blocks, large wallet movements, bridge inflows/outflows, or protocol announcements.",
+      "insight_provider": "template",
+      "raw_metrics": {
+        "isolation_score": -0.736478,
+        "contamination": 0.02,
+        "tx_count": 2,
+        "total_value_mnt": 1000.0728,
+        "large_tx_count": 0
+      },
+      "method": "isolation_forest",
+      "transfers": [],
+      "investment_signal": "Multi-dimensional outlier across tx volume, value, and wallet dimensions \u2014 warrants immediate position review.",
+      "lead_time_blocks": 0,
+      "lead_time_hours": 0.0,
+      "affected_protocols": [],
+      "signal_tier": "HIGH-PRIORITY INVESTIGATION",
+      "reasons": [
+        "Multivariate outlier detected (tx volume + value + wallet diversity)"
+      ],
+      "audit": {
+        "status": "recorded",
+        "tx_hash": "0xb0288178607cc710625357de23dadadba34e44306a3f13cb848b2438857f291d",
+        "on_chain_id": null,
+        "explorer": "https://sepolia.mantlescan.xyz/tx/0xb0288178607cc710625357de23dadadba34e44306a3f13cb848b2438857f291d",
+        "demo_mode": false
+      },
+      "smart_money": {
+        "clusters": 0,
+        "signals": []
+      }
+    },
+    {
+      "id": "iforest_100868323_1789867093",
+      "type": "multivariate_anomaly",
+      "block": 100868323,
+      "timestamp": "2026-09-20T01:15:58+00:00",
+      "confidence": 0.99,
+      "confidence_pct": 99,
+      "hash": "a9cbc9d0e72d1cd1cc7846e69ace2732da2cbbd09245a5298f0f9bf9c7bcbd27",
+      "hex_hash": "0xa9cbc9d0e72d1cd1cc7846e69ace2732da2cbbd09245a5298f0f9bf9c7bcbd27",
+      "insight": "Multivariate anomaly triggered across multiple metrics. Complex on-chain event. \ud83d\udd0d Action: Monitor for additional anomalous blocks, large wallet movements, bridge inflows/outflows, or protocol announcements.",
+      "insight_provider": "template",
+      "raw_metrics": {
+        "isolation_score": -0.862688,
+        "contamination": 0.02,
+        "tx_count": 3,
+        "total_value_mnt": 4986.6559,
+        "large_tx_count": 1,
+        "multi_confirm": true,
+        "confirming_methods": [
+          "zscore",
+          "isolation_forest"
+        ]
+      },
+      "method": "isolation_forest",
+      "transfers": [
+        {
+          "tx_hash": "0x036e1b5de15d36899ad295bed656fa2adc81f985e1a7e8bf0849ee7b9510cd09",
+          "from": "0xd8169f099ce16c87a99d2a8494023574b5eea9c5",
+          "to": "0xfd0b9a4bb75af8b96dcc0f06c3e3687fdf8a7b11",
+          "value_mnt": 4986.65,
+          "value_usd": 4238.65,
+          "label_from": "unknown",
+          "label_to": "unknown",
+          "block": 100868323,
+          "is_contract": false
+        }
+      ],
+      "investment_signal": "Multi-dimensional outlier across tx volume, value, and wallet dimensions \u2014 warrants immediate position review.",
+      "lead_time_blocks": 0,
+      "lead_time_hours": 0.0,
+      "affected_protocols": [],
+      "signal_tier": "HIGH-PRIORITY INVESTIGATION",
+      "reasons": [
+        "Multivariate outlier detected (tx volume + value + wallet diversity)"
+      ],
+      "audit": {
+        "status": "recorded",
+        "tx_hash": "0xf8763328def873b6295a6906af4dff802830e751116ead01eaf098adae90e113",
+        "on_chain_id": null,
+        "explorer": "https://sepolia.mantlescan.xyz/tx/0xf8763328def873b6295a6906af4dff802830e751116ead01eaf098adae90e113",
+        "demo_mode": false
+      },
+      "smart_money": {
+        "clusters": 0,
+        "signals": []
+      }
+    },
+    {
+      "id": "moe_imbalance_100868370_1789867093",
+      "type": "liquidity_imbalance",
+      "block": 100868370,
+      "timestamp": "2026-09-20T01:18:13.449988+00:00",
+      "confidence": 0.93,
+      "confidence_pct": 93,
+      "hash": "ab699021a78198694c8a26dc94d0b0c44a4fcabba9b3cf0d8a100937d8fc298d",
+      "hex_hash": "0xab699021a78198694c8a26dc94d0b0c44a4fcabba9b3cf0d8a100937d8fc298d",
+      "insight": "\ud83d\udca7 LIQUIDITY IMBALANCE \u2014 Merchant Moe / Mantle DEX\n\nMerchant Moe WETH/MNT pool reserve ratio imbalance detected. Pool is asymmetric: one side holds 2,500,000.0 vs 250.0 (ratio imbalance: 50.0% from 50/50 equilibrium). Total pool value ~$3,000,000. Possible causes include liquidity provision or removal, large swaps, arbitrage, or other reserve-changing activity. Source: Mantle RPC direct contract read.\n\n\ud83d\udccd Observation: Merchant Moe WETH/MNT pool reserve deviation detected (pool value ~$3,000,000). Possible causes include liquidity provision or removal, large swaps, arbitrage, or other reserve-changing activity.\n\ud83d\udd0d Action: Monitor for arbitrage stabilization and follow-on reserve changes",
+      "insight_provider": "template",
+      "raw_metrics": {
+        "reserve0_mnt": 2500000.0,
+        "reserve1_weth": 250.0,
+        "avg_reserve0_mnt": 2500000.0,
+        "r0_delta_pct": 49.99,
+        "r1_delta_pct": 49.99,
+        "pool_usd": 3000000.0,
+        "imbalance_ratio": 0.4999,
+        "is_ratio_imbalance": true
+      },
+      "method": "reserve_analysis",
+      "transfers": [],
+      "investment_signal": "Merchant Moe pool ratio imbalance 50.0% from equilibrium ($3,000,000 pool). Asymmetric reserves may indicate recent large swaps or LP changes.",
+      "lead_time_blocks": 0,
+      "lead_time_hours": 0.0,
+      "affected_protocols": [
+        "Merchant Moe",
+        "Agni Finance",
+        "FusionX"
+      ],
+      "signal_tier": "ANOMALY DETECTED - Awaiting confirmation",
+      "reasons": [
+        "Liquidity pool reserve shifted by 49.99% (ratio: 0.50)"
+      ],
+      "audit": {
+        "status": "recorded",
+        "tx_hash": "0xba57f1d0687f7092224c4cb7a1a54c5c2600271340dce18c6dec9d8f90333cda",
+        "on_chain_id": null,
+        "explorer": "https://sepolia.mantlescan.xyz/tx/0xba57f1d0687f7092224c4cb7a1a54c5c2600271340dce18c6dec9d8f90333cda",
+        "demo_mode": false
+      },
+      "smart_money": {
+        "clusters": 0,
+        "signals": []
+      }
     }
   ],
   "smart_money_summary": {
-    "tracked_wallets": 2,
+    "tracked_wallets": 1,
     "known_labels": 55,
     "tier1_alerts": 0,
     "signals_generated": 0,
